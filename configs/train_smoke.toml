@@ -1,0 +1,107 @@
+# 训练管线冒烟测试(Mac 本地):缩小版网络 + 2009 年数据子集
+# 真正的训练配置(云端 4090)以此为模板放大
+
+[control]
+version = 4
+online = false
+
+state_file = '/Users/r/HMM/Better_mortal/runs/smoke/mortal_smoke.pth'
+best_state_file = '/Users/r/HMM/Better_mortal/runs/smoke/mortal_smoke_best.pth'
+tensorboard_dir = '/Users/r/HMM/Better_mortal/runs/smoke/tb'
+
+# 注:MPS 不支持 float64(train.py 用它算 reward),Mac 上只能 cpu;云端改 cuda:0
+device = 'cpu'
+enable_cudnn_benchmark = false
+enable_amp = false
+enable_compile = false
+
+batch_size = 64
+opt_step_every = 1
+
+save_every = 50
+test_every = 1000000
+submit_every = 50
+
+[test_play]
+games = 32
+log_dir = '/Users/r/HMM/Better_mortal/runs/smoke/test_play'
+
+[dataset]
+globs = ['/Users/r/HMM/Better_mortal/data/houou/2009/*.mjson.gz']
+file_index = '/Users/r/HMM/Better_mortal/runs/smoke/file_index.pth'
+file_batch_size = 1
+reserve_ratio = 0.0
+# macOS 必须 0(同上);Linux 云端可调回
+num_workers = 0
+player_names_files = []
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+
+[env]
+gamma = 1
+pts = [6.0, 4.0, 2.0, 0.0]
+
+[resnet]
+conv_channels = 64
+num_blocks = 4
+
+[cql]
+min_q_weight = 5
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = false
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0
+
+[optim.scheduler]
+peak = 1e-4
+final = 1e-5
+warm_up_steps = 100
+max_steps = 100000
+
+[baseline.train]
+device = 'mps'
+enable_compile = false
+state_file = '/Users/r/HMM/MJ/vendor/mortal_bot/mortal.pth'
+
+[baseline.test]
+device = 'mps'
+enable_compile = false
+state_file = '/Users/r/HMM/MJ/vendor/mortal_bot/mortal.pth'
+
+[grp]
+state_file = '/Users/r/HMM/Better_mortal/runs/smoke/grp.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
+
+[grp.control]
+# GRP 是 float64 GRU,MPS 不支持 float64,必须 CPU
+device = 'cpu'
+enable_cudnn_benchmark = false
+tensorboard_dir = '/Users/r/HMM/Better_mortal/runs/smoke/grp_tb'
+
+batch_size = 256
+save_every = 100
+val_steps = 20
+
+[grp.dataset]
+# 2009 数据:2-9 月做训练,10-12 月做验证
+train_globs = ['/Users/r/HMM/Better_mortal/data/houou/2009/20090*.mjson.gz']
+val_globs = ['/Users/r/HMM/Better_mortal/data/houou/2009/20091*.mjson.gz']
+file_index = '/Users/r/HMM/Better_mortal/runs/smoke/grp_file_index.pth'
+file_batch_size = 50
+# macOS 必须 0(DataLoader 子进程 + Rust 扩展会段错误);Linux 云端可调回
+num_workers = 0
+
+[grp.optim]
+lr = 1e-4

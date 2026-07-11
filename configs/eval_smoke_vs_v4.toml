@@ -1,0 +1,29 @@
+# 闭环验证:自己训的冒烟模型(64ch×4blk, 550步) vs MJ 的 Mortal v4
+[1v3]
+seed_key = 42
+games_per_iter = 8
+iters = 1
+log_dir = '/Users/r/HMM/Better_mortal/eval/smoke_vs_v4'
+
+[1v3.challenger]
+device = 'cpu'
+name = 'smoke-64x4'
+state_file = '/Users/r/HMM/Better_mortal/runs/smoke/mortal_smoke.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = false
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = 'cpu'
+name = 'champion-v4'
+state_file = '/Users/r/HMM/MJ/vendor/mortal_bot/mortal.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = false
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ''
+tactics = ''

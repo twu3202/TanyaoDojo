@@ -1,0 +1,29 @@
+# 冒烟测试:v4 vs v4,8 局复式,只为验证评测闭环
+[1v3]
+seed_key = 42
+games_per_iter = 8
+iters = 1
+log_dir = '/Users/r/HMM/Better_mortal/eval/smoke'
+
+[1v3.challenger]
+device = 'cpu'
+name = 'challenger-v4'
+state_file = '/Users/r/HMM/MJ/vendor/mortal_bot/mortal.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = false
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = 'cpu'
+name = 'champion-v4'
+state_file = '/Users/r/HMM/MJ/vendor/mortal_bot/mortal.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = false
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ''
+tactics = ''

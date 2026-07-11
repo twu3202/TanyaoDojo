@@ -1,0 +1,28 @@
+[1v3]
+seed_key = 42
+games_per_iter = 32
+iters = 1
+log_dir = "/root/autodl-tmp/runs/eval_smoke_gpu"
+
+[1v3.challenger]
+device = "cuda:0"
+name = "v4-chal"
+state_file = "/root/better_mortal/baseline/mortal_v4.pth"
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = "cuda:0"
+name = "v4-cham"
+state_file = "/root/better_mortal/baseline/mortal_v4.pth"
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ""
+tactics = ""

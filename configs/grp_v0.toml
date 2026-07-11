@@ -1,0 +1,31 @@
+# GRP 奖励模型 v0:train = 2010+2012(18.7万局),val = 2009(6.9千局)
+# Mac CPU 可训(float64 GRU)。全量数据到位后可在云端用更多年份重训。
+[grp]
+state_file = '/Users/r/HMM/Better_mortal/runs/grp_v0/grp.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
+
+[grp.control]
+device = 'cpu'
+enable_cudnn_benchmark = false
+tensorboard_dir = '/Users/r/HMM/Better_mortal/runs/grp_v0/tb'
+
+batch_size = 256
+save_every = 2000
+val_steps = 200
+
+[grp.dataset]
+train_globs = [
+    '/Users/r/HMM/Better_mortal/data/houou/2010/*.mjson.gz',
+    '/Users/r/HMM/Better_mortal/data/houou/2012/*.mjson.gz',
+]
+val_globs = ['/Users/r/HMM/Better_mortal/data/houou/2009/*.mjson.gz']
+file_index = '/Users/r/HMM/Better_mortal/runs/grp_v0/file_index.pth'
+file_batch_size = 50
+# macOS 必须 0(见 SETUP_NOTES.md)
+num_workers = 0
+
+[grp.optim]
+lr = 1e-5

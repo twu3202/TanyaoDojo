@@ -1,0 +1,34 @@
+# [云端] GRP 奖励模型全量版:train = 2019–2024,val = 2025
+# 用法(GPU 模式下):cd /root/better_mortal/Mortal/mortal && MORTAL_CFG=/root/better_mortal/configs/remote_grp_full.toml python train_grp.py
+[grp]
+state_file = '/root/autodl-tmp/runs/grp_full/grp.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
+
+[grp.control]
+device = 'cuda:0'
+enable_cudnn_benchmark = false
+tensorboard_dir = '/root/autodl-tmp/runs/grp_full/tb'
+
+batch_size = 512
+save_every = 2000
+val_steps = 400
+
+[grp.dataset]
+train_globs = [
+    '/root/autodl-tmp/data/houou/2019/*.mjson*',
+    '/root/autodl-tmp/data/houou/2020/*.mjson*',
+    '/root/autodl-tmp/data/houou/2021/*.mjson*',
+    '/root/autodl-tmp/data/houou/2022/*.mjson*',
+    '/root/autodl-tmp/data/houou/2023/*.mjson*',
+    '/root/autodl-tmp/data/houou/2024/*.mjson*',
+]
+val_globs = ['/root/autodl-tmp/data/houou/2025/*.mjson*']
+file_index = '/root/autodl-tmp/runs/grp_full/file_index.pth'
+file_batch_size = 50
+num_workers = 4
+
+[grp.optim]
+lr = 1e-5

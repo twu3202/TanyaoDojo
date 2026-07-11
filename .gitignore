@@ -1,0 +1,17 @@
+# 数据(26GB+,且天凤条款禁止再分发——绝不入库)
+data/
+
+# 训练输出与评测日志(大文件;权重快照放 weights_backup/ 本地保存)
+runs/
+eval/
+weights_backup/
+
+# Rust 构建产物
+Mortal/target/
+Mortal/mortal/libriichi.so
+
+# 杂项
+__pycache__/
+*.pyc
+.DS_Store
+*.log

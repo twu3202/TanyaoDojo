@@ -1,0 +1,123 @@
+# [云端] 主训练 v1:官方规格 40 块×192 通道,离线 CQL,数据 2019–2026(约 190 万局)
+# 前置:remote_grp_full.toml 训完的 grp.pth
+# 用法:cd /root/better_mortal/Mortal/mortal && MORTAL_CFG=/root/better_mortal/configs/remote_train_v1.toml python train.py
+
+[control]
+version = 4
+online = false
+
+state_file = '/root/autodl-tmp/runs/v1/mortal.pth'
+best_state_file = '/root/autodl-tmp/runs/v1/best.pth'
+tensorboard_dir = '/root/autodl-tmp/runs/v1/tb'
+
+device = 'cuda:0'
+enable_cudnn_benchmark = true
+enable_amp = true
+enable_compile = true
+
+batch_size = 512
+opt_step_every = 1
+
+save_every = 400
+test_every = 20000
+submit_every = 400
+
+[test_play]
+games = 1000
+log_dir = '/root/autodl-tmp/runs/v1/test_play'
+
+[dataset]
+globs = [
+    '/root/autodl-tmp/data/houou/2019/*.mjson*',
+    '/root/autodl-tmp/data/houou/2020/*.mjson*',
+    '/root/autodl-tmp/data/houou/2021/*.mjson*',
+    '/root/autodl-tmp/data/houou/2022/*.mjson*',
+    '/root/autodl-tmp/data/houou/2023/*.mjson*',
+    '/root/autodl-tmp/data/houou/2024/*.mjson*',
+    '/root/autodl-tmp/data/houou/2025/*.mjson*',
+    '/root/autodl-tmp/data/houou/2026/*.mjson*',
+]
+file_index = '/root/autodl-tmp/runs/v1/file_index.pth'
+# 社区经验(Mortal discussions #59):file_batch_size=1 解 dataloader 瓶颈
+file_batch_size = 1
+reserve_ratio = 0.0
+num_workers = 8
+player_names_files = []
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+
+[env]
+gamma = 1
+pts = [6.0, 4.0, 2.0, 0.0]
+
+[resnet]
+conv_channels = 192
+num_blocks = 40
+
+[cql]
+min_q_weight = 5
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = false
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0
+
+[optim.scheduler]
+peak = 1e-4
+final = 1e-4
+warm_up_steps = 1000
+max_steps = 1000
+
+[baseline.train]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/root/better_mortal/baseline/mortal_v4.pth'
+
+[baseline.test]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/root/better_mortal/baseline/mortal_v4.pth'
+
+[grp]
+state_file = '/root/autodl-tmp/runs/grp_full/grp.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
+
+[1v3]
+seed_key = 20260711
+games_per_iter = 2000
+iters = 50
+log_dir = '/root/autodl-tmp/runs/v1/1v3'
+
+[1v3.challenger]
+device = 'cuda:0'
+name = 'v1'
+state_file = '/root/autodl-tmp/runs/v1/best.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = 'cuda:0'
+name = 'mortal-v4'
+state_file = '/root/better_mortal/baseline/mortal_v4.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ''
+tactics = ''
