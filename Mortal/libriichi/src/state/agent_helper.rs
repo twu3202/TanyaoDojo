@@ -1,5 +1,6 @@
-use super::{PlayerState, SinglePlayerTables};
+use super::{DefensiveTables, PlayerState, SinglePlayerTables};
 use crate::algo::agari::AgariCalculator;
+use crate::algo::def;
 use crate::algo::point::Point;
 use crate::algo::shanten;
 use crate::algo::sp::{InitState, SPCalculator};
@@ -590,5 +591,58 @@ impl PlayerState {
         }
 
         Ok(SinglePlayerTables { max_ev_table })
+    }
+
+    /// Defensive danger tables for the v5 obs (Track B). For each of the three
+    /// relative opponents (shimocha/toimen/kamicha) that has an *accepted
+    /// riichi*, computes per-tile deal-in probability plus genbutsu/suji masks.
+    /// Non-riichi opponents get all-zero rows (v0: riichi-only defense).
+    ///
+    /// The suji definition matches `scripts/build_deal_in_table.py`: a number
+    /// tile of value `v` in a suit is suji iff the opponent discarded a
+    /// same-suit tile of value `v-3` or `v+3`. Genbutsu (a tile in that
+    /// opponent's kawa) is exactly safe, so its deal-in prob is 0.
+    pub(super) fn defensive_tables(&self) -> DefensiveTables {
+        let mut deal_in_prob = [[0.0f32; 34]; 3];
+        let mut genbutsu = [[false; 34]; 3];
+        let mut suji = [[false; 34]; 3];
+
+        for rel in 1..=3usize {
+            if !self.riichi_accepted[rel] {
+                continue;
+            }
+            let out = rel - 1;
+
+            // Deaka'd discard mask for this opponent.
+            let mut discarded = [false; 34];
+            for tile in &self.kawa_overview[rel] {
+                discarded[tile.deaka().as_usize()] = true;
+            }
+
+            for tid in 0..34usize {
+                let g = discarded[tid];
+                let s = if tid < 27 {
+                    let suit = tid / 9;
+                    let num = tid % 9; // 0..8, i.e. value-1
+                    (num >= 3 && discarded[suit * 9 + num - 3])
+                        || (num <= 5 && discarded[suit * 9 + num + 3])
+                } else {
+                    false
+                };
+                genbutsu[out][tid] = g;
+                suji[out][tid] = s;
+                deal_in_prob[out][tid] = if g {
+                    0.0
+                } else {
+                    def::deal_in_prob(tid, s, self.at_turn)
+                };
+            }
+        }
+
+        DefensiveTables {
+            deal_in_prob,
+            genbutsu,
+            suji,
+        }
     }
 }

@@ -21,7 +21,13 @@ struct ObsEncoderContext<'a> {
     mask: Array1<bool>,
     idx: usize,
     at_kan_select: bool,
+    /// Working version for the *base* features: capped at 4 so that v5 reuses
+    /// the entire v4 encoding path unchanged. Extra v5 channels are appended
+    /// separately based on `obs_version`.
     version: u32,
+    /// The real requested version (drives the output shape and the extra v5
+    /// defensive channels).
+    obs_version: u32,
 }
 
 #[must_use]
@@ -119,7 +125,9 @@ impl<'a> ObsEncoderContext<'a> {
             mask,
             idx: 0,
             at_kan_select,
-            version,
+            // v5 reuses the v4 base path; extra channels keyed on obs_version.
+            version: version.min(4),
+            obs_version: version,
         }
     }
 
@@ -623,6 +631,10 @@ impl<'a> ObsEncoderContext<'a> {
             }
         }
 
+        if self.obs_version >= 5 {
+            self.encode_defense();
+        }
+
         assert_eq!(self.idx, self.arr.rows());
         let arr = self.arr.build();
         debug_assert!(arr.iter().all(|&v| (0. ..=1.).contains(&v)));
@@ -635,6 +647,52 @@ impl<'a> ObsEncoderContext<'a> {
         let v = value.clamp(0., 30_000.) / 30_000.;
         self.arr.fill(self.idx + 1, v);
         self.idx += 2;
+    }
+
+    /// v5 defensive channels (Track B), 10 rows total:
+    /// - deal_in_prob per relative opponent (3) + max over opponents (1)
+    /// - genbutsu mask per opponent (3)
+    /// - suji mask per opponent (3)
+    fn encode_defense(&mut self) {
+        let tables = self.state.defensive_tables();
+
+        for o in 0..3 {
+            for tid in 0..34 {
+                let p = tables.deal_in_prob[o][tid];
+                if p > 0. {
+                    self.arr.assign(self.idx + o, tid, p);
+                }
+            }
+        }
+        for tid in 0..34 {
+            let m = tables
+                .deal_in_prob
+                .iter()
+                .map(|row| row[tid])
+                .fold(0.0_f32, f32::max);
+            if m > 0. {
+                self.arr.assign(self.idx + 3, tid, m);
+            }
+        }
+        self.idx += 4;
+
+        for o in 0..3 {
+            for tid in 0..34 {
+                if tables.genbutsu[o][tid] {
+                    self.arr.assign(self.idx + o, tid, 1.);
+                }
+            }
+        }
+        self.idx += 3;
+
+        for o in 0..3 {
+            for tid in 0..34 {
+                if tables.suji[o][tid] {
+                    self.arr.assign(self.idx + o, tid, 1.);
+                }
+            }
+        }
+        self.idx += 3;
     }
 
     // discard table: 3 * MAX_NUM_TURNS

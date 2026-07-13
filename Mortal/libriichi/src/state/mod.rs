@@ -1,5 +1,6 @@
 mod action;
 mod agent_helper;
+mod def_tables;
 mod getter;
 mod item;
 mod obs_repr;
@@ -12,6 +13,7 @@ mod test;
 
 use crate::py_helper::add_submodule;
 pub use action::ActionCandidate;
+pub use def_tables::DefensiveTables;
 pub use player_state::PlayerState;
 pub use sp_tables::SinglePlayerTables;
 
