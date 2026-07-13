@@ -1,0 +1,123 @@
+# [本地服务器] v5 旗舰:Track B 防守特征(version=5, obs 1022ch)+ Track A LR 衰减
+# ⚠️ v5 输入维度不同,从头训练(不能续 v1/v4)。需先编译带 v5 的 libriichi.so
+# GRP 复用 grp_full.pth(与 obs 版本无关)。数据/GRP 同 v11 前置。
+# 用法:MORTAL_CFG=~/Projects/better_mortal/configs/local_train_v5.toml python train.py
+# 用法:cd ~/Projects/better_mortal/Mortal/mortal && . ../../.venv/bin/activate
+#       MORTAL_CFG=~/Projects/better_mortal/configs/local_train_v11.toml python train.py
+# A2 变体(宽度):把 [resnet] conv_channels 改 256 另存 local_train_v11_w256.toml
+
+[control]
+version = 5
+online = false
+state_file = '/home/twu/Projects/better_mortal/runs/v5/mortal.pth'
+best_state_file = '/home/twu/Projects/better_mortal/runs/v5/best.pth'
+tensorboard_dir = '/home/twu/Projects/better_mortal/runs/v5/tb'
+device = 'cuda:0'
+enable_cudnn_benchmark = true
+enable_amp = true
+enable_compile = true
+batch_size = 512
+opt_step_every = 1
+save_every = 400
+test_every = 20000
+submit_every = 400
+
+[test_play]
+games = 1000
+log_dir = '/home/twu/Projects/better_mortal/runs/v5/test_play'
+
+[dataset]
+globs = [
+    '/home/twu/Projects/better_mortal/data/houou/2019/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2020/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2021/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2022/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2023/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2024/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2025/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2026/*.mjson*',
+]
+file_index = '/home/twu/Projects/better_mortal/runs/v5/file_index.pth'
+file_batch_size = 1
+reserve_ratio = 0.0
+num_workers = 8
+player_names_files = []
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+
+[env]
+gamma = 1
+pts = [6.0, 4.0, 2.0, 0.0]
+
+[resnet]
+conv_channels = 192
+num_blocks = 40
+
+[cql]
+min_q_weight = 5
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = false
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0
+
+[optim.scheduler]
+# ⭐ Track A1 核心修复:cosine 退火 peak→final,覆盖整个 epoch
+peak = 1e-4
+final = 1e-5
+warm_up_steps = 2000
+max_steps = 1210000
+
+[baseline.train]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[baseline.test]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[grp]
+state_file = '/home/twu/Projects/better_mortal/runs/grp_full/grp.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
+
+[1v3]
+seed_key = 20260711
+games_per_iter = 2000
+iters = 50
+log_dir = '/home/twu/Projects/better_mortal/runs/v5/1v3'
+
+[1v3.challenger]
+device = 'cuda:0'
+name = 'v5-def'
+state_file = '/home/twu/Projects/better_mortal/runs/v5/best.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = 'cuda:0'
+name = 'mortal-v4'
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ''
+tactics = ''
