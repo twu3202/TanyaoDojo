@@ -1,0 +1,32 @@
+# [Mac 隔离] 自对弈生成 smoke test:v1_best 自对弈(CPU),验证 Track C 生成回路
+[control]
+version = 4
+online = true
+device = 'cpu'
+enable_cudnn_benchmark = false
+enable_amp = false
+enable_compile = false
+
+[resnet]
+conv_channels = 192
+num_blocks = 40
+
+[train_play.default]
+games = 8
+log_dir = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/selfplay_logs'
+boltzmann_epsilon = 0.005
+boltzmann_temp = 0.05
+top_p = 1.0
+repeats = 1
+
+[baseline.train]
+device = 'cpu'
+enable_compile = false
+state_file = '/Users/r/HMM/Better_mortal/weights_backup/v1_best.pth'
+
+[grp]
+state_file = '/Users/r/HMM/Better_mortal/weights_backup/grp_full_snapshot.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
