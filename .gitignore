@@ -15,3 +15,6 @@ __pycache__/
 *.pyc
 .DS_Store
 *.log
+
+# 第三方对手(akochan 源码克隆,不入库;搭建方法见 TRACK_C_SELFPLAY.md 哨兵节)
+vendor/
