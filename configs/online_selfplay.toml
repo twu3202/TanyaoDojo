@@ -1,0 +1,111 @@
+# [本地服务器] Track C 自对弈在线 RL —— trainer 配置(每晚分段跑,state.pth 续跑)。
+# 单机拆分:server(CPU) + N worker(CPU 生成) + trainer(本配置, GPU)。
+# worker 用 run_selfplay.sh 自动生成的 device→cpu 副本(online_selfplay_worker.toml)。
+#
+# ⚠️ FILL-AFTER-V18:基座(v18 或 v5)评测定了之后,务必确认下面 3 处与基座一致,否则加载崩:
+#   - [control] version         v18/v5=5,  v11系=4
+#   - [resnet]  conv_channels    v18/v5=256, v11系=192
+#   - [resnet]  num_blocks       v18/v5=40,  v11系=40
+#   并把 [baseline.train] / 首夜 --base 指向基座 best.pth。
+#   grp / mortal_v4 路径按服务器实际填。
+
+[control]
+version = 5                 # FILL: 与基座一致
+online = true
+device = 'cuda:0'           # trainer 用 GPU(run_selfplay 会把 worker 副本改成 cpu)
+enable_cudnn_benchmark = true
+enable_amp = true
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/runs/selfplay/state.pth'
+best_state_file = '/home/twu/Projects/better_mortal/runs/selfplay/best.pth'
+tensorboard_dir = '/home/twu/Projects/better_mortal/runs/selfplay/tb'
+batch_size = 512
+opt_step_every = 1
+save_every = 200            # state.pth 每 200 步存盘 → 每晚停最多丢 200 步(续跑无损)
+test_every = 4000           # 每 4000 步对 baseline.test(=v4)打一次 test_play(噪声大, 仅参考)
+submit_every = 20           # trainer 每 20 步向 server 推一次新参数
+
+[online]
+history_window = 10
+enable_compile = false
+
+[online.remote]
+host = '127.0.0.1'
+port = 5577
+
+[online.server]
+buffer_dir = '/home/twu/Projects/better_mortal/runs/selfplay/buffer'
+drain_dir = '/home/twu/Projects/better_mortal/runs/selfplay/drain'
+sample_reuse_rate = 0       # 每条样本用几次(0=用完即弃, 提高可省生成量但增 off-policy 偏差)
+sample_reuse_threshold = 0
+capacity = 4000             # replay buffer 容量(对局数), 按显存/吞吐可调
+force_sequential = false
+
+[test_play]
+games = 2000               # test_play 规模; 真强度以周期性 100k 复式(one_vs_three)为准
+log_dir = '/home/twu/Projects/better_mortal/runs/selfplay/test_play'
+
+[train_play.default]
+games = 2000               # 每个 worker 每轮生成的对局数
+log_dir = '/home/twu/Projects/better_mortal/runs/selfplay/train_play'
+boltzmann_epsilon = 0.005  # 探索(TRACK_C 文档值): ε-greedy + 温度
+boltzmann_temp = 0.05
+top_p = 1.0
+repeats = 1
+
+[dataset]
+globs = []                 # 在线不用离线数据; 从 drain 出来的自对弈对局训练
+file_index = '/home/twu/Projects/better_mortal/runs/selfplay/file_index.pth'
+file_batch_size = 1
+reserve_ratio = 0.0
+num_workers = 0
+player_names_files = []
+num_epochs = 1000000000
+enable_augmentation = false
+augmented_first = false
+
+[env]
+gamma = 1
+pts = [6.0, 4.0, 2.0, 0.0]
+
+[resnet]
+conv_channels = 256        # FILL: 与基座一致
+num_blocks = 40            # FILL: 与基座一致
+
+[cql]
+min_q_weight = 5           # 在线模式下被 `if not online` 关掉, 此值无效(留档一致性)
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = true              # 在线惯例: 冻结 BatchNorm 统计
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 1.0        # 在线开梯度裁剪防爆(离线基座是 0=不裁)
+
+[optim.scheduler]
+peak = 1e-5                # 在线恒定小 LR(微调)
+final = 1e-5
+warm_up_steps = 0
+max_steps = 1000000000     # 巨大 → LR 恒定在 final, 不衰减(在线无 epoch 概念)
+
+[baseline.train]
+device = 'cuda:0'          # 自对弈对手: trainee 打 3×它。FILL: 基座 best.pth(自我提升)或 mortal_v4(直接对抗)
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/runs/selfplay/BASE.pth'   # FILL-AFTER-V18
+
+[baseline.test]
+device = 'cuda:0'          # test_play 对手 = v4, 直接量"vs v4"强度
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[grp]
+state_file = '/home/twu/Projects/better_mortal/grp_full.pth'  # FILL: 服务器 grp_full 实际路径
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
