@@ -1,4 +1,5 @@
-# [本地服务器] v5 旗舰:Track B 防守特征(version=5, obs 1022ch)+ Track A LR 衰减
+# [本地服务器] v18:v5配方(防守特征+256宽+LR衰减)× 全18年数据(251万局,从头训)
+# 旧注:v5 旗舰:Track B 防守特征(version=5, obs 1022ch)+ Track A LR 衰减
 # ⚠️ v5 输入维度不同,从头训练(不能续 v1/v4)。需先编译带 v5 的 libriichi.so
 # GRP 复用 grp_full.pth(与 obs 版本无关)。数据/GRP 同 v11 前置。
 # 用法:MORTAL_CFG=~/Projects/better_mortal/configs/local_train_v5.toml python train.py
@@ -9,9 +10,9 @@
 [control]
 version = 5
 online = false
-state_file = '/home/twu/Projects/better_mortal/runs/v5/mortal.pth'
-best_state_file = '/home/twu/Projects/better_mortal/runs/v5/best.pth'
-tensorboard_dir = '/home/twu/Projects/better_mortal/runs/v5/tb'
+state_file = '/home/twu/Projects/better_mortal/runs/v18/mortal.pth'
+best_state_file = '/home/twu/Projects/better_mortal/runs/v18/best.pth'
+tensorboard_dir = '/home/twu/Projects/better_mortal/runs/v18/tb'
 device = 'cuda:0'
 enable_cudnn_benchmark = true
 enable_amp = true
@@ -25,10 +26,20 @@ submit_every = 400
 
 [test_play]
 games = 1000
-log_dir = '/home/twu/Projects/better_mortal/runs/v5/test_play'
+log_dir = '/home/twu/Projects/better_mortal/runs/v18/test_play'
 
 [dataset]
 globs = [
+    '/home/twu/Projects/better_mortal/data/houou/2009/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2010/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2011/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2012/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2013/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2014/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2015/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2016/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2017/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2018/*.mjson*',
     '/home/twu/Projects/better_mortal/data/houou/2019/*.mjson*',
     '/home/twu/Projects/better_mortal/data/houou/2020/*.mjson*',
     '/home/twu/Projects/better_mortal/data/houou/2021/*.mjson*',
@@ -38,7 +49,7 @@ globs = [
     '/home/twu/Projects/better_mortal/data/houou/2025/*.mjson*',
     '/home/twu/Projects/better_mortal/data/houou/2026/*.mjson*',
 ]
-file_index = '/home/twu/Projects/better_mortal/runs/v5/file_index.pth'
+file_index = '/home/twu/Projects/better_mortal/runs/v18/file_index.pth'
 file_batch_size = 1
 reserve_ratio = 0.0
 num_workers = 8
@@ -75,7 +86,7 @@ max_grad_norm = 0
 peak = 1.4e-4
 final = 1.4e-5
 warm_up_steps = 2000
-max_steps = 605000
+max_steps = 1240000
 
 [baseline.train]
 device = 'cuda:0'
@@ -98,12 +109,12 @@ num_layers = 2
 seed_key = 20260711
 games_per_iter = 2000
 iters = 50
-log_dir = '/home/twu/Projects/better_mortal/runs/v5/1v3'
+log_dir = '/home/twu/Projects/better_mortal/runs/v18/1v3'
 
 [1v3.challenger]
 device = 'cuda:0'
-name = 'v5-def'
-state_file = '/home/twu/Projects/better_mortal/runs/v5/best.pth'
+name = 'v18-def'
+state_file = '/home/twu/Projects/better_mortal/runs/v18/best.pth'
 stochastic_latent = false
 enable_compile = false
 enable_amp = true
