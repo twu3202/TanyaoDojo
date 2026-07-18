@@ -107,11 +107,15 @@ for i in $(seq 1 $WORKERS); do
   OPP=$(resolve_opp "$m")
   WCFG_I=$SP/worker_${i}.toml
   # 生成 worker 配置: ①(可选)device→cpu ②baseline.train 指向该 worker 的对手
+  # ③⚠️ 每 worker 独立 train_play log_dir —— player.py 每轮 rmtree(log_dir),共享目录会互删
+  #    对局文件/重复提交(2026-07-18 GPU worker 实测踩雷,修复于此)
+  LOGDIR_SED="s#^log_dir = .*selfplay/train_play.*#log_dir = '$SP/train_play_w${i}'#"
   if [ "$WDEV" = cpu ]; then
-    sed 's#cuda:0#cpu#g' $CFG | sed -E "s#^state_file = .*BASE\.pth.*#state_file = '${OPP}'#" > $WCFG_I
+    sed 's#cuda:0#cpu#g' $CFG | sed -E -e "s#^state_file = .*BASE\.pth.*#state_file = '${OPP}'#" -e "$LOGDIR_SED" > $WCFG_I
   else
-    sed -E "s#^state_file = .*BASE\.pth.*#state_file = '${OPP}'#" $CFG > $WCFG_I
+    sed -E -e "s#^state_file = .*BASE\.pth.*#state_file = '${OPP}'#" -e "$LOGDIR_SED" $CFG > $WCFG_I
   fi
+  mkdir -p $SP/train_play_w${i}
   setsid env MORTAL_CFG=$WCFG_I TRAIN_PLAY_PROFILE=default $PY client.py > $LOGD/worker_$i.log 2>&1 < /dev/null &
   echo $! >> $PIDF
   echo "[selfplay] worker $i 启动 (PID $!, device=$WDEV, 对手=$m -> $OPP)"
