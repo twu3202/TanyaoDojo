@@ -2,15 +2,12 @@
 # 单机拆分:server(CPU) + N worker(CPU 生成) + trainer(本配置, GPU)。
 # worker 用 run_selfplay.sh 自动生成的 device→cpu 副本(online_selfplay_worker.toml)。
 #
-# ⚠️ FILL-AFTER-V18:基座(v18 或 v5)评测定了之后,务必确认下面 3 处与基座一致,否则加载崩:
-#   - [control] version         v18/v5=5,  v11系=4
-#   - [resnet]  conv_channels    v18/v5=256, v11系=192
-#   - [resnet]  num_blocks       v18/v5=40,  v11系=40
-#   并把 [baseline.train] / 首夜 --base 指向基座 best.pth。
-#   grp / mortal_v4 路径按服务器实际填。
+# ✅ 已按基座填定(2026-07-18):**基座 = v11**(v18 评测 -3.02±0.53 无增益,判读见 RESULTS.md)。
+#   version=4 / conv_channels=192 / num_blocks=40,与 runs/v11/best.pth 一致。
+#   首夜 --base 指 runs/v11/best.pth(run_selfplay.sh 会拷成 state.pth + BASE.pth)。
 
 [control]
-version = 5                 # FILL: 与基座一致
+version = 4                 # 基座 v11:version 4(无防守特征)
 online = true
 device = 'cuda:0'           # trainer 用 GPU(run_selfplay 会把 worker 副本改成 cpu)
 enable_cudnn_benchmark = true
@@ -69,8 +66,8 @@ gamma = 1
 pts = [6.0, 4.0, 2.0, 0.0]
 
 [resnet]
-conv_channels = 256        # FILL: 与基座一致
-num_blocks = 40            # FILL: 与基座一致
+conv_channels = 192        # 基座 v11:192 宽(推理比 256 快 ~50%,自对弈吞吐优先)
+num_blocks = 40
 
 [cql]
 min_q_weight = 5           # 在线模式下被 `if not online` 关掉, 此值无效(留档一致性)
@@ -96,7 +93,7 @@ max_steps = 1000000000     # 巨大 → LR 恒定在 final, 不衰减(在线无 
 [baseline.train]
 device = 'cuda:0'          # 自对弈对手: trainee 打 3×它。FILL: 基座 best.pth(自我提升)或 mortal_v4(直接对抗)
 enable_compile = false
-state_file = '/home/twu/Projects/better_mortal/runs/selfplay/BASE.pth'   # FILL-AFTER-V18
+state_file = '/home/twu/Projects/better_mortal/runs/selfplay/BASE.pth'   # = v11_best(run_selfplay.sh --base 自动拷入)
 
 [baseline.test]
 device = 'cuda:0'          # test_play 对手 = v4, 直接量"vs v4"强度
@@ -104,7 +101,7 @@ enable_compile = false
 state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
 
 [grp]
-state_file = '/home/twu/Projects/better_mortal/grp_full.pth'  # FILL: 服务器 grp_full 实际路径
+state_file = '/home/twu/Projects/better_mortal/runs/grp_full/grp.pth'  # 已核实:服务器与本地 WSL 均为此路径(根目录无 grp_full.pth)
 
 [grp.network]
 hidden_size = 64

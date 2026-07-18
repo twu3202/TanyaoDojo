@@ -1,0 +1,28 @@
+[1v3]
+seed_key = 20260711
+games_per_iter = 2000
+iters = 50
+log_dir = "/home/twu/Projects/better_mortal/runs/v11/eval_manual_1v3"
+
+[1v3.challenger]
+device = "cuda:0"
+name = "v11-base"
+state_file = "/home/twu/Projects/better_mortal/runs/v11/best.pth"
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = "cuda:0"
+name = "mortal-v4"
+state_file = "/home/twu/Projects/better_mortal/baseline/mortal_v4.pth"
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ""
+tactics = ""

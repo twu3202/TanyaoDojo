@@ -5,6 +5,7 @@ data/
 runs/
 eval/
 weights_backup/
+data_staging/
 
 # Rust 构建产物
 Mortal/target/
