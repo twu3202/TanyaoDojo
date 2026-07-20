@@ -17,10 +17,12 @@ state_file = '/home/twu/Projects/better_mortal/runs/selfplay/state.pth'
 best_state_file = '/home/twu/Projects/better_mortal/runs/selfplay/best.pth'
 tensorboard_dir = '/home/twu/Projects/better_mortal/runs/selfplay/tb'
 batch_size = 512
-opt_step_every = 1
+# ⭐ 2026-07-20 实验 A' 验证的止血配方(勿回退):opt_step_every=8 梯度累积(Equim #33 亲述要点,
+#   有效步长÷8;首夜 =1 时 49万局单调崩至 -32,=8 后 8 测稳定在基座水平)
+opt_step_every = 8
 save_every = 200            # state.pth 每 200 步存盘 → 每晚停最多丢 200 步(续跑无损)
 test_every = 4000           # 每 4000 步对 baseline.test(=v4)打一次 test_play(噪声大, 仅参考)
-submit_every = 20           # trainer 每 20 步向 server 推一次新参数
+submit_every = 400          # 对齐上游(首夜 20 过于激进)
 
 [online]
 history_window = 10
@@ -43,7 +45,7 @@ games = 2000               # test_play 规模; 真强度以周期性 100k 复式
 log_dir = '/home/twu/Projects/better_mortal/runs/selfplay/test_play'
 
 [train_play.default]
-games = 2000               # 每个 worker 每轮生成的对局数
+games = 800                # 每个 worker 每轮生成的对局数(对齐上游;轮次短→参数更新鲜)
 log_dir = '/home/twu/Projects/better_mortal/runs/selfplay/train_play'
 boltzmann_epsilon = 0.005  # 探索(TRACK_C 文档值): ε-greedy + 温度
 boltzmann_temp = 0.05
