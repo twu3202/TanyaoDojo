@@ -113,9 +113,12 @@ def train():
         if not online or state['config']['control']['online']:
             optimizer.load_state_dict(state['optimizer'])
             scheduler.load_state_dict(state['scheduler'])
+            # 本地补丁(2026-07-21):best_perf/steps 移入门内——在线热启动(从离线基座)时应重置,
+            # 否则继承基座的历史 best 纪录(如 v11 的 +4.0 噪声尖峰)使 best.pth 永不更新,
+            # 且步数计数器带着基座历史值(纯显示但误导)。离线续训/在线续在线不受影响。
+            best_perf = state['best_perf']
+            steps = state['steps']
         scaler.load_state_dict(state['scaler'])
-        best_perf = state['best_perf']
-        steps = state['steps']
 
     optimizer.zero_grad(set_to_none=True)
     mse = nn.MSELoss()
