@@ -102,6 +102,14 @@ device = 'cuda:0'          # test_play 对手 = v4, 直接量"vs v4"强度
 enable_compile = false
 state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
 
+# ⭐ 锚定值微调(C' 方案,2026-07-21 备妥待发;需配合补丁版 train.py):
+#   把全部合法动作的 Q 锚在冻结基座上,治"未采取动作漂移→排序侵蚀"(A' 验尸的慢速 churn)。
+#   weight=0 或删除本节 = 完全关闭(行为同上游)。部署脚本:scratchpad/deploy_anchor.sh。
+#   配套建议:boltzmann_temp 0.05→0.1(有锚后可开一点探索),由部署脚本按需 sed。
+[anchor]
+weight = 0.5
+state_file = '/home/twu/Projects/better_mortal/runs/selfplay/BASE.pth'
+
 [grp]
 state_file = '/home/twu/Projects/better_mortal/runs/grp_full/grp.pth'  # 已核实:服务器与本地 WSL 均为此路径(根目录无 grp_full.pth)
 

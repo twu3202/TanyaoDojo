@@ -75,6 +75,24 @@ def train():
 
     mortal.freeze_bn(config['freeze_bn']['mortal'])
 
+    # 本地补丁(2026-07-21)锚定值微调:在线模式把全部合法动作的 Q 锚在冻结基座上,
+    # 抑制"未采取动作 Q 无监督漂移→排序侵蚀"(A'/B1 实测的慢速 churn 病灶)。
+    # [anchor] weight=0 或配置缺省时完全惰性,行为与上游一致。
+    anchor_cfg = config.get('anchor', {})
+    anchor_weight = anchor_cfg.get('weight', 0)
+    anchor_mortal = None
+    anchor_dqn = None
+    if online and anchor_weight > 0:
+        anchor_state = torch.load(anchor_cfg['state_file'], weights_only=True, map_location=device)
+        anchor_mortal = Brain(version=version, **config['resnet']).to(device).eval()
+        anchor_dqn = DQN(version=version).to(device).eval()
+        anchor_mortal.load_state_dict(anchor_state['mortal'])
+        anchor_dqn.load_state_dict(anchor_state['current_dqn'])
+        for p in chain(anchor_mortal.parameters(), anchor_dqn.parameters()):
+            p.requires_grad_(False)
+        del anchor_state
+        logging.info(f'anchor enabled: weight={anchor_weight}, state_file={anchor_cfg["state_file"]}')
+
     decay_params = []
     no_decay_params = []
     for model in all_models:
@@ -138,6 +156,7 @@ def train():
         'dqn_loss': 0,
         'cql_loss': 0,
         'next_rank_loss': 0,
+        'anchor_loss': 0,
     }
     all_q = torch.zeros((save_every, batch_size), device=device, dtype=torch.float32)
     all_q_target = torch.zeros((save_every, batch_size), device=device, dtype=torch.float32)
@@ -240,6 +259,13 @@ def train():
                 if not online:
                     cql_loss = q_out.logsumexp(-1).mean() - q.mean()
 
+                anchor_loss = 0
+                if anchor_mortal is not None:
+                    with torch.no_grad():
+                        anchor_q = anchor_dqn(anchor_mortal(obs), masks)
+                    # 只在合法动作上取差(布尔索引先选后归约,规避 mask 填充值参与运算)
+                    anchor_loss = (q_out[masks] - anchor_q[masks]).pow(2).mean()
+
                 next_rank_logits, = aux_net(phi)
                 next_rank_loss = ce(next_rank_logits, player_ranks)
 
@@ -247,6 +273,7 @@ def train():
                     dqn_loss,
                     cql_loss * min_q_weight,
                     next_rank_loss * next_rank_weight,
+                    anchor_loss * anchor_weight,
                 ))
             scaler.scale(loss / opt_step_every).backward()
 
@@ -254,6 +281,8 @@ def train():
                 stats['dqn_loss'] += dqn_loss
                 if not online:
                     stats['cql_loss'] += cql_loss
+                if anchor_mortal is not None:
+                    stats['anchor_loss'] += anchor_loss
                 stats['next_rank_loss'] += next_rank_loss
                 all_q[idx] = q
                 all_q_target[idx] = q_target_mc
@@ -286,6 +315,8 @@ def train():
                 if not online:
                     writer.add_scalar('loss/cql_loss', stats['cql_loss'] / save_every, steps)
                 writer.add_scalar('loss/next_rank_loss', stats['next_rank_loss'] / save_every, steps)
+                if anchor_mortal is not None:
+                    writer.add_scalar('loss/anchor_loss', stats['anchor_loss'] / save_every, steps)
                 writer.add_scalar('hparam/lr', scheduler.get_last_lr()[0], steps)
                 writer.add_histogram('q_predicted', all_q_1d, steps)
                 writer.add_histogram('q_target', all_q_target_1d, steps)
