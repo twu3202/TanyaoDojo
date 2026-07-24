@@ -20,13 +20,18 @@ SICHUAN_RL_PLAN.md),policy 线 5000 万局需求在旧管线不可行(~190 天)�
   在 Mahjax 自己的 obs 编码下产出 (obs, action) 监督数据。要点:mjai↔Mahjax 动作空间映射、
   牌山重构回放、抽样差分校验。
 - **R2 BC**:全量人类数据行为克隆(examples/bc.py,CNN 或 transformer 网络)→ 得 Mahjax 原生基座。
-- **R2.5 训练循环优化(实测发现的必要工作项,2026-07-24)**:官方示例 ppo_with_reg **as-is 稳态
-  仅 ~1,260 步/秒**(两点法实测:5/25 update 568s/2652s,每 update 104s)≈ 6.5k 局/h——比旧栈
-  还慢!而纯环境实测 30 万步/秒 → 240× 差距全在示例 harness:rollout 为 vmap(lax.scan) 未整体
-  jit 融合、num_envs=1024 太小(env 步延迟对 batch 平坦,已实测 8k 并行同延迟)、update 循环未
-  融合。改造方向 = purejaxrl 式"整个 update 一个 jit" + num_envs 8-16k,目标 2-8 万步/秒
-  (≈10-40× 旧栈 C'),预估 1-3 天工程。**示例代码是研究级参考,不是生产 harness——迁移收益
-  要靠 R2.5 兑现,环境层的 100× 是真的(已验证),训练层的收益需要自己写好循环。**
+- **R2.5 训练循环优化(2026-07-24 代码已交付,定量待服务器窗口)**:
+  - 背景实测:官方示例 as-is 稳态 ~1,260 步/秒(Ada,两点法)≈ 6.5k 局/h,慢于旧栈。
+    勘误:示例三段各自有 jit,"漏 jit"不成立;真实慢源 = ①尺寸哲学(1024×128:env 步延迟对
+    batch 平坦,窄而深的 rollout 浪费墙钟)②逐 update 的 Python 分发 + 9 个 float() 强制同步
+    ③dict+transformer 默认(最贵组合)。
+  - **交付:jax_rl/ppo_fast.py**——算法与上游严格一致(含 magnet),工程改动:加宽减深默认、
+    K-update 大 jit(lax.scan 内联,设备端累积指标)、obs 类型可配。经验:donate_argnums 与
+    vmap(init) 的 XLA 输出别名冲突,弃用;dict obs 单样本数百 KB,8GB 卡仅容微型批。
+  - 本机(5060 Ti)验证:**功能全绿**(收敛/熵/KL 正常,大 jit 机制工作);吞吐 A/B 在 8GB 上
+    **测不出差异**(minibatch 512 的 transformer 更新时间 ~10.8s/update 垄断一切,两组同
+    ~760 步/秒)——**定量收益判定需在服务器 48GB 上做 10 分钟对照**(mb 4096、num_envs 8k+),
+    待 GPU 空闲窗口执行;或直接并入 R3 首跑对照。目标不变:2-8 万步/秒。
 - **R3 PPO**:ppo_with_reg 配方(BC 起步 + magnet 正则,≈ Mortal-Policy 配方)跑在 R2.5 优化后
   的 harness 上;5000 万局 = 优化后单卡 1-2 周 / 8×A100 短租 2-4 天(待 R2.5 后重估)。
 - **R4 评测桥(神圣不可变)**:mjai 协议适配器把 Mahjax 模型包成 mjai bot,接入既有 libriichi
