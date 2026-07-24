@@ -20,8 +20,15 @@ SICHUAN_RL_PLAN.md),policy 线 5000 万局需求在旧管线不可行(~190 天)�
   在 Mahjax 自己的 obs 编码下产出 (obs, action) 监督数据。要点:mjai↔Mahjax 动作空间映射、
   牌山重构回放、抽样差分校验。
 - **R2 BC**:全量人类数据行为克隆(examples/bc.py,CNN 或 transformer 网络)→ 得 Mahjax 原生基座。
-- **R3 PPO**:ppo_with_reg 自对弈(BC 起步 + 正则防漂,≈ Mortal-Policy 配方);
-  5000 万局 = 单卡 1-2 周 / 8×A100 短租 2-4 天。
+- **R2.5 训练循环优化(实测发现的必要工作项,2026-07-24)**:官方示例 ppo_with_reg **as-is 稳态
+  仅 ~1,260 步/秒**(两点法实测:5/25 update 568s/2652s,每 update 104s)≈ 6.5k 局/h——比旧栈
+  还慢!而纯环境实测 30 万步/秒 → 240× 差距全在示例 harness:rollout 为 vmap(lax.scan) 未整体
+  jit 融合、num_envs=1024 太小(env 步延迟对 batch 平坦,已实测 8k 并行同延迟)、update 循环未
+  融合。改造方向 = purejaxrl 式"整个 update 一个 jit" + num_envs 8-16k,目标 2-8 万步/秒
+  (≈10-40× 旧栈 C'),预估 1-3 天工程。**示例代码是研究级参考,不是生产 harness——迁移收益
+  要靠 R2.5 兑现,环境层的 100× 是真的(已验证),训练层的收益需要自己写好循环。**
+- **R3 PPO**:ppo_with_reg 配方(BC 起步 + magnet 正则,≈ Mortal-Policy 配方)跑在 R2.5 优化后
+  的 harness 上;5000 万局 = 优化后单卡 1-2 周 / 8×A100 短租 2-4 天(待 R2.5 后重估)。
 - **R4 评测桥(神圣不可变)**:mjai 协议适配器把 Mahjax 模型包成 mjai bot,接入既有 libriichi
   one_vs_three(同一批牌山 seed_key=20260711)对 v4 打 100k——与 -2.50/-1.96 系列直接可比。
   里程碑判据不变:avg_pt 95% CI 整体 >0 = 真超 v4。
