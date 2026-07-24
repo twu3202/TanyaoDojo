@@ -19,6 +19,16 @@ SICHUAN_RL_PLAN.md),policy 线 5000 万局需求在旧管线不可行(~190 天)�
 - **R1 数据桥(关键工程)**:251 万局天凤 mjson 回放进 Mahjax env(red_mahjong,规则对齐天凤),
   在 Mahjax 自己的 obs 编码下产出 (obs, action) 监督数据。要点:mjai↔Mahjax 动作空间映射、
   牌山重构回放、抽样差分校验。
+  - **重放回路已达标(2026-07-24,data_bridge/replay_env.py)**:300 场真实凤凰牌谱
+    **3,213/3,213 局 100% 合法重放 + 终局类型全对**(判据达成)。要点:牌山布局
+    deck[84+13p..]=配牌 / deck[83]↓=自摸 / deck[10+k]=岭上 / deck[9-2k]、[8-2k]=宝、里;
+    init_from_deck 镜像 env._init 注入牌山与局面;动作映射利用"本回合 id(0-73,85)与
+    响应 id(74-84)不相交"做无歧义驱动(下一事件属当前玩家且合法→执行,否则 PASS);
+    九种九牌在 mjai 无显式动作,verify_step 的 KYUUSHU 分支会自动开新局,需就地终局。
+    剩余:BC 数据集落盘格式(等 R2 网络选型定 obs 编码后一并做)。
+  - 备选捷径(社区 Trisolar-ian/mahjax-mortal-merge 的思路):不重放人类谱,直接
+    Mahjax 自产对局 + Mortal v4 当老师打标签(蒸馏)。状态分布对齐 PPO 实际访问域,
+    可作 R2 的补充数据源;其 action_spec.py 的 87 动作解码器可参考。
 - **R2 BC**:全量人类数据行为克隆(examples/bc.py,CNN 或 transformer 网络)→ 得 Mahjax 原生基座。
 - **R2.5 训练循环优化(2026-07-24 代码已交付,定量待服务器窗口)**:
   - 背景实测:官方示例 as-is 稳态 ~1,260 步/秒(Ada,两点法)≈ 6.5k 局/h,慢于旧栈。
