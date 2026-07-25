@@ -39,7 +39,8 @@ MAX_REWARD = 320.0
 class Args(BaseModel):
     env_name: str = "no_red_mahjong"
     round_mode: Literal["single", "east", "half"] = "single"
-    observe_type: Literal["dict", "2D"] = "dict"   # dict 与上游示例网络保证兼容;2D+CNN 需配套网络
+    # dict = 上游示例网络;lean = R2 定版(obs_lean 结构化平面 + LeanACNet,须 red_mahjong)
+    observe_type: Literal["dict", "2D", "lean"] = "dict"
     seed: int = 0
     # 尺寸:加宽减深
     num_envs: int = 8192
@@ -69,7 +70,15 @@ args = Args(**OmegaConf.to_object(OmegaConf.from_cli()))
 os.environ.setdefault("XLA_PYTHON_CLIENT_MEM_FRACTION", str(args.mem_fraction))
 print(args, file=sys.stderr)
 
-ENV = mahjax.make(args.env_name, round_mode=args.round_mode, observe_type=args.observe_type)
+if args.observe_type == "lean":
+    assert args.env_name == "red_mahjong", "lean 观测读 red_mahjong 状态字段"
+    ENV = mahjax.make(args.env_name, round_mode=args.round_mode, observe_type="dict")
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from obs_lean import observe_lean
+    OBSERVE_FN = observe_lean
+else:
+    ENV = mahjax.make(args.env_name, round_mode=args.round_mode, observe_type=args.observe_type)
+    OBSERVE_FN = ENV.observe
 STEP_FN = auto_reset(ENV.step, ENV.init)
 NUM_PLAYERS = ENV.num_players
 BATCH_SIZE = args.num_envs * args.num_steps
@@ -80,6 +89,9 @@ NUM_JIT_CALLS = max(1, NUM_UPDATES // args.updates_per_jit)
 
 
 def get_network():
+    if args.observe_type == "lean":
+        from net_lean import LeanACNet
+        return LeanACNet()
     # 复用上游 examples 的网络定义(Apache 2.0);examples 需在 PYTHONPATH
     from common import get_network_cls
     return get_network_cls(args.env_name)()
@@ -109,7 +121,7 @@ def make_train(network: nn.Module, magnet_params):
         def one_step(carry, _):
             state, rng = carry
             rng, k_act, k_env = jax.random.split(rng, 3)
-            obs = jax.vmap(ENV.observe)(state)
+            obs = jax.vmap(OBSERVE_FN)(state)
             mask = state.legal_action_mask.astype(jnp.bool_)
             cur = jnp.asarray(state.current_player, dtype=jnp.int32)
             done = jnp.asarray(state.terminated | state.truncated, dtype=jnp.bool_)
@@ -242,7 +254,7 @@ def main():
     rng = jax.random.PRNGKey(args.seed)
     rng, k_net, k_reset = jax.random.split(rng, 3)
     network = get_network()
-    dummy_obs = jax.vmap(ENV.observe)(jax.vmap(ENV.init)(jax.random.split(jax.random.PRNGKey(0), 2)))
+    dummy_obs = jax.vmap(OBSERVE_FN)(jax.vmap(ENV.init)(jax.random.split(jax.random.PRNGKey(0), 2)))
     params = network.init(k_net, dummy_obs)
     magnet_params = params
     if args.pretrained_model_path:

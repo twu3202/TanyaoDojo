@@ -64,6 +64,7 @@ def main():
     ap.add_argument("--epochs", type=int, default=3)
     ap.add_argument("--batch", type=int, default=512)
     ap.add_argument("--lr", type=float, default=3e-4)
+    ap.add_argument("--save", default=None, help="训练后 pickle 参数到此路径(ppo_fast 可直接加载)")
     args = ap.parse_args()
 
     d = load(args.data_dir)
@@ -138,7 +139,13 @@ def main():
         print(f"ep{ep} loss={np.mean(losses):.4f} "
               f"val_acc={hit.mean():.4f} choice={acc(choice):.4f} "
               f"discard={acc(is_discard & choice):.4f} react={acc(is_react & choice):.4f} "
-              f"call={acc(is_call):.4f} ({time.time()-t0:.0f}s)")
+              f"call={acc(is_call):.4f} ({time.time()-t0:.0f}s)", flush=True)
+
+    if args.save:
+        import pickle
+        with open(args.save, "wb") as f:
+            pickle.dump(jax.device_get(params), f)
+        print(f"saved params -> {args.save}")
 
 
 if __name__ == "__main__":
