@@ -95,6 +95,17 @@ SICHUAN_RL_PLAN.md),policy 线 5000 万局需求在旧管线不可行(~190 天)�
 - **R4 评测桥(神圣不可变)**:mjai 协议适配器把 Mahjax 模型包成 mjai bot,接入既有 libriichi
   one_vs_three(同一批牌山 seed_key=20260711)对 v4 打 100k——与 -2.50/-1.96 系列直接可比。
   里程碑判据不变:avg_pt 95% CI 整体 >0 = 真超 v4。
+  - **架构定案(2026-07-25 侦察完毕,实现待做)**:用 libriichi 的 `'mjai-log'` 引擎类型
+    (见 Mortal/mortal/engine.py 的 ExampleMjaiLogEngine)——OneVsThree 每个决策回调给
+    `game_state.events_json`(开局以来全部 mjai 事件)+ `game_state.state.last_cans`
+    (ActionCandidate:can_discard/chi_low·mid·high/pon/daiminkan/kakan/ankan/riichi/
+    tsumo_agari/ron_agari/ryukyoku + target_actor,rust 端 validate_reaction 把关)。
+    因此:**合法性引擎白嫖 libriichi,obs 无状态重建**——写 events→obs_lean 的纯 numpy
+    构建器(每回调从事件流重建,消灭状态同步 bug),差分判据 = 对 houou 牌谱逐决策点与
+    replay_env 的 obs_lean 完全一致;掩码由 cans 映射到 87 动作(粒度差处用 PlayerState
+    getter 补:暗/加杠候选、食替禁打)。响应转 mjai JSON(打牌需回赤五面与 tsumogiri 旗)。
+    待办:①mjai_obs.py 构建器+差分验证 ②cans→mask+动作→JSON ③LeanJaxEngine 批推理
+    ④100 场 1v3 冒烟 → 100k 正式。
 
 ## 风险与对策
 

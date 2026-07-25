@@ -30,12 +30,16 @@ from mahjax.red_mahjong.observation import _observe_dict
 SHARD = 100_000
 
 
+LEAN_KEYS = ("planes", "scalars", "action", "legal_mask", "from_log", "game_id")
+DICT_KEYS = ("hand", "last_draw", "action_history", "shanten", "furiten", "scores",
+             "round", "honba", "kyotaku", "prevalent", "seat", "dora_indicators")
+
+
 class Buf:
-    def __init__(self):
-        self.rows = {k: [] for k in (
-            "planes", "scalars", "hand", "last_draw", "action_history", "shanten",
-            "furiten", "scores", "round", "honba", "kyotaku", "prevalent", "seat",
-            "dora_indicators", "action", "legal_mask", "from_log", "game_id")}
+    def __init__(self, lean_only=False):
+        self.lean_only = lean_only
+        keys = LEAN_KEYS if lean_only else LEAN_KEYS + DICT_KEYS
+        self.rows = {k: [] for k in keys}
 
     def __len__(self):
         return len(self.rows["action"])
@@ -44,6 +48,12 @@ class Buf:
         r = self.rows
         r["planes"].append(np.round(np.asarray(ol["planes"]) * 4).astype(np.uint8))
         r["scalars"].append(np.asarray(ol["scalars"], np.float32))
+        r["action"].append(np.uint8(a))
+        r["legal_mask"].append(mask)
+        r["from_log"].append(from_log)
+        r["game_id"].append(np.uint32(gid))
+        if self.lean_only:
+            return
         r["hand"].append(np.asarray(od["hand"], np.int8))
         r["last_draw"].append(np.int8(od["last_draw"]))
         r["action_history"].append(np.asarray(od["action_history"], np.int8))
@@ -56,22 +66,19 @@ class Buf:
         r["prevalent"].append(np.int8(od["prevalent_wind"]))
         r["seat"].append(np.int8(od["seat_wind"]))
         r["dora_indicators"].append(np.asarray(od["dora_indicators"], np.int8))
-        r["action"].append(np.uint8(a))
-        r["legal_mask"].append(mask)
-        r["from_log"].append(from_log)
-        r["game_id"].append(np.uint32(gid))
 
     def flush(self, out_dir: Path, shard_ix: int):
         arrs = {k: np.stack(v) for k, v in self.rows.items()}
         path = out_dir / f"shard_{shard_ix:04d}.npz"
         np.savez_compressed(path, **arrs)
         n = len(self)
-        self.__init__()
+        self.__init__(self.lean_only)
         return path, n
 
 
 def main():
     pat, n_games, out = sys.argv[1], int(sys.argv[2]), Path(sys.argv[3])
+    lean_only = len(sys.argv) > 4 and sys.argv[4] == "lean"
     out.mkdir(parents=True, exist_ok=True)
     files = sorted(globmod.glob(pat))
     random.Random(1).shuffle(files)
@@ -79,7 +86,7 @@ def main():
 
     obs_l = jax.jit(observe_lean)
     obs_d = jax.jit(_observe_dict)
-    buf = Buf()
+    buf = Buf(lean_only)
     shard_ix = n_k = ok = total = 0
     rejects = 0
     t0 = time.time()
@@ -90,7 +97,8 @@ def main():
 
             def collect(state, a, from_log, _gid=gid):
                 mask = np.asarray(state.legal_action_mask)
-                buf.add(obs_l(state), obs_d(state), mask, a, from_log, _gid)
+                od = None if lean_only else obs_d(state)
+                buf.add(obs_l(state), od, mask, a, from_log, _gid)
 
             try:
                 replay_kyoku(k, on_decision=collect)
