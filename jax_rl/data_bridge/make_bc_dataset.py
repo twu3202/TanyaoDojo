@@ -86,6 +86,11 @@ def main():
 
     obs_l = jax.jit(observe_lean)
     obs_d = jax.jit(_observe_dict)
+    # ⚠️ verify_step 走 update_shanten=FALSE,state.shanten_current_player 在重放中
+    # 恒为初始值 → obs 标量[8] 必须在采集点用当前玩家真实手牌重算(PPO/评测侧是真值,
+    # 不修会造成 BC 与在线的特征分布错位)。
+    from mahjax.red_mahjong.shanten import Shanten
+    shan = jax.jit(Shanten.number)
     buf = Buf(lean_only)
     shard_ix = n_k = ok = total = 0
     rejects = 0
@@ -98,7 +103,10 @@ def main():
             def collect(state, a, from_log, _gid=gid):
                 mask = np.asarray(state.legal_action_mask)
                 od = None if lean_only else obs_d(state)
-                buf.add(obs_l(state), od, mask, a, from_log, _gid)
+                ol = obs_l(state)
+                scal = np.array(ol["scalars"])
+                scal[8] = float(shan(state.players.hand[int(state.current_player)])) / 6.0
+                buf.add({"planes": ol["planes"], "scalars": scal}, od, mask, a, from_log, _gid)
 
             try:
                 replay_kyoku(k, on_decision=collect)

@@ -90,7 +90,18 @@ SICHUAN_RL_PLAN.md),policy 线 5000 万局需求在旧管线不可行(~190 天)�
     加载✓、magnet 生效(mag_kl 0.23)✓、熵 0.90 起步(锐利 BC 策略)✓;
     **256 环境即 19.7k 步/秒**(magnet 代价 -8%),无 magnet 21.4k。重网络 Ada 天花板
     4.4k 作废,轻网络在 Ada + 8k 环境的正式吞吐待服务器空闲窗实测(预期数万级)。
-  - 正式跑配方模板:BC 全量基座 → lean PPO(ep1-2, mb4096, mag 0.2)→ R4 评测桥
+  - **Ada 正式吞吐矩阵(2026-07-25,全臂 BC 起步+magnet 0.2)**:
+    L1 8192env/ep1/mb4k=**57,801**;L2 ep2=35,756;L3 16k env/mb8k=53,635;
+    L4 mb16k=58,032;L5 32k env/mb16k=55,374。结论:lean 网络下 update 不再是瓶颈,
+    吞吐在 ~55-58k 步/秒进入 rollout/env 平台区,加大 env 数与 minibatch 均无增益
+    (mb16k 也不再 OOM,lean obs 内存红利兑现)。**R3 定版配置 = 8192×32, ep1, mb4096,
+    mag 0.2 → 57.8k 步/秒 ≈ 上游默认的 46×**;编译 57s。1 亿步 ≈ 半天(单 Ada)。
+  - ⚠️ **shanten 标量 bug(2026-07-25 发现并修复)**:verify_step 不更新
+    shanten_current_player → BC 数据集 obs 标量[8] 恒为 0,而 PPO/评测侧是真值
+    (env.step 会更新)——特征分布错位。已在 make_bc_dataset 采集点重算真实向听
+    (Shanten.number(当前手牌))。此前 2k 数据/权重带此瑕疵(对照结论仍立,两网同底),
+    20k 重建已带修复,后续 BC 一律用修复版数据。
+  - 正式跑配方模板:BC 全量基座 → lean PPO(ep1, mb4096, mag 0.2)→ R4 评测桥
     对 v4 打 100k 定强度。
 - **R4 评测桥(神圣不可变)**:mjai 协议适配器把 Mahjax 模型包成 mjai bot,接入既有 libriichi
   one_vs_three(同一批牌山 seed_key=20260711)对 v4 打 100k——与 -2.50/-1.96 系列直接可比。
