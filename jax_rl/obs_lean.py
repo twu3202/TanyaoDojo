@@ -32,9 +32,15 @@ import jax.numpy as jnp
 
 from mahjax.red_mahjong.env import State
 from mahjax.red_mahjong.tile import Tile, River
+from mahjax.red_mahjong.meld import Meld
 
 NUM_PLANES = 20
 NUM_SCALARS = 26
+
+# ⚠️ 数据源勘误(2026-07-25,差分核查发现):env 从不写 state.players.discards 与
+# meld_tiles(只在 _replace_state 路由表里挂名)。真实牌河在 players.river(uint16 编码,
+# 经 River.decode_tile 解),真实副露在 players.melds(uint16 编码,经 Meld.* 解)。
+# 初版误用死数组导致牌河/副露平面恒零——现已全部改从活数组解码。
 
 
 def _count_by_type(tiles: jnp.ndarray) -> jnp.ndarray:
@@ -52,6 +58,40 @@ def _one_hot_tile(tile: jnp.ndarray) -> jnp.ndarray:
     return jax.nn.one_hot(t34, 34, dtype=jnp.float32) * ok
 
 
+def _meld_counts34(melds_row: jnp.ndarray) -> jnp.ndarray:
+    """(4,) uint16 编码副露 → (34,) 暴露牌计数(碰3/杠4/吃三连各1)。"""
+
+    def one(m):
+        act = Meld.action(m)
+        tt = Meld.target(m)
+        valid = tt >= 0
+        is_chi = Meld.is_chi(m)
+        is_pon = Meld.is_pon(m)
+        is_kan = Meld.is_kan(m)
+        n = is_pon.astype(jnp.float32) * 3.0 + is_kan.astype(jnp.float32) * 4.0
+        cnt = jnp.zeros(34, jnp.float32)
+        cnt = cnt.at[jnp.clip(tt, 0, 33)].add(n * valid)
+        chi_base = tt - Meld._chi_index(act)
+        for k in range(3):
+            cnt = cnt.at[jnp.clip(chi_base + k, 0, 33)].add(
+                is_chi.astype(jnp.float32) * valid
+            )
+        return cnt
+
+    return jax.vmap(one)(melds_row).sum(axis=0)
+
+
+def _called_correction34(melds_all: jnp.ndarray) -> jnp.ndarray:
+    """(4,4) 全桌副露 → (34,) 鸣走牌校正:被鸣的那张同时留在牌河(灰)与副露中,
+    可见计数会双计 → 每个非暗杠副露在 target 型上减 1。"""
+    m = melds_all.reshape(-1)
+    tt = jax.vmap(Meld.target)(m)
+    is_closed = jax.vmap(Meld.is_closed_kan)(m)
+    valid = (tt >= 0) & (~is_closed)
+    oh = jax.nn.one_hot(jnp.clip(tt, 0, 33), 34, dtype=jnp.float32) * valid[:, None]
+    return oh.sum(axis=0)
+
+
 def observe_lean(state: State) -> dict:
     c_p = state.current_player
     rel = (jnp.arange(4) + c_p) % 4  # 相对座位:自/右/对/左
@@ -63,20 +103,31 @@ def observe_lean(state: State) -> dict:
         red_flags34 = red_flags34.at[black].set(
             state.players.hand_with_red[c_p, red].astype(jnp.float32)
         )
-    drawn = _one_hot_tile(state.round_state.last_draw)
+    # 抢杠窗口守卫:kan_declared 时 last_draw 是杠家的暗牌(env 不重置),对被服务的
+    # 响应者是信息泄漏且 mjai 侧不可复现 → 置 -1。
+    drawn_visible = jnp.where(
+        state.round_state.kan_declared, jnp.int32(-1), state.round_state.last_draw.astype(jnp.int32)
+    )
+    drawn = _one_hot_tile(drawn_visible)
 
-    river_cnt = jax.vmap(_count_by_type)(state.players.discards[rel].astype(jnp.int32))  # (4,34)
+    river_tiles = River.decode_tile(state.players.river[rel])  # (4,24) 0-36/-1,含被鸣走的(灰)
+    river_cnt = jax.vmap(_count_by_type)(river_tiles)  # (4,34)
     dc = state.players.discard_counts[rel].astype(jnp.int32)  # (4,)
     last_ix = jnp.maximum(dc - 1, 0)
     last_tiles = River.decode_tile(state.players.river[rel, last_ix])
     last_tiles = jnp.where(dc > 0, last_tiles, -1)
     last_oh = jax.vmap(_one_hot_tile)(last_tiles)  # (4,34)
 
-    meld_tiles = state.players.meld_tiles[rel].reshape(4, -1).astype(jnp.int32)  # (4,16)
-    meld_cnt = jax.vmap(_count_by_type)(meld_tiles)  # (4,34)
+    meld_cnt = jax.vmap(_meld_counts34)(state.players.melds[rel])  # (4,34)
 
     dora_ind_cnt = _count_by_type(state.round_state.dora_indicators.astype(jnp.int32))
-    visible = hand34 + river_cnt.sum(axis=0) + meld_cnt.sum(axis=0) + dora_ind_cnt
+    visible = (
+        hand34
+        + river_cnt.sum(axis=0)
+        + meld_cnt.sum(axis=0)
+        - _called_correction34(state.players.melds)
+        + dora_ind_cnt
+    )
 
     planes = jnp.concatenate(
         [
@@ -101,16 +152,19 @@ def observe_lean(state: State) -> dict:
     rnd = state.round_state.round.astype(jnp.float32)
     prevalent = jax.nn.one_hot(state.round_state.round // 4, 4, dtype=jnp.float32)
     seat = jax.nn.one_hot(state.round_state.seat_wind[c_p], 4, dtype=jnp.float32)
-    reds_seen = (
-        jnp.stack(
-            [
-                jnp.any(state.players.discards == r).astype(jnp.float32)
-                + jnp.any(state.players.meld_tiles == r).astype(jnp.float32)
-                + jnp.any(state.round_state.dora_indicators == r).astype(jnp.float32)
-                for r in (34, 35, 36)
-            ]
-        ).sum()
-    )
+    m_flat = state.players.melds.reshape(-1)
+    m_red = jax.vmap(Meld.contains_red)(m_flat)
+    m_suit = jax.vmap(Meld.target)(m_flat) // 9  # 空副露 target=-1 → -1,不会命中 0-2
+    red_flags = []
+    for s, r in enumerate((34, 35, 36)):
+        red_flags.append(
+            (
+                jnp.any(river_tiles == r)
+                | jnp.any(state.round_state.dora_indicators == r)
+                | jnp.any(m_red & (m_suit == s))
+            ).astype(jnp.float32)
+        )
+    reds_seen = jnp.stack(red_flags).sum()
     live_left = (
         state.round_state.next_deck_ix.astype(jnp.float32)
         - state.round_state.last_deck_ix.astype(jnp.float32)
