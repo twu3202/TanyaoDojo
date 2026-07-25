@@ -238,8 +238,12 @@ def event_to_action(ev: dict) -> int:
 MAX_STEPS = 400
 
 
-def replay_kyoku(kyoku: Kyoku) -> dict:
-    """重放一局。返回 {steps, end_ok};不合法/无法推进抛 ReplayReject。"""
+def replay_kyoku(kyoku: Kyoku, on_decision=None) -> dict:
+    """重放一局。返回 {steps, end_ok};不合法/无法推进抛 ReplayReject。
+
+    on_decision(state, action, from_log):每个将要执行的动作前回调——
+    from_log=True 是牌谱显式动作,False 是隐式 PASS(有响应权但未叫,亦是真人决策)。
+    """
     deck = build_deck(kyoku)
     state = init_from_deck(deck, kyoku)
     decisions = [ev for ev in kyoku.events if ev["type"] in DECISION_TYPES]
@@ -252,10 +256,12 @@ def replay_kyoku(kyoku: Kyoku) -> dict:
             break
         mask = np.asarray(state.legal_action_mask)
         cp = int(state.current_player)
+        from_log = False
         if ptr < len(decisions) and decisions[ptr]["actor"] == cp:
             a = event_to_action(decisions[ptr])
             if mask[a]:
                 ptr += 1
+                from_log = True
             elif mask[Action.PASS]:
                 a = int(Action.PASS)
             else:
@@ -268,6 +274,8 @@ def replay_kyoku(kyoku: Kyoku) -> dict:
         elif ptr >= len(decisions) and kyoku.end_type == "ryukyoku" and mask[Action.KYUUSHU]:
             # 九种九牌:mjai 无显式动作事件;verify_step 的 KYUUSHU 分支会直接
             # 推进到下一局(带新随机牌山),所以断言合法后就地终局,不再步进检查。
+            if on_decision is not None:
+                on_decision(state, int(Action.KYUUSHU), True)
             _, illegal = _vstep_jit(state, jnp.int32(int(Action.KYUUSHU)))
             if bool(illegal):
                 raise ReplayReject("verify_illegal", f"step={steps} a=KYUUSHU")
@@ -278,6 +286,8 @@ def replay_kyoku(kyoku: Kyoku) -> dict:
                 "serve_mismatch",
                 f"step={steps} cp={cp} next_ev={nxt} legal={np.flatnonzero(mask).tolist()}",
             )
+        if on_decision is not None:
+            on_decision(state, a, from_log)
         state, illegal = _vstep_jit(state, jnp.int32(a))
         if bool(illegal):
             raise ReplayReject("verify_illegal", f"step={steps} a={a}")
