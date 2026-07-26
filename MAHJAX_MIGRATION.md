@@ -118,6 +118,19 @@ SICHUAN_RL_PLAN.md),policy 线 5000 万局需求在旧管线不可行(~190 天)�
 - **R4 评测桥(神圣不可变)**:mjai 协议适配器把 Mahjax 模型包成 mjai bot,接入既有 libriichi
   one_vs_three(同一批牌山 seed_key=20260711)对 v4 打 100k——与 -2.50/-1.96 系列直接可比。
   里程碑判据不变:avg_pt 95% CI 整体 >0 = 真超 v4。
+  - **贯通(2026-07-27 凌晨,mjai_bot/)**:tracker(events→obs,差分 100 场全等)+
+    jax_engine(mjai-log 引擎,cans+tracker 双重掩码)+ run_eval(神圣协议)。
+    两坑志:①validate_reaction_json 未导出 Python,宽 except 把 AttributeError 当非法
+    动作→全程 none→手牌爆容量(假安全网);②`[x]*0` 仍先求值 x(FIVES[tt] KeyError)。
+    400 局 ×2 模型共 **128,788 决策 fallback=0**——掩码/发射零瑕疵。评测速度
+    ~2.5 局/秒(本机,v4 冠军 GPU + LeanJax CPU),100k ≈ 11h。
+  - **首块评分板(400 局,±8.5)**:BC 基座(20k 场)= **-14.29pt**(排名分布
+    [76,99,99,126],avg_rank 2.69);r3_run1@~50 亿步 = **-19.46pt**(2.76)。
+    两结论:①未超 v4(参照:价值线 rl1_best=-1.96,离线上限=-2.50);②**纯自博弈
+    PPO 未把强度迁移到外部对手**(四座同策略均衡漂移 + avg_reward≈0 无外部信号,
+    方向与 OpenAI Five 的 league 教训一致)。下一杠杆排序:全量数据 BC(数据 ×125,
+    确定性收益)≫ PPO 重设计(对手池 league / 更强锚)。r3_run1 暂继续跑
+    (零机会成本),全量 BC 基座就绪后以 league 版重启替换。
   - **架构定案(2026-07-25 侦察完毕,实现待做)**:用 libriichi 的 `'mjai-log'` 引擎类型
     (见 Mortal/mortal/engine.py 的 ExampleMjaiLogEngine)——OneVsThree 每个决策回调给
     `game_state.events_json`(开局以来全部 mjai 事件)+ `game_state.state.last_cans`
