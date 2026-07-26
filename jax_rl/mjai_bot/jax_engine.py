@@ -61,6 +61,8 @@ class LeanJaxEngine:
         self.trackers: dict[int, tuple] = {}   # game_idx -> (kyoku_key, tracker, fed)
         self.fallback_count = 0
         self.decision_count = 0
+        self._debug_hand = True
+        self._hand_mismatch = 0
 
     def set_player_ids(self, player_ids):
         self.player_ids = list(player_ids)
@@ -199,10 +201,9 @@ class LeanJaxEngine:
             tgt = cans.target_actor
             pai = tr.rivers_str[tgt][-1]
             tt = to34(t2i(pai))
-            consumed = []
             n_red = int(tr.hand37[FIVES[tt]]) if tt in FIVES else 0
             n_black = int(tr.hand37[tt])
-            consumed += [RED_STR[FIVES[tt]]] * n_red + [i2t(tt)] * n_black
+            consumed = ([RED_STR[FIVES[tt]]] * n_red if n_red else []) + [i2t(tt)] * n_black
             return {"type": "daiminkan", "actor": me, "target": int(tgt), "pai": pai,
                     "consumed": consumed[:3]}
         if 78 <= a <= 83:
@@ -232,13 +233,21 @@ class LeanJaxEngine:
                 return {"type": "kakan", "actor": me, "pai": pai,
                         "consumed": list(pon[4][:3])}
             n_red = int(tr.hand37[FIVES[tt]]) if tt in FIVES else 0
-            consumed = [RED_STR[FIVES[tt]]] * n_red + [i2t(tt)] * (4 - n_red)
+            consumed = ([RED_STR[FIVES[tt]]] * n_red if n_red else []) + [i2t(tt)] * (4 - n_red)
             return {"type": "ankan", "actor": me, "consumed": consumed}
         if a == 85:
             return {"type": "ryukyoku", "actor": me}
         return {"type": "none"}
 
     def react_batch(self, game_states):
+        try:
+            return self._react_batch(game_states)
+        except Exception:
+            import traceback
+            traceback.print_exc(file=sys.stderr)
+            raise
+
+    def _react_batch(self, game_states):
         jnp = self._jnp
         metas = []
         planes, scalars = [], []
@@ -247,6 +256,16 @@ class LeanJaxEngine:
             me = self.player_ids[gi]
             events = json.loads(gs.events_json)
             tr = self._tracker_for(gi, me, events)
+            if self._debug_hand:
+                th = np.frombuffer(bytes(gs.state.tehai), dtype=np.uint8).astype(np.int32)
+                mine = tr._hand34().astype(np.int32)
+                if tr.last_draw >= 0:
+                    pass  # libriichi tehai 含摸牌,tracker 亦含 → 直接比
+                if not np.array_equal(mine, th) and self._hand_mismatch < 5:
+                    self._hand_mismatch += 1
+                    print(f"HAND_MISMATCH game={gi} me={me} diff={(mine-th).tolist()}\n"
+                          f"  last_events={[e.get('type')+str(e.get('actor','')) for e in events[-6:]]}",
+                          file=sys.stderr, flush=True)
             mask = self._build_mask(tr, gs.state, me)
             obs = tr.build_obs()
             planes.append(obs["planes"])
@@ -259,32 +278,16 @@ class LeanJaxEngine:
         for (gi, me, tr, st, mask), lg in zip(metas, logits):
             self.decision_count += 1
             lg = np.where(mask, lg, -1e9)
-            order = np.argsort(-lg)
-            resp = None
-            for a in order[:6]:
-                if not mask[a]:
-                    break
-                cand = self._to_mjai(int(a), tr, st, me)
-                try:
-                    st.validate_reaction_json(json.dumps(cand))
-                    resp = cand
-                    break
-                except Exception:
-                    self.fallback_count += 1
-            if resp is None:
-                for cand in ({"type": "dahai", "actor": me, "pai": tr.last_draw_str,
-                              "tsumogiri": True} if tr.last_draw_str else None,
-                             {"type": "none"}):
-                    if cand is None:
-                        continue
-                    try:
-                        st.validate_reaction_json(json.dumps(cand))
-                        resp = cand
-                        break
-                    except Exception:
-                        pass
-            if resp is None:
-                resp = {"type": "none"}
+            a = int(np.argmax(lg))
+            if mask[a]:
+                resp = self._to_mjai(a, tr, st, me)
+            else:  # 掩码全空(不应发生):摸切或过,并计数
+                self.fallback_count += 1
+                if tr.last_draw_str and st.last_cans.can_discard:
+                    resp = {"type": "dahai", "actor": me, "pai": tr.last_draw_str,
+                            "tsumogiri": True}
+                else:
+                    resp = {"type": "none"}
             if resp.get("type") == "none" and st.last_cans.can_ron_agari:
                 tr.note_ron_passed()
             out.append(json.dumps(resp))
