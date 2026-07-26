@@ -241,8 +241,9 @@ MAX_STEPS = 400
 def replay_kyoku(kyoku: Kyoku, on_decision=None) -> dict:
     """重放一局。返回 {steps, end_ok};不合法/无法推进抛 ReplayReject。
 
-    on_decision(state, action, from_log):每个将要执行的动作前回调——
-    from_log=True 是牌谱显式动作,False 是隐式 PASS(有响应权但未叫,亦是真人决策)。
+    on_decision(state, action, from_log, ptr):每个将要执行的动作前回调——
+    from_log=True 是牌谱显式动作,False 是隐式 PASS(有响应权但未叫,亦是真人决策);
+    ptr = 决策事件游标(配合 DECISION_TYPES 过滤可还原原始事件前缀,差分测试用)。
     """
     deck = build_deck(kyoku)
     state = init_from_deck(deck, kyoku)
@@ -275,7 +276,7 @@ def replay_kyoku(kyoku: Kyoku, on_decision=None) -> dict:
             # 九种九牌:mjai 无显式动作事件;verify_step 的 KYUUSHU 分支会直接
             # 推进到下一局(带新随机牌山),所以断言合法后就地终局,不再步进检查。
             if on_decision is not None:
-                on_decision(state, int(Action.KYUUSHU), True)
+                on_decision(state, int(Action.KYUUSHU), True, ptr)
             _, illegal = _vstep_jit(state, jnp.int32(int(Action.KYUUSHU)))
             if bool(illegal):
                 raise ReplayReject("verify_illegal", f"step={steps} a=KYUUSHU")
@@ -287,7 +288,7 @@ def replay_kyoku(kyoku: Kyoku, on_decision=None) -> dict:
                 f"step={steps} cp={cp} next_ev={nxt} legal={np.flatnonzero(mask).tolist()}",
             )
         if on_decision is not None:
-            on_decision(state, a, from_log)
+            on_decision(state, a, from_log, ptr)
         state, illegal = _vstep_jit(state, jnp.int32(a))
         if bool(illegal):
             raise ReplayReject("verify_illegal", f"step={steps} a={a}")

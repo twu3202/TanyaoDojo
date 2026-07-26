@@ -100,7 +100,7 @@ def main():
         for k in g.kyokus:
             n_k += 1
 
-            def collect(state, a, from_log, _gid=gid):
+            def collect(state, a, from_log, _ptr=None, _gid=gid):
                 mask = np.asarray(state.legal_action_mask)
                 od = None if lean_only else obs_d(state)
                 ol = obs_l(state)
