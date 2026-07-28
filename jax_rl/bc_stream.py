@@ -49,6 +49,7 @@ def main():
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--val-shards", type=int, default=6)
     ap.add_argument("--save", default=None)
+    ap.add_argument("--init", default=None, help="从已有参数 pickle 续训")
     ap.add_argument("--channels", type=int, default=128)
     ap.add_argument("--blocks", type=int, default=6)
     args = ap.parse_args()
@@ -72,6 +73,10 @@ def main():
         "scalars": jnp.asarray(val["scalars"][:2]),
     }
     params = net.init(jax.random.PRNGKey(0), sample)
+    if args.init:
+        with open(args.init, "rb") as f:
+            params = pickle.load(f)
+        print(f"init from {args.init}")
     n_params = sum(x.size for x in jax.tree_util.tree_leaves(params))
     print(f"params={n_params/1e6:.2f}M")
     tx = optax.adam(args.lr)
