@@ -58,10 +58,13 @@ def main():
                     default="/home/r/Projects/better_mortal/baseline/mortal_v4.pth")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--log-dir", default="/home/r/Projects/better_mortal/runs/leanjax_eval")
+    ap.add_argument("--channels", type=int, default=128)
+    ap.add_argument("--blocks", type=int, default=6)
     args = ap.parse_args()
 
     cham = load_champion(args.champion, args.device)
-    chal = LeanJaxEngine(args.params, name="leanjax")
+    chal = LeanJaxEngine(args.params, name="leanjax",
+                         channels=args.channels, blocks=args.blocks)
     seeds_per_iter = args.games // 4
     total = np.zeros(4, np.int64)
     t0 = time.time()
