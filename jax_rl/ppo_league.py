@@ -63,6 +63,8 @@ class Args(BaseModel):
     save_path: str = "ppo_league_params.pkl"
     ckpt_every_blocks: int = 16
     mem_fraction: float = 0.85
+    channels: int = 128               # 与基座/池权重的网络规格一致
+    blocks: int = 6
 
 
 args = Args(**OmegaConf.to_object(OmegaConf.from_cli()))
@@ -258,7 +260,7 @@ def make_train(network: nn.Module, magnet_params):
 def main():
     rng = jax.random.PRNGKey(args.seed)
     rng, k_net, k_reset = jax.random.split(rng, 3)
-    network = LeanACNet()
+    network = LeanACNet(channels=args.channels, blocks=args.blocks)
     dummy_obs = jax.vmap(OBSERVE_FN)(jax.vmap(ENV.init)(jax.random.split(jax.random.PRNGKey(0), 2)))
     params = network.init(k_net, dummy_obs)
     magnet_params = params
