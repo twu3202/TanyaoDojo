@@ -55,7 +55,8 @@ class Args(BaseModel):
     vf_coef: float = 0.5
     mag_coef: float = 0.2
     mag_divergence_type: Literal["kl", "l2"] = "kl"
-    pretrained_model_path: Optional[str] = None      # 学习者初始化 + magnet 锚
+    pretrained_model_path: Optional[str] = None      # 学习者初始化(默认亦作 magnet 锚)
+    magnet_model_path: Optional[str] = None          # 单独指定锚(续训时锚应仍指稳定基座)
     league_pool: str = ""                             # 逗号分隔的冻结对手 pkl
     self_pool_slots: int = 2                          # 池尾追加的自快照轮转槽数
     snapshot_every_blocks: int = 32
@@ -268,7 +269,11 @@ def main():
         with open(args.pretrained_model_path, "rb") as f:
             params = pickle.load(f)
         magnet_params = params
-        print(f"loaded pretrained/magnet from {args.pretrained_model_path}", file=sys.stderr)
+        print(f"loaded pretrained from {args.pretrained_model_path}", file=sys.stderr)
+    if args.magnet_model_path:
+        with open(args.magnet_model_path, "rb") as f:
+            magnet_params = pickle.load(f)
+        print(f"magnet <- {args.magnet_model_path}", file=sys.stderr)
 
     pool_list = []
     for p in [x for x in args.league_pool.split(",") if x.strip()]:
