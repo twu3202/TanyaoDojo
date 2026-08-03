@@ -10,11 +10,10 @@ JAX_PKGS="jax[cuda12]==0.6.2 flax==0.10.7 optax==0.2.8 distrax==0.1.5 chex==0.1.
 numpy==2.2.6 pydantic==2.13.4 omegaconf==2.3.1 svgwrite"
 
 if [ "$ROLE" = "main" ]; then
-  pip install -q $JAX_PKGS
-  python - << "EOF"
-import jax, flax
-print("main OK:", jax.__version__, flax.__version__, jax.devices())
-EOF
+  # 不依赖镜像自带 Python(3.12 亦可):自建 3.10 环境,与已验证栈完全一致
+  conda create -y -n train python=3.10 >/dev/null
+  conda run -n train pip install -q $JAX_PKGS
+  conda run -n train python -c "import jax, flax; print('main OK:', jax.__version__, flax.__version__, jax.devices())"
 else
   conda create -y -n bc python=3.10 >/dev/null
   conda run -n bc pip install -q $JAX_PKGS
