@@ -63,6 +63,7 @@ class Args(BaseModel):
     # 输出
     save_model: bool = False
     save_path: str = "ppo_fast_params.pkl"
+    ckpt_every_blocks: int = 0        # >0 时每 N 个 jit 块滚动落盘参数(长跑防崩)
     mem_fraction: float = 0.75
 
 
@@ -285,6 +286,11 @@ def main():
             el = time.time() - t0
             print(f"[block {i}/{NUM_JIT_CALLS-1}] steps={steps:,} sps={(steps - BATCH_SIZE*args.updates_per_jit)/el:,.0f} "
                   f"loss={m['loss']:.4f} ent={m['entropy']:.3f} kl={m['approx_kl']:.5f} r={m['avg_reward']:.5f}", flush=True)
+        if args.ckpt_every_blocks > 0 and i % args.ckpt_every_blocks == 0:
+            tmp = args.save_path + ".tmp"
+            with open(tmp, "wb") as f:
+                pickle.dump(jax.device_get(train_state.params), f)
+            os.replace(tmp, args.save_path)
     jax.block_until_ready(train_state.params)
     dt = time.time() - t0
     steady = (steps - BATCH_SIZE * args.updates_per_jit) / dt if NUM_JIT_CALLS > 1 else 0

@@ -25,12 +25,24 @@ from net_lean import LeanACNet
 
 
 def load(data_dir):
-    arrs = {}
-    for fp in sorted(glob.glob(str(Path(data_dir) / "shard_*.npz"))):
+    """预分配+逐 shard 填充(concatenate 的双缓冲在 10M+ 样本时会顶爆内存)。"""
+    files = sorted(glob.glob(str(Path(data_dir) / "shard_*.npz")))
+    with np.load(files[0]) as z0:
+        keys = list(z0.files)
+        spec = {k: (z0[k].dtype, z0[k].shape[1:]) for k in keys}
+    counts = []
+    for fp in files:
         with np.load(fp) as z:
-            for k in z.files:
-                arrs.setdefault(k, []).append(z[k])
-    return {k: np.concatenate(v) for k, v in arrs.items()}
+            counts.append(len(z["action"]))
+    n = sum(counts)
+    arrs = {k: np.empty((n, *shp), dtype=dt) for k, (dt, shp) in spec.items()}
+    off = 0
+    for fp, c in zip(files, counts):
+        with np.load(fp) as z:
+            for k in keys:
+                arrs[k][off : off + c] = z[k]
+        off += c
+    return arrs
 
 
 def lean_batch(d, ix):
