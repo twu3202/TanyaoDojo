@@ -7,7 +7,11 @@
   - val 集取自前 --val-shards 个文件的 val 部分(封顶,避免巨型 val);
   - 优化器状态跨组持续;每 epoch 末落盘参数。
 用法:python bc_stream.py <data_dir> [--epochs 2] [--batch 1024] [--group 16]
-      [--save out.pkl] [--channels 128] [--blocks 6]
+      [--save out.pkl] [--channels 128] [--blocks 6] [--snap-every-groups N]
+
+选峰铁律(2026-08-04 实测:宽网欠训 -1.7pt、大网过训 -2.3pt,外部强度对训练量
+单峰且 val ±0.2% 可对应外部 ±2pt)→ --snap-every-groups N 每 N 个 shard 组落一个
+带序号快照({save}.gK.pkl)并打 val,供逐档 4k 跟评选峰,不能只留 epoch 末档。
 """
 from __future__ import annotations
 import argparse
@@ -52,6 +56,8 @@ def main():
     ap.add_argument("--init", default=None, help="从已有参数 pickle 续训")
     ap.add_argument("--channels", type=int, default=128)
     ap.add_argument("--blocks", type=int, default=6)
+    ap.add_argument("--snap-every-groups", type=int, default=0,
+                    help="每 N 个 shard 组存带序号快照并打 val(0=关)")
     args = ap.parse_args()
 
     files = shard_files(args.data_dir)
@@ -123,6 +129,7 @@ def main():
     rng = np.random.default_rng(0)
     B = args.batch
     step = 0
+    g_count = 0
     for ep in range(args.epochs):
         order = rng.permutation(len(files))
         t0, losses = time.time(), []
@@ -143,6 +150,15 @@ def main():
                     jnp.asarray(action[b], jnp.int32), jnp.asarray(lmask[b]))
                 losses.append(float(loss))
                 step += 1
+            g_count += 1
+            if args.snap_every_groups and args.save and g_count % args.snap_every_groups == 0:
+                a_all, a_choice, a_disc, a_call = evaluate()
+                snap = f"{args.save}.g{g_count}.pkl"
+                with open(snap, "wb") as f:
+                    pickle.dump(jax.device_get(params), f)
+                print(f"[snap g{g_count}] steps={step} val_acc={a_all:.4f} "
+                      f"choice={a_choice:.4f} discard={a_disc:.4f} call={a_call:.4f} "
+                      f"-> {snap}", flush=True)
         a_all, a_choice, a_disc, a_call = evaluate()
         print(f"ep{ep} steps={step} loss={np.mean(losses):.4f} "
               f"val_acc={a_all:.4f} choice={a_choice:.4f} discard={a_disc:.4f} "
