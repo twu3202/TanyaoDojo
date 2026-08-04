@@ -159,6 +159,19 @@ SICHUAN_RL_PLAN.md),policy 线 5000 万局需求在旧管线不可行(~190 天)�
     零崩。**RL 路线重设计排序:①oracle critic(Suphx 核心:训练期 critic 看全信息,
     非对称 actor-critic,文献最有依据)②锚退火(扫描各臂均恒锚)③奖励塑形**。
     八臂续跑至 30 亿步中(顺便验证更长尺度),oracle critic 开工。
+  - **oracle critic 落地 + 三路调研定形态(2026-08-04)**:实现 `obs_oracle.py`
+    (合法 20 平面之上 +17 特权平面:三家手牌/赤五/未摸牌墙/里宝 +3 向听标量,
+    冒烟验证前缀逐位=obs_lean、墙计数精确 73、开销 5×lean 但绝对量可忽略)+
+    `net_lean.LeanCriticNet`(独立 value-only 网)+ `ppo_oracle.py`(非对称 AC:
+    GAE/值损失全走 oracle critic,actor 值头弃用,**actor pkl 与评测桥/池完全兼容**;
+    critic 预热期冻 actor;oracle 退火臂可选)。本机冒烟绿:vloss 0.40→0.002。
+    同日三路网络调研(RESEARCH_SURVEY_2026-08.md)关键校准:①**PerfectDou PTIE
+    (永久非对称 critic,斗地主 +9.4pt)是证据最强形态,Suphx 式 actor 蒸馏被
+    Equim 实证无效**(Mortal #102,v3 已移除)——默认不退火;②自博弈不迁移
+    有名字:competitive overfitting(2604.04983),药方=对手池混入协同适应外
+    成分+高频外部探针;③下一台阶:中心化 Q-critic+Expected SARSA(λ) 替 GAE
+    (2605.19235,斗地主 -40% 步数超 PerfectDou);④Mahjax 上游 2026-07 修了
+    抢杠 mask/吃后全 False mask 等规则 bug,待 diff 我们的 fork。
   - **league run1 首验(2.7 亿步即被让机中断,4k 局)**:**-14.81±2.70**——与基座
     统计边缘持平略降,未现 r3 式崩退(同期 r3 已 -19)。判读:①lr_r 显示刚追平
     对手池,3% 训练量未到兑现期,RL 微调的"先小跌后爬"曲线属常态;②approx_kl

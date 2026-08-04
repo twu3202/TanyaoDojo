@@ -100,6 +100,7 @@ graph LR
 | 文档 | 内容 |
 |---|---|
 | [MAHJAX_MIGRATION.md](MAHJAX_MIGRATION.md) | **从这里开始**:R0-R4 全记录、实验定量、坑志 |
+| [RESEARCH_SURVEY_2026-08.md](RESEARCH_SURVEY_2026-08.md) | 三路调研综述:同赛道动态、非对称 AC 证据链、自博弈不迁移药方 |
 | [SICHUAN_RL_PLAN.md](SICHUAN_RL_PLAN.md) | 川麻纯 RL 立项与 Mahjax 基准 |
 | [jax_rl/sichuan/RULES.md](jax_rl/sichuan/RULES.md) | 川麻规则冻结 v0 |
 | [HANDOFF.md](HANDOFF.md) / [RESULTS.md](RESULTS.md) / [TRACK_C_SELFPLAY.md](TRACK_C_SELFPLAY.md) | 价值线时代(历史) |
