@@ -36,8 +36,9 @@ DICT_KEYS = ("hand", "last_draw", "action_history", "shanten", "furiten", "score
 
 
 class Buf:
-    def __init__(self, lean_only=False):
+    def __init__(self, lean_only=False, plane_scale=4):
         self.lean_only = lean_only
+        self.plane_scale = plane_scale  # lean=4;v2=24(时序 1/24 步长下仍无损)
         keys = LEAN_KEYS if lean_only else LEAN_KEYS + DICT_KEYS
         self.rows = {k: [] for k in keys}
 
@@ -46,7 +47,7 @@ class Buf:
 
     def add(self, ol, od, mask, a, from_log, gid):
         r = self.rows
-        r["planes"].append(np.round(np.asarray(ol["planes"]) * 4).astype(np.uint8))
+        r["planes"].append(np.round(np.asarray(ol["planes"]) * self.plane_scale).astype(np.uint8))
         r["scalars"].append(np.asarray(ol["scalars"], np.float32))
         r["action"].append(np.uint8(a))
         r["legal_mask"].append(mask)
@@ -72,26 +73,31 @@ class Buf:
         path = out_dir / f"shard_{shard_ix:04d}.npz"
         np.savez_compressed(path, **arrs)
         n = len(self)
-        self.__init__(self.lean_only)
+        self.__init__(self.lean_only, self.plane_scale)
         return path, n
 
 
 def main():
     pat, n_games, out = sys.argv[1], int(sys.argv[2]), Path(sys.argv[3])
-    lean_only = len(sys.argv) > 4 and sys.argv[4] == "lean"
+    mode = sys.argv[4] if len(sys.argv) > 4 else ""
+    lean_only = mode in ("lean", "v2")
     out.mkdir(parents=True, exist_ok=True)
     files = sorted(globmod.glob(pat))
     random.Random(1).shuffle(files)
     files = files[:n_games]
 
-    obs_l = jax.jit(observe_lean)
+    if mode == "v2":
+        from obs_v2 import observe_v2
+        obs_l = jax.jit(observe_v2)
+    else:
+        obs_l = jax.jit(observe_lean)
     obs_d = jax.jit(_observe_dict)
     # ⚠️ verify_step 走 update_shanten=FALSE,state.shanten_current_player 在重放中
     # 恒为初始值 → obs 标量[8] 必须在采集点用当前玩家真实手牌重算(PPO/评测侧是真值,
     # 不修会造成 BC 与在线的特征分布错位)。
     from mahjax.red_mahjong.shanten import Shanten
     shan = jax.jit(Shanten.number)
-    buf = Buf(lean_only)
+    buf = Buf(lean_only, plane_scale=24 if mode == "v2" else 4)
     shard_ix = n_k = ok = total = 0
     rejects = 0
     t0 = time.time()

@@ -71,11 +71,13 @@ def main():
         for k in val:
             val[k].append(d[k][m])
     val = {k: np.concatenate(v) for k, v in val.items()}
-    print(f"val={len(val['action'])}")
+    # 量化尺度按通道数识别:lean 20ch=×4;v2 36ch=×24(构建侧同约定)
+    plane_scale = 24.0 if val["planes"].shape[-1] >= 36 else 4.0
+    print(f"val={len(val['action'])} planes_ch={val['planes'].shape[-1]} scale={plane_scale}")
 
     net = LeanACNet(channels=args.channels, blocks=args.blocks)
     sample = {
-        "planes": jnp.asarray(val["planes"][:2], jnp.float32) / 4.0,
+        "planes": jnp.asarray(val["planes"][:2], jnp.float32) / plane_scale,
         "scalars": jnp.asarray(val["scalars"][:2]),
     }
     params = net.init(jax.random.PRNGKey(0), sample)
@@ -94,7 +96,7 @@ def main():
 
     @jax.jit
     def train_step(p, o, planes, scalars, labels, mask):
-        obs = {"planes": planes.astype(jnp.float32) / 4.0, "scalars": scalars}
+        obs = {"planes": planes.astype(jnp.float32) / plane_scale, "scalars": scalars}
 
         def loss_fn(p_):
             logits = jnp.where(mask, logits_of(p_, obs), -1e9)
@@ -106,7 +108,7 @@ def main():
 
     @jax.jit
     def pred_step(p, planes, scalars, mask):
-        obs = {"planes": planes.astype(jnp.float32) / 4.0, "scalars": scalars}
+        obs = {"planes": planes.astype(jnp.float32) / plane_scale, "scalars": scalars}
         return jnp.argmax(jnp.where(mask, logits_of(p, obs), -1e9), axis=-1)
 
     def evaluate():
