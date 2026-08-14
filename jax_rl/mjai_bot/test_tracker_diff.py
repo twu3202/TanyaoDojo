@@ -19,12 +19,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from mjai_parser import parse_game
 from replay_env import replay_kyoku, ReplayReject, DECISION_TYPES
 from obs_lean import observe_lean
+from obs_v2 import observe_v2
 from tracker import KyokuTracker, make_jax_helpers
 
 import jax
 from mahjax.red_mahjong.shanten import Shanten
 
-obs_j = jax.jit(observe_lean)
+OBS_MODE = sys.argv[3] if len(sys.argv) > 3 else "lean"
+NP_, NS_ = (36, 32) if OBS_MODE == "v2" else (20, 26)
+obs_j = jax.jit(observe_v2 if OBS_MODE == "v2" else observe_lean)
 shan_j = jax.jit(Shanten.number)
 shan_fn, waits_fn = make_jax_helpers()
 
@@ -34,6 +37,11 @@ PLANE_NAMES = (
     + [f"last_{i}" for i in range(4)]
     + [f"meld_{i}" for i in range(4)]
     + ["visible", "dora_ind"]
+    + [f"v2time_{i}" for i in range(4)]
+    + [f"v2tedashi_{i}" for i in range(4)]
+    + [f"v2riichi_{i}" for i in range(4)]
+    + [f"v2seen_{i}" for i in range(3)]
+    + ["v2dora_real"]
 )
 
 
@@ -55,8 +63,8 @@ def main():
 
     stats = {
         "decisions": 0,
-        "plane_mismatch": np.zeros(20, np.int64),
-        "scalar_mismatch": np.zeros(26, np.int64),
+        "plane_mismatch": np.zeros(NP_, np.int64),
+        "scalar_mismatch": np.zeros(NS_, np.int64),
     }
     first = {}
 
@@ -107,7 +115,7 @@ def main():
                 for ev in evs[_fed[cp]:prefix_end]:
                     tr.feed(ev)
                 _fed[cp] = max(_fed[cp], prefix_end)
-                mine = tr.build_obs()
+                mine = tr.build_obs_v2() if OBS_MODE == "v2" else tr.build_obs()
                 envo = obs_j(state)
                 env_p = np.asarray(envo["planes"])
                 env_s = np.array(envo["scalars"])

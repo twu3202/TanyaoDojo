@@ -60,11 +60,12 @@ def main():
     ap.add_argument("--log-dir", default="/home/r/Projects/better_mortal/runs/leanjax_eval")
     ap.add_argument("--channels", type=int, default=128)
     ap.add_argument("--blocks", type=int, default=6)
+    ap.add_argument("--obs", default="lean", choices=("lean", "v2"))
     args = ap.parse_args()
 
     cham = load_champion(args.champion, args.device)
     chal = LeanJaxEngine(args.params, name="leanjax",
-                         channels=args.channels, blocks=args.blocks)
+                         channels=args.channels, blocks=args.blocks, obs=args.obs)
     seeds_per_iter = args.games // 4
     total = np.zeros(4, np.int64)
     t0 = time.time()

@@ -30,6 +30,14 @@ BLACK5 = {34: 4, 35: 13, 36: 22}
 NUM_PLANES = 20
 NUM_SCALARS = 26
 
+# 指示牌→实宝牌 34 型映射(与 obs_v2.DORA_NEXT 同构)
+DORA_NEXT = [
+    (t - 8 if t % 9 == 8 else t + 1) if t < 27
+    else (27 + (t - 27 + 1) % 4) if t < 31
+    else (31 + (t - 31 + 1) % 3)
+    for t in range(34)
+]
+
 MELD_EVS = ("pon", "chi", "daiminkan", "ankan", "kakan")
 
 
@@ -69,6 +77,9 @@ class KyokuTracker:
         self.dora_ind = [t2i(ev["dora_marker"])]
         self.rivers = [[] for _ in range(4)]          # 0-36 append-only
         self.rivers_str = [[] for _ in range(4)]      # 原始 mjai 牌面串(回发用)
+        self.rivers_tsumogiri = [[] for _ in range(4)]  # v2:逐张摸切旗
+        self.riichi_decl_idx = [None] * 4             # v2:立直宣言牌的河内下标
+        self._pending_reach = [False] * 4
         self.melds = [[] for _ in range(4)]           # [kind, tile_types, target34, red_suits, strs]
         self.riichi = [False] * 4
         self.last_draw = -1
@@ -116,11 +127,17 @@ class KyokuTracker:
                 self.last_draw_str = ev["pai"]
                 if not self.riichi[me]:
                     self.furiten_pass = False          # env: furiten_by_pass &= riichi
+        elif t == "reach":
+            self._pending_reach[ev["actor"]] = True   # 宣言:下一打即宣言牌(env 在该打即写 riichi 位)
         elif t == "dahai":
             actor = ev["actor"]
             v = t2i(ev["pai"])
             self.rivers[actor].append(v)
             self.rivers_str[actor].append(ev["pai"])
+            self.rivers_tsumogiri[actor].append(bool(ev.get("tsumogiri", False)))
+            if self._pending_reach[actor]:
+                self.riichi_decl_idx[actor] = len(self.rivers[actor]) - 1
+                self._pending_reach[actor] = False
             if actor == me:
                 self.hand37[v] -= 1
                 self.forbidden34[:] = False            # 食替禁打只约束鸣后首打
@@ -263,6 +280,40 @@ class KyokuTracker:
         sc[24] = float(live_left <= 0.0)
         sc[25] = live_left / 70.0
         return {"planes": planes.T, "scalars": sc}
+
+    def build_obs_v2(self) -> dict:
+        """obs_v2 镜像:lean 20+26 之上追加 16 平面 + 6 标量(语义对照 obs_v2.py)。"""
+        base = self.build_obs()
+        me = self.me
+        rel = [(me + i) % 4 for i in range(4)]
+        extra = np.zeros((16, 34), np.float32)
+        for i, p in enumerate(rel):
+            for idx, v in enumerate(self.rivers[p]):
+                extra[i][to34(v)] = (idx + 1) / 24.0             # 20-23 时序(末次覆盖)
+            for v, tg in zip(self.rivers[p], self.rivers_tsumogiri[p]):
+                if not tg:
+                    extra[4 + i][to34(v)] += 0.25                # 24-27 手切/4
+            di = self.riichi_decl_idx[p]
+            if di is not None:
+                extra[8 + i][to34(self.rivers[p][di])] = 1.0     # 28-31 宣言牌
+        for j, p in enumerate(rel[1:]):
+            for v in self.rivers[p]:
+                extra[12 + j][to34(v)] = 1.0                     # 32-34 对手河现物
+        for v in self.dora_ind:
+            extra[15][DORA_NEXT[to34(v)]] += 0.25                # 35 宝牌实体/4
+        sc2 = np.zeros(6, np.float32)
+        for j, p in enumerate(rel[1:]):
+            di = self.riichi_decl_idx[p]
+            sc2[j] = 0.0 if di is None else (di + 1) / 18.0      # 26-28 宣言时点
+        n_me = len(self.rivers[me])
+        sc2[3] = n_me / 18.0                                     # 29 巡目
+        sc2[4] = sum(len(self.rivers[p]) for p in range(4)) / 70.0  # 30 总舍牌
+        n_ted = sum(1 for tg in self.rivers_tsumogiri[me] if not tg)
+        sc2[5] = (n_ted / n_me) if n_me > 0 else 0.0             # 31 手切率
+        return {
+            "planes": np.concatenate([base["planes"], extra.T], axis=1),
+            "scalars": np.concatenate([base["scalars"], sc2]),
+        }
 
 
 def make_jax_helpers():

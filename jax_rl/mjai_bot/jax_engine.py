@@ -38,7 +38,7 @@ def i2t(v: int) -> str:
 
 class LeanJaxEngine:
     def __init__(self, params_path: str, name: str = "LeanJax", channels: int = 128,
-                 blocks: int = 6):
+                 blocks: int = 6, obs: str = "lean"):
         import pickle
         import jax
         import jax.numpy as jnp
@@ -57,6 +57,7 @@ class LeanJaxEngine:
 
         self._fwd = jax.jit(fwd)
         self._jnp = jnp
+        self.obs_mode = obs                    # 'lean' | 'v2'(v2 权重必须配 v2 观测)
         self.shan_fn, self.waits_fn = make_jax_helpers()
         self.trackers: dict[int, tuple] = {}   # game_idx -> (kyoku_key, tracker, fed)
         self.fallback_count = 0
@@ -267,7 +268,7 @@ class LeanJaxEngine:
                           f"  last_events={[e.get('type')+str(e.get('actor','')) for e in events[-6:]]}",
                           file=sys.stderr, flush=True)
             mask = self._build_mask(tr, gs.state, me)
-            obs = tr.build_obs()
+            obs = tr.build_obs_v2() if self.obs_mode == "v2" else tr.build_obs()
             planes.append(obs["planes"])
             scalars.append(obs["scalars"])
             metas.append((gi, me, tr, gs.state, mask))
