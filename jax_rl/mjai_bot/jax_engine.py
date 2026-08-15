@@ -155,18 +155,16 @@ class LeanJaxEngine:
                 mask[base] = plain_ok
                 if five is not None and tr.hand37[FIVES[five]] > 0:
                     mask[base + 1] = True
+        # ⚠️ 杠候选必须取 libriichi 的官方列表(state.kakan_candidates/ankan_candidates),
+        # 不能用"手里有 4 张"自行推断:立直后暗杠受"不变听形"约束,rust 侧
+        # validate_reaction 会 ensure!(candidates.contains(tile)) 直接抛错终止对局
+        # (2026-08-16 实测:seed14000 段 800 万决策级别触发一次 "cannot ankan 5s")。
         if cans.can_kakan:
-            for m in tr.melds[me]:
-                if m[0] == "pon":
-                    tt = m[2]
-                    have = tr.hand37[tt] + (tr.hand37[FIVES[tt]] if tt in FIVES else 0)
-                    if have > 0:
-                        mask[37 + tt] = True
+            for s in st.kakan_candidates():
+                mask[37 + to34(t2i(s))] = True
         if cans.can_ankan:
-            h34 = tr._hand34()
-            for tt in range(34):
-                if h34[tt] == 4:
-                    mask[37 + tt] = True
+            for s in st.ankan_candidates():
+                mask[37 + to34(t2i(s))] = True
         if cans.can_ryukyoku:
             mask[85] = True
         if cans.can_pass:
