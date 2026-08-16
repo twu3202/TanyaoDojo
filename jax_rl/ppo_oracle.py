@@ -385,6 +385,11 @@ def main():
         ts_a, ts_c, env_state, rng, metrics = train_block(
             ts_a, ts_c, pool_params, assign, learner_seat, env_state, rng,
             scale_at(i), oracle_scale_at(i))
+        # ⚠️ 逐块同步(2026-08-05 云上八臂集体停摆的修法):不阻塞时 python 主循环
+        # 会把几十个重块塞进 XLA 异步队列,大网 oracle 配置下显存高压 + 队列过深会
+        # 卡死内核(GPU util 恒 100% 的忙等假象,ckpt 停更)。每块 4 个 update,
+        # 同步开销可忽略。
+        jax.block_until_ready(metrics)
         steps += BATCH_SIZE * args.updates_per_jit
         if args.self_pool_slots > 0 and i >= args.critic_warmup_blocks \
                 and i % args.snapshot_every_blocks == 0:
