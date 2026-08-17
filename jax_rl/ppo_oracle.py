@@ -71,6 +71,9 @@ class Args(BaseModel):
     save_model: bool = True
     save_path: str = "ppo_oracle_params.pkl"
     ckpt_every_blocks: int = 16
+    # 带序号快照:RL 的外部强度可能早期有峰后退化,只留滚动覆盖档就无法选峰
+    # (2026-08-17 oracle 首航教训:8 亿步 -8.38,但无中间档可查峰在哪)
+    snap_ckpt_every_blocks: int = 0
     mem_fraction: float = 0.85
     channels: int = 128               # actor 规格(须与基座/池权重一致)
     blocks: int = 6
@@ -407,6 +410,11 @@ def main():
                   f"mag={m['mag_kl']:.4f} lr_r={m['learner_reward']:+.5f}{warm}", flush=True)
         if args.ckpt_every_blocks > 0 and i % args.ckpt_every_blocks == 0:
             save_ckpt()
+        if args.snap_ckpt_every_blocks > 0 and i % args.snap_ckpt_every_blocks == 0:
+            snap = f"{args.save_path}.b{i}.pkl"
+            with open(snap + ".tmp", "wb") as f:
+                pickle.dump(jax.device_get(ts_a.params), f)
+            os.replace(snap + ".tmp", snap)
     jax.block_until_ready(ts_a.params)
     dt = time.time() - t0
     steady = (steps - BATCH_SIZE * args.updates_per_jit) / dt if NUM_JIT_CALLS > 1 else 0

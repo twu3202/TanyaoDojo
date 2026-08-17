@@ -207,6 +207,15 @@ SICHUAN_RL_PLAN.md),policy 线 5000 万局需求在旧管线不可行(~190 天)�
     配置:actor 256×10 从 g402 起(锚/对手池同),oracle critic 128×6,4096 env,
     critic 预热 32 块。编译 94s 通过,首块 v_loss 0.102。哨兵改盯 **ckpt mtime**
     (util 会被忙等假象骗过)。判据:10 亿步内 4k 外评能否破 -5.07。
+    - **首航负结果(8 亿步,4k)= -8.38±2.65**,较基座同段 -5.19 **倒退 3.2pt**。
+      critic 侧完全成立(v_loss 0.102→0.001,全信息使值估计易学),但**更准的价值
+      没有转化为对外部对手的强度**;policy 确实移动了(ent 0.513→0.494,
+      approx_kl 9e-4/update,mag 0.02),方向对 Mortal 为负。lr_r 全程贴 0 微负
+      (≈-0.9 点/局,与 league 三连阴同形态)。
+      **RL 四连负**(纯自博弈 / 窄网 league / 8 臂 league / oracle critic),
+      且这次已按调研药方配了"协同演化谱系外"的冻结 BC 对手座位。
+      工程缺陷:只留滚动覆盖档,无法判断"单调退化 vs 早期有峰"——已补
+      `snap_ckpt_every_blocks`(带序号快照),下一发必须开。
     - **⚠️ 评测桥杠掩码 bug 修复(2026-08-16)**:暗/加杠掩码原按"自家手里有 4 张/
       有对应碰"自行推断,但 rust 侧 `validate_reaction` 会
       `ensure!(ankan_candidates.contains(tile))`——立直后暗杠受"不变听形"约束时
