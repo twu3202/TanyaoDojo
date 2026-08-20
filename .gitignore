@@ -23,3 +23,20 @@ jax_rl/*.pkl
 
 # 上游 Mortal(AGPL-3.0)不入库:评测桥依赖其 libriichi,搭建见 SETUP.md
 Mortal/
+
+# 内部调研/规划文档:本地保留,不进公开仓库
+CLAUDE.md
+ARCH_RESEARCH.md
+ARCH_TRACKB_DEFENSE.md
+CHINA_MJ_JIAXING.md
+CHINA_MJ_VARIANTS.md
+EVAL_PLAN.md
+HANDOFF.md
+PHASE2_PLAN.md
+RESEARCH.md
+RESEARCH_SURVEY_2026-08.md
+RL_SIM_PLAN.md
+ROADMAP.md
+SETUP_NOTES.md
+TRACK_C_SELFPLAY.md
+TRAINING_PLAN.md

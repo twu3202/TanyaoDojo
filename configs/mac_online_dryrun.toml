@@ -7,9 +7,9 @@ device = 'cpu'
 enable_cudnn_benchmark = false
 enable_amp = false
 enable_compile = false
-state_file = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry/state.pth'
-best_state_file = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry/best.pth'
-tensorboard_dir = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry/tb'
+state_file = '/tmp/mortal_dryrun/online_dry/state.pth'
+best_state_file = '/tmp/mortal_dryrun/online_dry/best.pth'
+tensorboard_dir = '/tmp/mortal_dryrun/online_dry/tb'
 batch_size = 64
 opt_step_every = 1
 save_every = 50
@@ -25,8 +25,8 @@ host = '127.0.0.1'
 port = 5577
 
 [online.server]
-buffer_dir = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry/buffer'
-drain_dir = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry/drain'
+buffer_dir = '/tmp/mortal_dryrun/online_dry/buffer'
+drain_dir = '/tmp/mortal_dryrun/online_dry/drain'
 sample_reuse_rate = 0
 sample_reuse_threshold = 0
 capacity = 8
@@ -34,11 +34,11 @@ force_sequential = false
 
 [test_play]
 games = 4
-log_dir = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry/test_play'
+log_dir = '/tmp/mortal_dryrun/online_dry/test_play'
 
 [train_play.default]
 games = 8
-log_dir = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry/train_play'
+log_dir = '/tmp/mortal_dryrun/online_dry/train_play'
 boltzmann_epsilon = 0.005
 boltzmann_temp = 0.05
 top_p = 1.0
@@ -46,7 +46,7 @@ repeats = 1
 
 [dataset]
 globs = []
-file_index = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry/file_index.pth'
+file_index = '/tmp/mortal_dryrun/online_dry/file_index.pth'
 file_batch_size = 1
 reserve_ratio = 0.0
 num_workers = 0

@@ -5,7 +5,7 @@ set -u
 PY=/opt/anaconda3/envs/mj-mortal/bin/python
 CFG=/Users/r/HMM/Better_mortal/configs/mac_online_dryrun.toml
 MM=/Users/r/HMM/Better_mortal/Mortal/mortal
-D=/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/online_dry
+D=/tmp/mortal_dryrun/online_dry
 rm -rf $D && mkdir -p $D
 # 热启动:v1_best 作为初始 state(trainer 会加载其权重,online模式不加载其optimizer)
 cp /Users/r/HMM/Better_mortal/weights_backup/v1_best.pth $D/state.pth

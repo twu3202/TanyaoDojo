@@ -13,7 +13,7 @@ num_blocks = 40
 
 [train_play.default]
 games = 8
-log_dir = '/private/tmp/claude-501/-Users-r-HMM-Better-mortal/ab22927d-050c-4e4b-8f56-9bccbc08104f/scratchpad/selfplay_logs'
+log_dir = '/tmp/mortal_dryrun/selfplay_logs'
 boltzmann_epsilon = 0.005
 boltzmann_temp = 0.05
 top_p = 1.0
