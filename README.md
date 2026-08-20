@@ -9,6 +9,7 @@
 
 > **许可**:根目录 MIT,`jax_rl/mjai_bot/` 为 AGPL-3.0(链接 libriichi)——见 [LICENSING.md](LICENSING.md)。
 > **数据**:天凤牌谱及其派生数据集**不分发**,请自备牌谱按 SETUP.md 重建。
+> **权重**:四份 checkpoint(含一份 RL 负结果)已发布在 [🤗 Twu31/TanyaoDojo](https://huggingface.co/Twu31/TanyaoDojo)。
 
 - **数据**:天凤凤凰卓 16 年牌谱(251 万局 mjai 格式;受天凤条款约束不入库、不再分发)
 - **评测协议(神圣不可变)**:复式 1v3,challenger 轮换 4 座打同一批牌山,
