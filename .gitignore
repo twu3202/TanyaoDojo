@@ -20,3 +20,6 @@ __pycache__/
 # 第三方对手(akochan 源码克隆,不入库;搭建方法见 TRACK_C_SELFPLAY.md 哨兵节)
 vendor/
 jax_rl/*.pkl
+
+# 上游 Mortal(AGPL-3.0)不入库:评测桥依赖其 libriichi,搭建见 SETUP.md
+Mortal/
