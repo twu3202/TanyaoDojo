@@ -29,7 +29,7 @@ from obs_lean import observe_lean
 
 from mahjax.red_mahjong.observation import _observe_dict
 
-SHARD = 100_000
+SHARD = 50_000   # 50k/shard:构建器常驻内存减半(WSL 15GB 下可并行更多工人)
 
 
 LEAN_KEYS = ("planes", "scalars", "action", "legal_mask", "from_log", "game_id")
