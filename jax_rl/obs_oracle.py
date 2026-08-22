@@ -27,13 +27,14 @@ from mahjax.red_mahjong.shanten import Shanten
 
 from obs_lean import observe_lean, _count_by_type
 
-NUM_ORACLE_PLANES = 37
+NUM_ORACLE_PLANES = 37       # lean 底座
 NUM_ORACLE_SCALARS = 29
+NUM_ORACLE_V2_PLANES = 53    # v2 底座
+NUM_ORACLE_V2_SCALARS = 35
 
 
-def observe_oracle(state: State) -> dict:
-    """合法 obs + 隐藏信息平面。只在训练期喂 critic,永不进 actor/评测。"""
-    legal = observe_lean(state)
+def oracle_extras(state: State):
+    """(34,17) 特权平面 + (3,) 特权标量。与合法底座(lean / v2)解耦,两者共用。"""
     c_p = state.current_player
     opp = (jnp.arange(1, 4) + c_p) % 4  # 相对座位:右/对/左
 
@@ -57,17 +58,31 @@ def observe_oracle(state: State) -> dict:
 
     ura_cnt = _count_by_type(state.round_state.ura_dora_indicators.astype(jnp.int32))
 
-    planes = jnp.concatenate(
+    extras = jnp.concatenate(
         [
-            legal["planes"],
             opp_oh.T,  # (34,12)
             opp_red.T,  # (34,3)
             (wall_cnt / 4.0)[:, None],
             (ura_cnt / 4.0)[:, None],
         ],
         axis=1,
-    )  # (34, 37)
-
+    )  # (34, 17)
     opp_shanten = jax.vmap(Shanten.number)(state.players.hand[opp]).astype(jnp.float32)
-    scalars = jnp.concatenate([legal["scalars"], opp_shanten / 6.0])  # (29,)
-    return {"planes": planes, "scalars": scalars}
+    return extras, opp_shanten / 6.0
+
+
+def observe_oracle(state: State) -> dict:
+    """lean 底座(20+26)+ 特权 → (34,37) / (29,)。只喂 critic,永不进 actor/评测。"""
+    legal = observe_lean(state)
+    ex_p, ex_s = oracle_extras(state)
+    return {"planes": jnp.concatenate([legal["planes"], ex_p], axis=1),
+            "scalars": jnp.concatenate([legal["scalars"], ex_s])}
+
+
+def observe_oracle_v2(state: State) -> dict:
+    """v2 底座(36+32)+ 特权 → (34,53) / (35,)。配 obs v2 系基座(如 g186)。"""
+    from obs_v2 import observe_v2
+    legal = observe_v2(state)
+    ex_p, ex_s = oracle_extras(state)
+    return {"planes": jnp.concatenate([legal["planes"], ex_p], axis=1),
+            "scalars": jnp.concatenate([legal["scalars"], ex_s])}

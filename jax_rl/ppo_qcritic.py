@@ -86,6 +86,7 @@ class Args(BaseModel):
     # 带序号快照:RL 的外部强度可能早期有峰后退化,只留滚动覆盖档就无法选峰
     # (2026-08-17 oracle 首航教训:8 亿步 -8.38,但无中间档可查峰在哪)
     snap_ckpt_every_blocks: int = 0
+    obs_base: Literal["lean", "v2"] = "lean"   # actor 合法底座(须与基座权重一致)
     mem_fraction: float = 0.85
     channels: int = 128               # actor 规格(须与基座/池权重一致)
     blocks: int = 6
@@ -106,8 +107,12 @@ print(args, file=sys.stderr)
 
 ENV = mahjax.make(args.env_name, round_mode=args.round_mode, observe_type="dict")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from obs_oracle import observe_oracle
+from obs_oracle import observe_oracle, observe_oracle_v2
 from net_lean import LeanACNet, LeanQCriticNet
+
+if args.obs_base == "v2":
+    observe_oracle = observe_oracle_v2
+    LEAN_PLANES, LEAN_SCALARS = 36, 32
 
 STEP_FN = auto_reset(ENV.step, ENV.init)
 NUM_PLAYERS = ENV.num_players
