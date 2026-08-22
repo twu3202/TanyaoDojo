@@ -61,6 +61,36 @@ class LeanCriticNet(nn.Module):
         return nn.Dense(1, kernel_init=orthogonal_init())(trunk).squeeze(-1)
 
 
+class LeanQCriticNet(nn.Module):
+    """中心化 Q-critic:输入 oracle obs,输出每动作 Q 值(NUM_ACTIONS 维)。
+    配合 Expected SARSA(λ) —— backup 用 sum_a pi(a|s)Q(s,a) 的策略加权期望,
+    不采样下一动作,消除自博弈随机策略下 GAE 的采样方差(arXiv 2605.19235)。"""
+
+    channels: int = 128
+    blocks: int = 6
+    head_dim: int = 256
+
+    @nn.compact
+    def __call__(self, obs: dict):
+        planes = jnp.asarray(obs["planes"], jnp.float32)
+        scalars = jnp.asarray(obs["scalars"], jnp.float32)
+        if planes.ndim == 2:
+            planes, scalars = planes[None], scalars[None]
+        s = nn.Dense(32, kernel_init=orthogonal_init())(scalars)
+        s = nn.relu(s)
+        s_tiled = jnp.repeat(s[:, None, :], planes.shape[1], axis=1)
+        x = jnp.concatenate([planes, s_tiled], axis=-1)
+        x = nn.Conv(self.channels, kernel_size=(3,), kernel_init=orthogonal_init())(x)
+        for _ in range(self.blocks):
+            x = ResBlock1D(self.channels)(x)
+        x = nn.LayerNorm()(x)
+        x = nn.relu(x)
+        flat = x.reshape(x.shape[0], -1)
+        trunk = nn.Dense(self.head_dim, kernel_init=orthogonal_init())(flat)
+        trunk = nn.relu(trunk)
+        return nn.Dense(NUM_ACTIONS, kernel_init=orthogonal_init())(trunk)
+
+
 class LeanACNet(nn.Module):
     channels: int = 128
     blocks: int = 6
