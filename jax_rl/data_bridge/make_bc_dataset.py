@@ -7,7 +7,9 @@ R2 BC 数据集落盘:重放回路 × 双观测(lean 平面 + 上游 dict),同�
   hand(14) last_draw(1) action_history(3,200) shanten furiten scores(4)
   round honba kyotaku prevalent seat dora_indicators(5)   —— 上游 dict obs 原料
   action  uint8   legal_mask (87,) bool   from_log bool   game_id uint32
-用法:PYTHONPATH=~/mahjax python make_bc_dataset.py "<glob>" <n_games> <out_dir>
+用法:PYTHONPATH=~/mahjax python make_bc_dataset.py "<glob>" <n_games> <out_dir> [lean|v2|v2adv]
+  v2adv 额外落两列:delta(决策者该局得失点)、rank(该局终局名次 0-3),供
+  advantage-filtered BC 按结果质量给样本加权(见 bc_stream --weight-mode)。
 """
 from __future__ import annotations
 import sys
@@ -31,22 +33,29 @@ SHARD = 100_000
 
 
 LEAN_KEYS = ("planes", "scalars", "action", "legal_mask", "from_log", "game_id")
+ADV_KEYS = ("delta", "rank")   # v2adv:决策者在该局的得失点 / 该局终局名次(0-3)
 DICT_KEYS = ("hand", "last_draw", "action_history", "shanten", "furiten", "scores",
              "round", "honba", "kyotaku", "prevalent", "seat", "dora_indicators")
 
 
 class Buf:
-    def __init__(self, lean_only=False, plane_scale=4):
+    def __init__(self, lean_only=False, plane_scale=4, with_adv=False):
         self.lean_only = lean_only
         self.plane_scale = plane_scale  # lean=4;v2=24(时序 1/24 步长下仍无损)
+        self.with_adv = with_adv
         keys = LEAN_KEYS if lean_only else LEAN_KEYS + DICT_KEYS
+        if with_adv:
+            keys = keys + ADV_KEYS
         self.rows = {k: [] for k in keys}
 
     def __len__(self):
         return len(self.rows["action"])
 
-    def add(self, ol, od, mask, a, from_log, gid):
+    def add(self, ol, od, mask, a, from_log, gid, delta=0, rank=0):
         r = self.rows
+        if self.with_adv:
+            r["delta"].append(np.int16(max(-32000, min(32000, int(delta)))))
+            r["rank"].append(np.uint8(rank))
         r["planes"].append(np.round(np.asarray(ol["planes"]) * self.plane_scale).astype(np.uint8))
         r["scalars"].append(np.asarray(ol["scalars"], np.float32))
         r["action"].append(np.uint8(a))
@@ -73,20 +82,20 @@ class Buf:
         path = out_dir / f"shard_{shard_ix:04d}.npz"
         np.savez_compressed(path, **arrs)
         n = len(self)
-        self.__init__(self.lean_only, self.plane_scale)
+        self.__init__(self.lean_only, self.plane_scale, self.with_adv)
         return path, n
 
 
 def main():
     pat, n_games, out = sys.argv[1], int(sys.argv[2]), Path(sys.argv[3])
     mode = sys.argv[4] if len(sys.argv) > 4 else ""
-    lean_only = mode in ("lean", "v2")
+    lean_only = mode in ("lean", "v2", "v2adv")
     out.mkdir(parents=True, exist_ok=True)
     files = sorted(globmod.glob(pat))
     random.Random(1).shuffle(files)
     files = files[:n_games]
 
-    if mode == "v2":
+    if mode in ("v2", "v2adv"):
         from obs_v2 import observe_v2
         obs_l = jax.jit(observe_v2)
     else:
@@ -97,22 +106,43 @@ def main():
     # 不修会造成 BC 与在线的特征分布错位)。
     from mahjax.red_mahjong.shanten import Shanten
     shan = jax.jit(Shanten.number)
-    buf = Buf(lean_only, plane_scale=24 if mode == "v2" else 4)
+    with_adv = mode == "v2adv"
+    buf = Buf(lean_only, plane_scale=24 if mode in ("v2", "v2adv") else 4, with_adv=with_adv)
     shard_ix = n_k = ok = total = 0
     rejects = 0
     t0 = time.time()
+    def kyoku_deltas(kyoku):
+        """该局四家得失点(hora 可多个=多家荣和;流局同样带 deltas)。"""
+        d = [0, 0, 0, 0]
+        for ev in kyoku.events:
+            if ev.get("type") in ("hora", "ryukyoku") and "deltas" in ev:
+                for i, v in enumerate(ev["deltas"]):
+                    d[i] += int(v)
+        return d
+
     for gid, fp in enumerate(files):
         g = parse_game(fp)
-        for k in g.kyokus:
+        if with_adv:
+            all_d = [kyoku_deltas(k) for k in g.kyokus]
+            base = g.kyokus[0].scores if g.kyokus and g.kyokus[0].scores else [25000] * 4
+            final = [base[i] + sum(d[i] for d in all_d) for i in range(4)]
+            order = sorted(range(4), key=lambda i: (-final[i], i))
+            rank_of = {p: r for r, p in enumerate(order)}
+        for ki_, k in enumerate(g.kyokus):
             n_k += 1
 
-            def collect(state, a, from_log, _ptr=None, _gid=gid):
+            def collect(state, a, from_log, _ptr=None, _gid=gid, _ki=ki_):
                 mask = np.asarray(state.legal_action_mask)
                 od = None if lean_only else obs_d(state)
                 ol = obs_l(state)
                 scal = np.array(ol["scalars"])
-                scal[8] = float(shan(state.players.hand[int(state.current_player)])) / 6.0
-                buf.add({"planes": ol["planes"], "scalars": scal}, od, mask, a, from_log, _gid)
+                cp = int(state.current_player)
+                scal[8] = float(shan(state.players.hand[cp])) / 6.0
+                if with_adv:
+                    buf.add({"planes": ol["planes"], "scalars": scal}, od, mask, a, from_log,
+                            _gid, delta=all_d[_ki][cp], rank=rank_of[cp])
+                else:
+                    buf.add({"planes": ol["planes"], "scalars": scal}, od, mask, a, from_log, _gid)
 
             try:
                 replay_kyoku(k, on_decision=collect)
