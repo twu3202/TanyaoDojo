@@ -65,3 +65,71 @@ def auto_reset_placement(step_fn, init_fn, pt: jnp.ndarray = ARENA_PT,
         )
 
     return wrapped
+
+
+# ---------------------------------------------------------------- GRP 势函数塑形
+# 终局奖励虽然对了,但每个 rollout 只有约 0.75 个半庄终局(实测 eps_rate=2.29e-5),
+# 10 亿步跑完策略几乎没动(mag_kl 0.011)。潜能塑形把终局信号摊到每一盘的边界:
+#   r'_t = Φ(s_{t+1}) − Φ(s_t)   (非终局)
+#   r'_T = pt − Φ(s_T)           (终局)
+# 求和телескоп为 pt − Φ(s_0),与原目标只差一个与策略无关的常数 → **策略不变**
+# (Ng et al. 1999 的势能塑形定理),但信号密度 ×8(一副半庄 8 局)。
+# Φ 由 GRP(局面→终局顺位点期望)给出,752 万人类对局样本训练,解释方差 0.313。
+
+import flax.linen as nn
+
+
+class GRPNet(nn.Module):
+    """局面(15 维)→ 四座终局顺位点期望(已按 PT_SCALE 归一)。与 grp_train.py 同构。"""
+
+    @nn.compact
+    def __call__(self, x):
+        for _ in range(3):
+            x = nn.relu(nn.Dense(128)(x))
+        return nn.Dense(4)(x)
+
+
+def grp_features(rs) -> jnp.ndarray:
+    """从 round_state 取 GRP 特征。分数单位:env 为百点,训练时用的是点/50000。"""
+    sc = rs.score.astype(jnp.float32) / 500.0            # 250(=25000点) → 0.5
+    return jnp.concatenate([
+        jnp.array([rs.round / 8.0,
+                   jnp.clip(rs.honba, 0, 8) / 8.0,
+                   jnp.clip(rs.kyotaku, 0, 8) / 8.0], jnp.float32),
+        sc,
+        sc - sc.mean(),
+        jax.nn.one_hot(rs.dealer, 4, dtype=jnp.float32),
+    ])
+
+
+def auto_reset_shaped(step_fn, init_fn, grp_params, pt=ARENA_PT, scale=PT_SCALE):
+    """顺位终局奖励 + GRP 潜能塑形(策略不变,信号密度 ×8)。"""
+    net = GRPNet()
+
+    def phi(state):
+        return net.apply(grp_params, grp_features(state.round_state)[None])[0]  # (4,)
+
+    def wrapped(state, action, key):
+        key1, key2 = jax.random.split(key)
+        state = jax.lax.cond(
+            state.terminated | state.truncated,
+            lambda: state.replace(terminated=jnp.bool_(False), truncated=jnp.bool_(False),
+                                  rewards=jnp.zeros_like(state.rewards)),
+            lambda: state,
+        )
+        phi_before = phi(state)
+        state = step_fn(state, action, key1)
+        done = state.terminated | state.truncated
+        phi_after = phi(state)
+        term_r = placement_reward(state.round_state.score.astype(jnp.float32), pt, scale)
+        rew = jnp.where(done, term_r - phi_before, phi_after - phi_before)
+        state = state.replace(rewards=rew)
+        init_state = init_fn(key2)
+        return jax.lax.cond(
+            done,
+            lambda: init_state.replace(terminated=state.terminated,
+                                       truncated=state.truncated, rewards=state.rewards),
+            lambda: state,
+        )
+
+    return wrapped

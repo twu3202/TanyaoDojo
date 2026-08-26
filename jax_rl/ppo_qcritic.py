@@ -59,7 +59,8 @@ LEAN_SCALARS = 26
 class Args(BaseModel):
     env_name: str = "red_mahjong"
     round_mode: str = "half"          # 半庄 = 竞技场实际长度(旧默认 single 是目标错配根因)
-    reward_mode: Literal["placement", "raw"] = "placement"  # placement=终局顺位点;raw=旧素点
+    reward_mode: Literal["placement", "shaped", "raw"] = "placement"  # shaped=+GRP 潜能塑形
+    grp_path: Optional[str] = None    # shaped 模式所需的 GRP 势函数权重
     observe_type: Literal["lean"] = "lean"
     seed: int = 0
     num_envs: int = 8192
@@ -115,7 +116,14 @@ if args.obs_base == "v2":
     observe_oracle = observe_oracle_v2
     LEAN_PLANES, LEAN_SCALARS = 36, 32
 
-if args.reward_mode == "placement":
+if args.reward_mode == "shaped":
+    from reward_placement import auto_reset_shaped
+    with open(args.grp_path, "rb") as _f:
+        _grp = pickle.load(_f)
+    STEP_FN = auto_reset_shaped(ENV.step, ENV.init, _grp)
+    MAX_REWARD = 1.0
+    print(f"GRP shaping <- {args.grp_path}", file=sys.stderr)
+elif args.reward_mode == "placement":
     from reward_placement import auto_reset_placement
     STEP_FN = auto_reset_placement(ENV.step, ENV.init)
     MAX_REWARD = 1.0            # 顺位点已在包装里归一
