@@ -42,3 +42,7 @@ TRACK_C_SELFPLAY.md
 TRAINING_PLAN.md
 SICHUAN_RL_PLAN.md
 MAHJAX_MIGRATION.md
+
+# 川麻扩展:查表为构建产物(2 秒可重建), docs/ 为内部方案与规则调研(本地保留)
+common/suit_table.npy
+docs/

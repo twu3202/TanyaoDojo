@@ -32,7 +32,7 @@ xychart-beta
 |---|---|---|---|
 | **价值线**(Mortal 栈,DQN 式在线值回归) | 已退役 | **-1.96 ± 0.53**(100k) | 首破离线天花板 -2.50;anchor 守稳不涨后关线 |
 | **Mahjax 线**(JAX 全 GPU 向量化,当前主线) | 进行中 | **-4.66 ± 0.535**(100k 里程碑) | BC 三杠杆见底(≈ -5);RL 修正后已止跌,GRP 塑形版在跑 |
-| 川麻纯 RL | P0 完成 | — | 规则冻结 + 纯 Python oracle + 862 测试全绿,待 P1 |
+| 川麻纯 RL | P0 完成 | — | 规则冻结 + oracle(862 测试)+ 查表核心 + L0-L3 梯子 + 复式竞技场;待 P1 写 JAX 环境 |
 
 ## Mahjax 线架构
 
@@ -166,7 +166,9 @@ GRP 势函数塑形(`reward_placement.auto_reset_shaped`),用 752 万人类对�
 ## 布局速览
 
 - `jax_rl/` **当前主线**:ppo_fast / ppo_league / bc_stream / obs_lean / net_lean、
-  `data_bridge/`(mjai 解析+重放)、`mjai_bot/`(评测桥)、`sichuan/`(川麻 P0)、cloud_setup.sh
+  `data_bridge/`(mjai 解析+重放)、`mjai_bot/`(评测桥)、cloud_setup.sh
+- `sichuan/` `common/` **川麻线**:规则参考实现(862 测试)、L0-L3 规则梯子、复式竞技场、
+  5 进制查表核心(胡牌/向听 O(1),3 万例零不符)、势能塑形(telescoping 已验证)
 - `Mortal/`(**不入库**)上游 clone,评测桥的 libriichi 由此构建 —— 见 SETUP.md
 - `configs/` `scripts/` 价值线时代的训练/评测/自对弈(历史)
 - `data/` `runs/` `weights_backup/` gitignore(数据不可分发;权重超 GitHub 单文件限)
@@ -177,5 +179,5 @@ GRP 势函数塑形(`reward_placement.auto_reset_shaped`),用 752 万人类对�
 |---|---|
 | [SETUP.md](SETUP.md) | 环境搭建:依赖版本、Mahjax/libriichi 克隆、数据自建、冒烟自检 |
 | [RESULTS.md](RESULTS.md) | 价值线时代记分册(历史) |
-| [jax_rl/sichuan/RULES.md](jax_rl/sichuan/RULES.md) | 川麻规则冻结 v0 |
+| [sichuan/RULES.md](sichuan/RULES.md) | 川麻规则冻结 v0 |
 | [LICENSING.md](LICENSING.md) | 分目录双许可说明(MIT / AGPL-3.0) |
