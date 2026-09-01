@@ -57,14 +57,16 @@ def run_one(seed, verbose=False):
             return ("分数不符", step, f"act={a} ref={g.scores()} jax={list(np.asarray(st.score))}")
     return ("超步数", 4000, None)
 
+# 用法: test_diff_jax.py <局数> [起始 seed]  —— 便于多进程按 seed 段并行
 n = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+s0 = int(sys.argv[2]) if len(sys.argv) > 2 else 0
 bad = {}
-for s in range(n):
+for s in range(s0, s0 + n):
     r, step, det = run_one(s)
     if not r.startswith("ok"):
         bad.setdefault(r, []).append((s, step, det))
-    if (s + 1) % 50 == 0:
-        print(f"{s+1}/{n}  失配 {sum(len(v) for v in bad.values())}", flush=True)
+    if (s - s0 + 1) % 500 == 0:
+        print(f"{s-s0+1}/{n}  失配 {sum(len(v) for v in bad.values())}", flush=True)
 print(f"\n=== 差分结果 {n} 局 ===")
 if not bad:
     print("零失配 ✓")

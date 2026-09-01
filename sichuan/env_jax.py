@@ -84,6 +84,7 @@ class State:
     resp_queue: jnp.ndarray      # (3,) int32,-1 填充
     resp_ix: jnp.ndarray         # int32
     ron_flag: jnp.ndarray        # (4,) bool 本次打牌的荣和者
+    first_ron: jnp.ndarray       # int32 队列顺序里**第一个**荣和者(-1 无);牌归他
     last_draw_was_gang: jnp.ndarray  # bool
     discard_was_gang: jnp.ndarray    # bool
     hai_di: jnp.ndarray          # bool
@@ -314,7 +315,8 @@ def _do_discard(st: State, t):
                     river=st.river.at[i, t].add(1),
                     pending_tile=jnp.int32(t), pending_from=i,
                     discard_was_gang=st.last_draw_was_gang,
-                    ron_flag=jnp.zeros(NUM_PLAYERS, dtype=bool))
+                    ron_flag=jnp.zeros(NUM_PLAYERS, dtype=bool),
+                    first_ron=jnp.int32(-1))
     q = _resp_order(st, i)
     st = st.replace(resp_queue=q, resp_ix=jnp.int32(0))
     return jax.lax.cond(q[0] >= 0,
@@ -391,8 +393,10 @@ def _resp_advance(st: State) -> State:
         any_ron = jnp.any(s.ron_flag)
 
         def with_ron(x: State):
-            # 牌离开打牌者牌河、归首个胡家(守恒),与 reference 一致
-            first = jnp.argmax(x.ron_flag)
+            # 牌离开打牌者牌河、归**队列顺序**里首个胡家(守恒),与 reference 一致。
+            # ⚠️ 不能用 argmax(ron_flag)——那是玩家编号最小者;队列从打牌者下家起算,
+            # 一炮多响时两者不同(实测 seed 402578:队列 [3,0,1],3 与 0 同荣,牌应归 3)。
+            first = jnp.clip(x.first_ron, 0, NUM_PLAYERS - 1)
             x = x.replace(river=x.river.at[dp, dt].add(-1),
                           hand=x.hand.at[first, dt].add(1))
             return jax.lax.cond(x.n_hu >= 3,
@@ -410,7 +414,8 @@ def _do_ron(st: State) -> State:
     dt = st.pending_tile
     st = _settle_hu(st, j, st.hand[j].astype(jnp.int32).at[dt].add(1),
                     FALSE, st.pending_from, gang_pao=st.discard_was_gang)
-    st = st.replace(ron_flag=st.ron_flag.at[j].set(True))
+    st = st.replace(ron_flag=st.ron_flag.at[j].set(True),
+                    first_ron=jnp.where(st.first_ron < 0, j, st.first_ron))
     return _resp_advance(st)
 
 
@@ -486,7 +491,7 @@ def _init_from_wall(wall) -> State:
         phase=jnp.int32(PH_VOID), cur=jnp.int32(0), void_declared=jnp.int32(0),
         pending_tile=jnp.int32(-1), pending_from=jnp.int32(-1),
         resp_queue=jnp.full(3, -1, jnp.int32), resp_ix=jnp.int32(0),
-        ron_flag=jnp.zeros(NUM_PLAYERS, dtype=bool),
+        ron_flag=jnp.zeros(NUM_PLAYERS, dtype=bool), first_ron=jnp.int32(-1),
         last_draw_was_gang=FALSE, discard_was_gang=FALSE, hai_di=FALSE,
         n_hu=jnp.int32(0),
         legal_action_mask=jnp.zeros(NUM_ACTIONS, dtype=bool),
