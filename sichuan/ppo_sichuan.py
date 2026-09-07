@@ -57,6 +57,7 @@ class Args(BaseModel):
     ent_coef: float = 0.01
     vf_coef: float = 0.5
     max_grad_norm: float = 0.5
+    dual_c: float = 0.0          # dual-clip 系数(Ye et al. 2019 用 3.0);0 = 关闭,与原版等价
     channels: int = 128
     blocks: int = 6
     shaping_w: float = 0.5
@@ -177,7 +178,16 @@ def make_update(net, tx):
                     ratio = jnp.exp(lp - b.log_prob)
                     l1 = ratio * a_
                     l2 = jnp.clip(ratio, 1 - args.clip_eps, 1 + args.clip_eps) * a_
-                    pg = -(jnp.minimum(l1, l2) * w_).sum() / jnp.maximum(w_.sum(), 1)
+                    obj = jnp.minimum(l1, l2)
+                    # dual-clip(Ye et al. 2019, arXiv:1912.09729):A<0 且 ratio 远大于 1 时,
+                    # 标准 min() 会选中**未裁剪**项 l1 —— 它随 ratio 线性变大、梯度无界,
+                    # 表现为"对被判为坏的动作施加极端压制",是熵塌缩的直接机械来源。
+                    # 本项目实测:1.52M 小网 max_ratio 全程 ≤8.3,5.78M 大网冲到 49.89
+                    # (max_kl 10.0),而 clip_frac/adv_osc 等均值指标照旧全绿 —— 容量越大
+                    # 这条尾巴越危险。dual_c<=0 关闭该项,行为与原版逐字相同。
+                    if args.dual_c > 0.0:
+                        obj = jnp.where(a_ < 0, jnp.maximum(obj, args.dual_c * a_), obj)
+                    pg = -(obj * w_).sum() / jnp.maximum(w_.sum(), 1)
                     vl = ((v - t_) ** 2 * w_).sum() / jnp.maximum(w_.sum(), 1)
                     ent = (d.entropy() * w_).sum() / jnp.maximum(w_.sum(), 1)
                     loss = pg + args.vf_coef * vl - args.ent_coef * ent
