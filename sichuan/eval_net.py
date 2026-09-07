@@ -50,6 +50,18 @@ def ref_to_id(a):
             "void": lambda: E.A_VOID + arg}[k]()
 
 
+def infer_arch(params):
+    """从权重推断 (channels, blocks)。
+
+    写死规格会在换网络大小时炸(实测:容量实验的 256x10 权重喂给写死的 128x6,
+    flax 抛 ScopeParamShapeError)。规格本来就完整编码在权重里,没有理由再传一次。
+    """
+    d = params["params"] if "params" in params else params
+    ch = int(d["Conv_0"]["kernel"].shape[-1])
+    nb = len([k for k in d if k.startswith("ResBlock1D_")])
+    return ch, nb
+
+
 def make_net_fn(params, channels, blocks):
     net = SichuanACNet(channels=channels, blocks=blocks)
 
@@ -126,7 +138,7 @@ def main():
     else:
         with open(path, "rb") as f:
             params = pickle.load(f)
-        pick = make_net_fn(params, 128, 6)
+        pick = make_net_fn(params, *infer_arch(params))
         challenger = None
 
     per_deal = []

@@ -47,6 +47,18 @@ def ref_to_id(a):
             "void": lambda: E.A_VOID + arg}[k]()
 
 
+def infer_arch(params):
+    """从权重推断 (channels, blocks)。
+
+    写死规格会在换网络大小时炸(实测:容量实验的 256x10 权重喂给写死的 128x6,
+    flax 抛 ScopeParamShapeError)。规格本来就完整编码在权重里,没有理由再传一次。
+    """
+    d = params["params"] if "params" in params else params
+    ch = int(d["Conv_0"]["kernel"].shape[-1])
+    nb = len([k for k in d if k.startswith("ResBlock1D_")])
+    return ch, nb
+
+
 def make_pick(path):
     """返回 (kind, fn)。kind='net' 时 fn(st)->action_id;'bot' 时 fn(g,i,acts,rng)->action。"""
     if path == "L1":
@@ -55,7 +67,8 @@ def make_pick(path):
         return "bot", bots.bot_L0_uniform
     with open(path, "rb") as f:
         params = pickle.load(f)
-    net = SichuanACNet(channels=128, blocks=6)
+    ch, nb = infer_arch(params)
+    net = SichuanACNet(channels=ch, blocks=nb)
 
     @jax.jit
     def pick(st):
