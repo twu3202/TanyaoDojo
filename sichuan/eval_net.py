@@ -153,8 +153,12 @@ def main():
         print(f"影子同步自检: 网络决策 {STATS['net_decisions']:,} 次,"
               f"合法集不符 {STATS['mask_mismatch']},动作回退 {STATS['fallback']}"
               f"  → {'✓ 可信' if STATS['mask_mismatch']==0 and STATS['fallback']==0 else '✗ 本次读数作废'}")
-    np.save(f"/tmp/sichuan_eval_{tag}_{opp_name}_{n}.npy", np.array(per_deal))
-    print(f"逐副牌读数已存 → /tmp/sichuan_eval_{tag}_{opp_name}_{n}.npy(供配对比较)")
+    # ⚠️ 不能落 /tmp:WSL 被回收时 /tmp 会清空,配对数据丢了就得整轮重跑
+    out = Path.home() / "Projects/better_mortal/runs/sichuan_eval"
+    out.mkdir(parents=True, exist_ok=True)
+    fp = out / f"{tag}_{opp_name}_{n}.npy"
+    np.save(fp, np.array(per_deal))
+    print(f"逐副牌读数已存 → {fp}(供配对比较)")
 
 
 if __name__ == "__main__":
