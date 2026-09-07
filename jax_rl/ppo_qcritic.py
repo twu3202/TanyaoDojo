@@ -84,6 +84,7 @@ class Args(BaseModel):
     snapshot_every_blocks: int = 32
     save_model: bool = True
     save_path: str = "ppo_qcritic_params.pkl"
+    log_every_blocks: int = 0    # 0 = 自动(min(64, NUM_JIT//8));长跑建议显式调密
     ckpt_every_blocks: int = 16
     # 带序号快照:RL 的外部强度可能早期有峰后退化,只留滚动覆盖档就无法选峰
     # (2026-08-17 oracle 首航教训:8 亿步 -8.38,但无中间档可查峰在哪)
@@ -448,7 +449,10 @@ def main():
             pool_params = jax.tree.map(
                 lambda pp, lp: pp.at[slot].set(lp), pool_params, ts_a.params)
             snap_slot += 1
-        if i % max(1, min(64, NUM_JIT_CALLS // 8)) == 0:
+        # 默认 min(64, NUM_JIT//8):1.5e9 步的长跑下是每 64 块 ≈ 1.9 小时一行,
+        # 太稀 —— 2026-09-07 那次让出 GPU 停机时,恰好停在第一条 block 行之前,
+        # 导致停机步数只能按墙钟估算。log_every_blocks 可显式调密。
+        if i % max(1, args.log_every_blocks or min(64, NUM_JIT_CALLS // 8)) == 0:
             m = jax.tree.map(float, metrics)
             el = time.time() - t0
             warm = " WARMUP" if i < args.critic_warmup_blocks else ""
