@@ -43,6 +43,9 @@ TRAINING_PLAN.md
 SICHUAN_RL_PLAN.md
 MAHJAX_MIGRATION.md
 
+# 内部调研报告:阶段性总结与行业扫描,本地保留,不进公开仓库
+research/
+
 # 川麻扩展:查表为构建产物(2 秒可重建), docs/ 为内部方案与规则调研(本地保留)
 common/suit_table.npy
 docs/
