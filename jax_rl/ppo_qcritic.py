@@ -208,7 +208,15 @@ def make_train(network: nn.Module, critic: nn.Module, magnet_params):
         def single_env(tr: Transition):
             def scan_fn(carry, t):
                 gae, next_value, racc, has_nv, is_new, next_valid = carry
-                player, reward, value, done = t.current_player, t.reward, t.value, t.is_new_episode
+                player, reward, value = t.current_player, t.reward, t.value
+                # 边界量必须取 t+1 的 is_new_episode(= carry 里这个一直没被用上的槽),
+                # 不是 t 自己的。reverse scan 里 is_new_episode[t] 为真说明 t 是**开局步**,
+                # 在它上面归零等于把开局当终局:该步 bootstrap 被清成 0,而真正的终局步
+                # 反过来继承了下一盘的 gae/next_value。实测(2026-09-07,川麻同构复现):
+                # 逐座位守恒偏差 1.000 -> 0,盘间丢失奖励 22.0 -> 0,跨盘 nv 污染 31 -> 0,
+                # valid 占比不变。顺位奖励只在终局那一步发,污染的正是承载全部目标信号的
+                # 那批 transition,所以这一处不能留。
+                done = is_new
                 gae = jnp.where(done, 0, gae)
                 racc = jnp.where(done, 0, racc)
                 has_nv = jnp.where(done, False, has_nv)

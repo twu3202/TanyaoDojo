@@ -120,8 +120,11 @@ def compute_adv(traj: Tr):
     轮到该玩家再行动时才把攒下的奖励结算成一次 TD。"""
     def per_env(tr: Tr):
         def scan_fn(carry, t):
-            gae, nv, racc, has_nv, next_valid = carry
-            p, done = t.cur, t.is_new
+            gae, nv, racc, has_nv, next_valid, is_new_next = carry
+            p = t.cur
+            # 边界量取 t+1 的 is_new(不是 t 自己的):reverse scan 里 is_new[t] 为真说明
+            # t 是**开局步**,在它上面归零等于把开局当终局。详见 ppo_qcritic 同处注释。
+            done = is_new_next
             gae = jnp.where(done, 0.0, gae)
             racc = jnp.where(done, 0.0, racc)
             nv = jnp.where(done, 0.0, nv)
@@ -136,11 +139,12 @@ def compute_adv(traj: Tr):
             adv = jnp.where(valid, new_gae, 0.0)
             tgt = jnp.where(valid, adv + t.value, t.value)
             carry = (gae, nv.at[p].set(t.value), racc,
-                     has_nv.at[p].set(True), next_valid.at[p].set(valid) | done)
+                     has_nv.at[p].set(True), next_valid.at[p].set(valid) | done,
+                     t.is_new)
             return carry, (adv, tgt, valid)
 
         init = (jnp.zeros(NP), jnp.zeros(NP), jnp.zeros(NP),
-                jnp.zeros(NP, bool), jnp.zeros(NP, bool))
+                jnp.zeros(NP, bool), jnp.zeros(NP, bool), jnp.bool_(False))
         _, out = lax.scan(scan_fn, init, tr, reverse=True)
         return out
 
