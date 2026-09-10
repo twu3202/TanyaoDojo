@@ -14,6 +14,7 @@ P1 的百万局差分已经证明两边逐决策点完全同步,所以影子可�
 """
 from __future__ import annotations
 
+import functools
 import math
 import pickle
 import random
@@ -29,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from sichuan import env_jax as E
 from sichuan.net import SichuanACNet
-from sichuan.obs import observe
+from sichuan.obs import observe, NUM_PLANES, NUM_PLANES_DISC
 from reference_impl import SichuanGame
 import bots
 
@@ -38,7 +39,6 @@ L1_VS_L0 = 3.867      # 判据基准(arena.ladder 实测)
 
 _init = jax.jit(E._init_from_wall)
 _step = jax.jit(E._step_core)
-_obs = jax.jit(observe)
 
 
 def ref_to_id(a):
@@ -51,19 +51,43 @@ def ref_to_id(a):
 
 
 def infer_arch(params):
-    """从权重推断 (channels, blocks)。
+    """从权重推断 (channels, blocks, disc)。
 
     写死规格会在换网络大小时炸(实测:容量实验的 256x10 权重喂给写死的 128x6,
     flax 抛 ScopeParamShapeError)。规格本来就完整编码在权重里,没有理由再传一次。
+
+    观测版本同理:P3 的权重比 P2 多两个输入平面,写死 observe() 会把 22 平面喂给
+    期待 24 平面的网络。Conv_0 的输入宽度 = 平面数 + 标量嵌入维,而标量嵌入维就是
+    Dense_0 的输出宽度 —— 两个都从权重里读,不留常数。
     """
     d = params["params"] if "params" in params else params
     ch = int(d["Conv_0"]["kernel"].shape[-1])
     nb = len([k for k in d if k.startswith("ResBlock1D_")])
-    return ch, nb
+    n_emb = int(d["Dense_0"]["kernel"].shape[-1])
+    n_planes = int(d["Conv_0"]["kernel"].shape[-2]) - n_emb
+    if n_planes == NUM_PLANES:
+        disc = False
+    elif n_planes == NUM_PLANES_DISC:
+        disc = True
+    else:
+        raise ValueError(f"权重要求 {n_planes} 个平面,而 obs.py 只提供 "
+                         f"{NUM_PLANES}(P2)/{NUM_PLANES_DISC}(P3)")
+    return ch, nb, disc
 
 
-def make_net_fn(params, channels, blocks):
+_OBS_CACHE = {}
+
+
+def obs_fn(disc: bool):
+    """按观测版本取 jit 过的 observe。disc 是 python bool,必须做静态参数。"""
+    if disc not in _OBS_CACHE:
+        _OBS_CACHE[disc] = jax.jit(functools.partial(observe, disc=disc))
+    return _OBS_CACHE[disc]
+
+
+def make_net_fn(params, channels, blocks, disc=False):
     net = SichuanACNet(channels=channels, blocks=blocks)
+    _obs = obs_fn(disc)
 
     @jax.jit
     def pick(st):

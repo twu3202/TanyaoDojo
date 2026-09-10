@@ -12,6 +12,7 @@ A(pi,pi)=0:同一份权重自己打自己期望为 0,可作自检。
 
 用法: python eval_h2h.py <A.pkl|L1> <B.pkl|L1> [n_deals]
 """
+import functools
 import math
 import pickle
 import random
@@ -27,14 +28,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from sichuan import env_jax as E
 from sichuan.net import SichuanACNet
-from sichuan.obs import observe
+from sichuan.obs import observe, NUM_PLANES, NUM_PLANES_DISC
 from reference_impl import SichuanGame
 import bots
 
 NEG = -1e9
 _init = jax.jit(E._init_from_wall)
 _step = jax.jit(E._step_core)
-_obs = jax.jit(observe)
 STATS = {"net_decisions": 0, "fallback": 0, "mask_mismatch": 0}
 
 
@@ -48,15 +48,38 @@ def ref_to_id(a):
 
 
 def infer_arch(params):
-    """从权重推断 (channels, blocks)。
+    """从权重推断 (channels, blocks, disc)。
 
     写死规格会在换网络大小时炸(实测:容量实验的 256x10 权重喂给写死的 128x6,
     flax 抛 ScopeParamShapeError)。规格本来就完整编码在权重里,没有理由再传一次。
+
+    观测版本同理:P3 的权重比 P2 多两个输入平面,写死 observe() 会把 22 平面喂给
+    期待 24 平面的网络。Conv_0 的输入宽度 = 平面数 + 标量嵌入维,而标量嵌入维就是
+    Dense_0 的输出宽度 —— 两个都从权重里读,不留常数。
     """
     d = params["params"] if "params" in params else params
     ch = int(d["Conv_0"]["kernel"].shape[-1])
     nb = len([k for k in d if k.startswith("ResBlock1D_")])
-    return ch, nb
+    n_emb = int(d["Dense_0"]["kernel"].shape[-1])
+    n_planes = int(d["Conv_0"]["kernel"].shape[-2]) - n_emb
+    if n_planes == NUM_PLANES:
+        disc = False
+    elif n_planes == NUM_PLANES_DISC:
+        disc = True
+    else:
+        raise ValueError(f"权重要求 {n_planes} 个平面,而 obs.py 只提供 "
+                         f"{NUM_PLANES}(P2)/{NUM_PLANES_DISC}(P3)")
+    return ch, nb, disc
+
+
+_OBS_CACHE = {}
+
+
+def obs_fn(disc: bool):
+    """按观测版本取 jit 过的 observe。disc 是 python bool,必须做静态参数。"""
+    if disc not in _OBS_CACHE:
+        _OBS_CACHE[disc] = jax.jit(functools.partial(observe, disc=disc))
+    return _OBS_CACHE[disc]
 
 
 def make_pick(path):
@@ -67,8 +90,9 @@ def make_pick(path):
         return "bot", bots.bot_L0_uniform
     with open(path, "rb") as f:
         params = pickle.load(f)
-    ch, nb = infer_arch(params)
+    ch, nb, disc = infer_arch(params)
     net = SichuanACNet(channels=ch, blocks=nb)
+    _obs = obs_fn(disc)
 
     @jax.jit
     def pick(st):
