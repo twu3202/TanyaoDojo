@@ -16,6 +16,9 @@
   13-16 四家定缺花色(整门置 1)—— 公开信息
   17-20 四家"已胡离场"标志(整平面)
   21    全场可见计数/4(自手+四河+四副露)
+  ---- 以下仅 disc=True(P3 观测)----
+  22   打出该牌后的向听/8(非法/非打牌阶段填 1.0 = 最差)
+  23   打出该牌后是否听牌
 标量表:
    0-3  四家分数/16(相对序)      4-7  四家副露数/4
    8    自家向听/8               9    自家是否听牌
@@ -38,6 +41,7 @@ from common.suit_table import load_table, make_jax_ops, NUM_TILES
 from sichuan.env_jax import State, NUM_PLAYERS, WALL_SIZE, MK_GANG_MING, MAX_MELDS
 
 NUM_PLANES = 22
+NUM_PLANES_DISC = 24        # disc=True 时的平面数(见文件头平面表 22-23)
 NUM_SCALARS = 26
 _TAB = load_table()
 _agari_fn, _shanten_fn = make_jax_ops(_TAB)
@@ -53,7 +57,19 @@ def _meld_counts(melds_kind, melds_tile, n_melds):
     return jnp.zeros(NUM_TILES, jnp.float32).at[idx].add(jnp.where(active, n, 0.0))
 
 
-def observe(state: State) -> dict:
+def _discard_shanten(hand_i32, num_melds, void_suit):
+    """打出每一张之后的向听。(27,) —— 27 次 O(1) 查表,vmap 一把。
+
+    ⚠️ 手里没有的牌,`hand - onehot` 会是 **-1**。5 进制索引对负计数是**静默错**的:
+    不越界、不报错,只是查到表里另一条,于是凭空多出面子。必须先 clip 再按合法性遮罩。
+    这正是 suit_profile 里那个"漏检 c[i]>=1 从负计数造顺子"的同一类坑。
+    """
+    eye = jnp.eye(NUM_TILES, dtype=jnp.int32)
+    after = jnp.maximum(hand_i32[None, :] - eye, 0)                   # (27,27)
+    return jax.vmap(lambda h: _shanten_fn(h, num_melds, void_suit))(after)
+
+
+def observe(state: State, disc: bool = False) -> dict:
     cp = state.current_player
     rel = (jnp.arange(NUM_PLAYERS) + cp) % NUM_PLAYERS      # 自/下/对/上
 
@@ -83,7 +99,18 @@ def observe(state: State) -> dict:
     visible = hand + river.sum(0) + melds.sum(0)
     planes.append(visible / 4.0)
 
-    P = jnp.stack(planes, axis=0).T                          # (27, 22)
+    if disc:
+        # 打牌决策特征。只在"摸完待打"(手牌 3k+2)时有意义 —— 3k+1 的手牌再拿掉一张
+        # 就是 3k,向听查表对这种残缺手型返回的数没有语义,故整段填最差值而不是让网络
+        # 去学会忽略它。
+        hand_i = state.hand[cp].astype(jnp.int32)
+        st_d = _discard_shanten(hand_i, state.n_melds[cp].astype(jnp.int32),
+                                state.void[cp].astype(jnp.int32)).astype(jnp.float32)
+        ok = (hand >= 1) & ((jnp.sum(hand_i) % 3) == 2)
+        planes.append(jnp.where(ok, st_d / 8.0, 1.0))
+        planes.append(jnp.where(ok, (st_d <= 0).astype(jnp.float32), 0.0))
+
+    P = jnp.stack(planes, axis=0).T                          # (27, 22) 或 (27, 24)
 
     nm = state.n_melds[cp].astype(jnp.int32)
     vd = state.void[cp].astype(jnp.int32)

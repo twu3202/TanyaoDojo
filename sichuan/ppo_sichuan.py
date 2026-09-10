@@ -37,6 +37,8 @@ from pydantic import BaseModel
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sichuan import env_jax as E
 from sichuan.net import SichuanACNet
+import functools
+
 from sichuan.obs import observe
 from sichuan.shaping import auto_reset_shaped
 
@@ -58,6 +60,7 @@ class Args(BaseModel):
     vf_coef: float = 0.5
     max_grad_norm: float = 0.5
     dual_c: float = 0.0          # dual-clip 系数(Ye et al. 2019 用 3.0);0 = 关闭,与原版等价
+    obs_disc: bool = False       # P3 观测:加“打出每张牌后的向听/是否听牌”两平面;False = 与 P2 逐字等价
     channels: int = 128
     blocks: int = 6
     shaping_w: float = 0.5
@@ -95,11 +98,15 @@ class Tr(NamedTuple):
     cur: jnp.ndarray
 
 
+# 观测版本在进程启动时定死:disc 进 jit 是静态参数,不能每步传。
+_OBSERVE = functools.partial(observe, disc=args.obs_disc)
+
+
 def rollout(params, net, env_state, key):
     def one(carry, _):
         st, rng = carry
         rng, ka, ke = jax.random.split(rng, 3)
-        obs = jax.vmap(observe)(st)
+        obs = jax.vmap(_OBSERVE)(st)
         mask = st.legal_action_mask.astype(jnp.bool_)
         logits, value = net.apply(params, obs)
         logits = jnp.where(mask, logits, NEG)
@@ -218,7 +225,7 @@ def main():
     key = jax.random.PRNGKey(args.seed)
     key, k0 = jax.random.split(key)
     st0 = jax.vmap(ENV.init)(jax.random.split(k0, args.num_envs))
-    sample = jax.tree.map(lambda x: x[:2], jax.vmap(observe)(st0))
+    sample = jax.tree.map(lambda x: x[:2], jax.vmap(_OBSERVE)(st0))
     params = net.init(jax.random.PRNGKey(1), sample)
     if args.init_from:
         with open(args.init_from, "rb") as f:
