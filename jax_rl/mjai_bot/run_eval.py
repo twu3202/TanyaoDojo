@@ -61,11 +61,20 @@ def main():
     ap.add_argument("--channels", type=int, default=128)
     ap.add_argument("--blocks", type=int, default=6)
     ap.add_argument("--obs", default="lean", choices=("lean", "v2"))
+    ap.add_argument("--challenger-type", default="leanjax", choices=("leanjax", "mortal"),
+                    help="mortal = 价值线 Mortal 格式权重(v11/rl1_best 等),与冠军同引擎同动作空间")
+    ap.add_argument("--challenger-name", default=None,
+                    help="写进牌谱 names 的名字;必须 != mortal-v4,否则 diag_gap 找不到挑战者座位")
     args = ap.parse_args()
 
     cham = load_champion(args.champion, args.device)
-    chal = LeanJaxEngine(args.params, name="leanjax",
-                         channels=args.channels, blocks=args.blocks, obs=args.obs)
+    if args.challenger_type == "mortal":
+        chal = load_champion(args.params, args.device)
+        chal.name = args.challenger_name or "challenger"
+    else:
+        chal = LeanJaxEngine(args.params, name=args.challenger_name or "leanjax",
+                             channels=args.channels, blocks=args.blocks, obs=args.obs)
+    assert chal.name != cham.name, "挑战者与冠军同名 -> 牌谱里分不出座位"
     seeds_per_iter = args.games // 4
     total = np.zeros(4, np.int64)
     t0 = time.time()
@@ -85,7 +94,7 @@ def main():
         ci = 1.96 * per_game.std(ddof=1) / np.sqrt(n) if n > 1 else 0.0
         print(f"[iter {i}] n={n} rankings={total.tolist()} avg_rank={avg_rank:.4f} "
               f"avg_pt={avg_pt:+.3f}±{ci:.3f} "
-              f"fallback={chal.fallback_count}/{chal.decision_count} "
+              f"fallback={getattr(chal, 'fallback_count', 0)}/{getattr(chal, 'decision_count', 0)} "
               f"({time.time()-t0:.0f}s)", flush=True)
 
 
