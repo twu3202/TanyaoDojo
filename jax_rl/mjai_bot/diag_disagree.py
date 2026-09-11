@@ -225,7 +225,7 @@ def main():
         files = files[:args.max_games]
 
     S = defaultdict(lambda: dict(n=0, unmapped=0, ref_ok=0, sub_ok=0, dis=0, qgap=0.0,
-                                 ref_riichi=0, sub_riichi=0, ref_pass=0, sub_pass=0))
+                                 ref_riichi=0, sub_riichi=0, ref_pass=0, sub_pass=0, lgap=0.0))
     n_games, bad = 0, 0
     for gi, p in enumerate(files):
         try:
@@ -254,6 +254,8 @@ def main():
             else:
                 s["ref_ok"] += int(a_ref[k] == logged)
                 s["sub_ok"] += int(a_sub[k] == logged)
+                if a_ref[k] != logged:                # v4 眼中"实际打出的那一手"损失多少
+                    s["lgap"] += float(q_ref[k, a_ref[k]] - q_ref[k, logged])
             if a_ref[k] != a_sub[k]:
                 s["dis"] += 1
                 s["qgap"] += float(q_ref[k, a_ref[k]] - q_ref[k, a_sub[k]])
@@ -268,9 +270,9 @@ def main():
     print(f"ref={os.path.basename(args.ref)}  sub={os.path.basename(args.sub)}"
           f"{'  (同一模型:阳性对照模式)' if same else ''}\n")
     print(f"  {'桶':<9}{'决策点':>9}{'未还原':>7}{'ref=实际':>9}{'sub=实际':>9}"
-          f"{'分歧率':>8}{'分歧均Q差':>10}{'Q差/局':>9}")
-    print("  " + "-" * 70)
-    tot_gap = 0.0
+          f"{'分歧率':>8}{'分歧均Q差':>10}{'Q差/局':>9}{'实际Q差/局':>11}")
+    print("  " + "-" * 82)
+    tot_gap = tot_lgap = 0.0
     for b in BUCKETS:
         if b not in S:
             continue
@@ -278,10 +280,14 @@ def main():
         mapped = max(s["n"] - s["unmapped"], 1)
         gap_per_game = s["qgap"] / max(n_games, 1)
         tot_gap += gap_per_game
+        tot_lgap += s["lgap"] / max(n_games, 1)
         print(f"  {b:<9}{s['n']:>9,}{s['unmapped']:>7,}{s['ref_ok'] / mapped:>9.2%}"
               f"{s['sub_ok'] / mapped:>9.2%}{s['dis'] / max(s['n'], 1):>8.2%}"
-              f"{s['qgap'] / max(s['dis'], 1):>10.4f}{gap_per_game:>9.4f}")
+              f"{s['qgap'] / max(s['dis'], 1):>10.4f}{gap_per_game:>9.4f}"
+              f"{s['lgap'] / max(n_games, 1):>11.4f}")
     print(f"\n  合计 Q差/局 = {tot_gap:.4f}(参考模型眼中被测模型每局损失,仅作分桶排序)")
+    print(f"  合计 实际Q差/局 = {tot_lgap:.4f}(v4 眼中该座位实际打出的动作每局损失;"
+          f"不依赖被测模型,JAX agent 的轨迹也能量)")
     if "riichi" in S:
         s = S["riichi"]
         print(f"  立直桶:ref 选立直 {s['ref_riichi'] / max(s['n'], 1):.2%},"
