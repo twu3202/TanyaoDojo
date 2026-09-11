@@ -46,7 +46,7 @@ from collections import defaultdict
 
 import numpy as np
 
-MORTAL_DIR = "/home/r/Projects/better_mortal/Mortal/mortal"
+MORTAL_DIR = os.environ.get("MORTAL_DIR", "/home/r/Projects/better_mortal/Mortal/mortal")
 sys.path.insert(0, MORTAL_DIR)
 import prelude  # noqa: F401,E402
 import torch  # noqa: E402
@@ -195,7 +195,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--log-dir", required=True)
     ap.add_argument("--seat-name", required=True)
-    ap.add_argument("--ref", default="/home/r/Projects/better_mortal/baseline/mortal_v4.pth")
+    ap.add_argument("--ref", default=os.environ.get("MORTAL_V4", "/home/r/Projects/better_mortal/baseline/mortal_v4.pth"))
     ap.add_argument("--sub", required=True)
     ap.add_argument("--seed-lo", type=int, default=0)
     ap.add_argument("--seed-hi", type=int, default=10**9)
