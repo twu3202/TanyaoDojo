@@ -34,7 +34,7 @@ from libriichi.arena import OneVsThree
 PTS = np.array([90.0, 45.0, 0.0, -135.0])
 
 
-def load_champion(state_file: str, device: str) -> MortalEngine:
+def load_champion(state_file: str, device: str, amp: str = "auto") -> MortalEngine:
     state = torch.load(state_file, weights_only=True, map_location="cpu")
     cfg = state["config"]
     version = cfg["control"].get("version", 1)
@@ -45,7 +45,9 @@ def load_champion(state_file: str, device: str) -> MortalEngine:
     dqn.load_state_dict(state["current_dqn"])
     return MortalEngine(
         brain, dqn, is_oracle=False, version=version,
-        device=torch.device(device), enable_amp=(device != "cpu"),
+        device=torch.device(device),
+        # auto = 历史行为(GPU 上开 AMP)。off 用于验证/加速:GPU fp32 应与 CPU fp32 逐局一致
+        enable_amp=(device != "cpu") if amp == "auto" else (amp == "on"),
         enable_rule_based_agari_guard=True, name="mortal-v4",
     )
 
@@ -60,6 +62,8 @@ def main():
     ap.add_argument("--champion",
                     default=os.environ.get("MORTAL_V4", "/home/r/Projects/better_mortal/baseline/mortal_v4.pth"))
     ap.add_argument("--device", default="cuda:0")
+    ap.add_argument("--amp", default="auto", choices=("auto", "on", "off"),
+                    help="Mortal 引擎的 AMP。auto=GPU 开/CPU 关(历史口径);off=GPU 上也走 fp32")
     ap.add_argument("--log-dir", default="/home/r/Projects/better_mortal/runs/leanjax_eval")
     ap.add_argument("--channels", type=int, default=128)
     ap.add_argument("--blocks", type=int, default=6)
@@ -70,9 +74,9 @@ def main():
                     help="写进牌谱 names 的名字;必须 != mortal-v4,否则 diag_gap 找不到挑战者座位")
     args = ap.parse_args()
 
-    cham = load_champion(args.champion, args.device)
+    cham = load_champion(args.champion, args.device, args.amp)
     if args.challenger_type == "mortal":
-        chal = load_champion(args.params, args.device)
+        chal = load_champion(args.params, args.device, args.amp)
         chal.name = args.challenger_name or "challenger"
     else:
         from jax_engine import LeanJaxEngine
