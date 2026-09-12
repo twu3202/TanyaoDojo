@@ -73,6 +73,22 @@ cd ~/Mortal/libriichi && cargo build --release            # 产出 libriichi.so
 评测脚本需要 `Mortal/mortal` 在 `PYTHONPATH` 上,并需要一份对手权重放在
 `baseline/`(权重不随本仓库分发,申领方式见上游说明)。
 
+### 3.1 锚定值微调补丁(价值线 C',可选)
+
+本项目目前最强的模型(12k 复式 `-0.75 ± 1.31` vs mortal_v4)靠的是给上游 trainer
+加的一处**锚定损失**:在线训练时把**全部合法动作**的 Q 与冻结基座的 Q 取平方误差,
+抑制"未采取动作的 Q 无监督漂移 → 动作排序被侵蚀"这条慢速病灶。补丁对上游是惰性的
+—— 配置里没有 `[anchor]` 节或 `weight = 0` 时,行为与上游完全一致。
+
+```bash
+cd ~/Mortal && patch -p1 < /path/to/TanyaoDojo/patches/anchor_train.patch
+```
+
+λ(即 `[anchor] weight`)是这套方案的主旋钮,不是可有可无的小数:λ=0.5 时锚把策略
+钉死,约 40 小时的 12k 配对只有 `+0.19`(z=0.33);放到 0.2 之后 9 小时就拿到
+`+1.56`(z=2.37)。配置见 [`configs/online_selfplay.toml`](configs/online_selfplay.toml),
+判读见 [RESULTS.md](RESULTS.md)。
+
 ## 4. 训练数据
 
 **不分发**:BC 数据集由天凤凤凰卓牌谱构建,受天凤条款约束,本项目不再分发原始牌谱

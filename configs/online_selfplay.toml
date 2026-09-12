@@ -48,7 +48,7 @@ log_dir = '/home/twu/Projects/better_mortal/runs/selfplay/test_play'
 games = 800                # 每个 worker 每轮生成的对局数(对齐上游;轮次短→参数更新鲜)
 log_dir = '/home/twu/Projects/better_mortal/runs/selfplay/train_play'
 boltzmann_epsilon = 0.005  # 探索(TRACK_C 文档值): ε-greedy + 温度
-boltzmann_temp = 0.05
+boltzmann_temp = 0.1       # 有锚(见 [anchor])之后可以开一点探索;C' 实跑用的就是 0.1
 top_p = 1.0
 repeats = 1
 
@@ -102,12 +102,14 @@ device = 'cuda:0'          # test_play 对手 = v4, 直接量"vs v4"强度
 enable_compile = false
 state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
 
-# ⭐ 锚定值微调(C' 方案,2026-07-21 备妥待发;需配合补丁版 train.py):
-#   把全部合法动作的 Q 锚在冻结基座上,治"未采取动作漂移→排序侵蚀"(A' 验尸的慢速 churn)。
-#   weight=0 或删除本节 = 完全关闭(行为同上游)。部署脚本:scratchpad/deploy_anchor.sh。
-#   配套建议:boltzmann_temp 0.05→0.1(有锚后可开一点探索),由部署脚本按需 sed。
+# ⭐ 锚定值微调(C' 方案,2026-07-22 实跑):把全部合法动作的 Q 锚在冻结基座上,
+#   治"未采取动作漂移→排序侵蚀"(A' 验尸的慢速 churn)。需配合补丁版 train.py,
+#   补丁见 patches/anchor_train.patch;weight=0 或删除本节 = 完全关闭(行为同上游)。
+#   ⚠️ λ 不是无所谓的小数,是本方案的主旋钮:λ=0.5 跑了约 40 小时策略几乎不动
+#   (12k 配对 vs 起点 +0.19,z=0.33 —— 锚把策略钉死了);放到 0.2 之后 9 小时即
+#   +1.56(z=2.37),成为项目最强(12k -0.75 vs mortal_v4)。判读见 RESULTS.md。
 [anchor]
-weight = 0.5
+weight = 0.2
 state_file = '/home/twu/Projects/better_mortal/runs/selfplay/BASE.pth'
 
 [grp]
