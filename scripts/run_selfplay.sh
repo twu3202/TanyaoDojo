@@ -10,7 +10,10 @@
 #  - 首夜 --base 把基座权重拷成 state.pth + BASE.pth; online 加载"只取权重、全新 optimizer"(train.py:113)。
 #  - 续跑 --resume 直接从 state.pth 恢复(权重+optimizer 全量)。
 #  - resume 护栏: --base 若发现 state.pth 已存在则拒绝, 避免覆盖训练进度。
-#  - worker 默认 CPU 生成(不抢 trainer 的 GPU); --worker-device cuda:0 可改 GPU 生成换吞吐(会拖慢 trainer)。
+#  - worker 默认 GPU 生成(cuda:0)。--worker-device cpu 只在 GPU 被别人占用时才用, 而且代价极大:
+#    2026-09-12 两次续跑漏了这个参数(当时默认是 cpu), 4 个 CPU worker 把 48 核挤到 load 115,
+#    一轮 800 半庄从 GPU 下的 ~5.5 分钟变成 ~8 小时, trainer 从 0.69 s/step 被挤到 8.9 s/step;
+#    暂停 worker 30 秒 trainer 就回到 1.03 s/step。GPU worker 并不拖慢 trainer(09-12 03:30 起 4 个 GPU worker 同跑 6 小时, trainer 仍是 0.69)。
 #  - ⭐ 对手池(防 "Mortal killer" 反制过拟合): --pool 逗号表按序循环分给 N 个 worker,
 #      成员: base=冻结基座(BASE.pth) | v4=mortal_v4 | snap=trainee最新快照 | /绝对路径=任意ckpt。
 #      每夜启动时 state.pth→snapshot.pth 原子刷新 → "每晚重启"天然就是快照对手的刷新节奏
@@ -28,7 +31,7 @@ STATE=$SP/state.pth
 SNAP=$SP/snapshot.pth
 mkdir -p $SP $LOGD $SP/buffer $SP/drain
 
-WORKERS=4; HOURS=0; MODE=""; BASE=""; WDEV=cpu; POOLSPEC="base"
+WORKERS=4; HOURS=0; MODE=""; BASE=""; WDEV=cuda:0; POOLSPEC="base"
 while [ $# -gt 0 ]; do case "$1" in
   --base)          MODE=base; BASE="$2"; shift 2;;
   --resume)        MODE=resume; shift;;
@@ -121,6 +124,7 @@ for i in $(seq 1 $WORKERS); do
   echo "[selfplay] worker $i 启动 (PID $!, device=$WDEV, 对手=$m -> $OPP)"
 done
 echo "[selfplay] 全部就位。对手池: $POOLSPEC  PIDs: $PIDF  日志: $LOGD"
+[ "$WDEV" = cpu ] && echo "!! worker 在 CPU 上生成: 一轮约 8 小时且会把 trainer 挤慢 ~13 倍, 除非 GPU 被占用否则别这样跑"
 
 # ---- 可选: 到点自动优雅停(每夜时长预算)----
 if [ "$HOURS" != 0 ]; then
