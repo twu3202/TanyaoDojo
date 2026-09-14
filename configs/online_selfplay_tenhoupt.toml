@@ -1,7 +1,7 @@
-# C' 续跑配置(2026-09-13 起):与 online_selfplay.toml 只差 [anchor] 两行。
-# 锚目标从 rl1_best(BASE.pth)换成 C' final:锚 rl1_best 续跑会在两小时内退回其打法(选立直 41%→44%,
-# 12k 配对 -1.26),锚 C' final 守住(选立直 39.9%,12k 配对 +0.22)。见 RESULTS.md 末节。
-# 注意对手池里的 base 仍是 rl1_best(run_selfplay.sh 按 BASE.pth 生成 worker 配置),只有 trainer 的锚换了。
+# 训练奖励改为评测同比例顺位点(2026-09-14 起):与 online_selfplay_anchorC.toml 只差 [env] pts 一行。
+# 所有旧配置 pts=[6,4,2,0](间距 2/2/2),评测协议 [90,45,0,-135](间距 45/45/135):训练对第四名的惩罚只有评测的 1/3。
+# 机制读数(diag_place / diag_bust):各快照 1 位与 4 位都多于 v4、被飞率偏高,avg_pt 缺口集中在被飞提前结束的对局。
+# 新值 = [90,45,0,-135] × 0.02656,与旧值同标准差(Q 尺度与锚目标同量级);常数平移不影响逐局奖励(期望顺位点之差)。
 
 # [本地服务器] Track C 自对弈在线 RL —— trainer 配置(每晚分段跑,state.pth 续跑)。
 # 单机拆分:server(CPU) + N worker(CPU 生成) + trainer(本配置, GPU)。
@@ -70,7 +70,7 @@ augmented_first = false
 
 [env]
 gamma = 1
-pts = [6.0, 4.0, 2.0, 0.0]
+pts = [2.390, 1.195, 0.0, -3.585]   # 评测 [90,45,0,-135] 同比例,与旧 [6,4,2,0] 同标准差
 
 [resnet]
 conv_channels = 192        # 基座 v11:192 宽(推理比 256 快 ~50%,自对弈吞吐优先)
