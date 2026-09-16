@@ -18,9 +18,10 @@ say() { echo "$(date +%m-%d_%H:%M:%S) $*" >> $LOG; }
 run_seg() {  # name ck tag seg_start iters
   local name=$1 ck=$2 tag=$3 s=$4 it=$5
   local L=$E/logs/${tag}_${name}_s${s}; rm -rf $L; mkdir -p $L
-  local K=$(cat $E/K 2>/dev/null || echo 3)
+  local K=$(cat $E/K 2>/dev/null || echo 2)   # 2026-09-16: 3 进程与 trainer 抢显存&CPU, 降到 2
   local t0=$(date +%s)
   say "START $tag $name s$s iters=$it K=$K"
+  bash $E/gpugate.sh ${NEED:-12000} 3600 || say "WARN 显存闸等待超时, 仍继续 $tag $name s$s"
   cd /home/twu/Better_mortal/jax_rl/mjai_bot
   for ((c=0; c<it; c+=2)); do echo $((s + c*100)); done | \
     xargs -P $K -I{} $PY run_eval.py $ck --challenger-type mortal --challenger-name "${tag}_${name}" --champion $V4 \

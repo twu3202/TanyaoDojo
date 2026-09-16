@@ -6,11 +6,12 @@ E=/home/twu/evalsta
 export MORTAL_DIR=/home/twu/Projects/better_mortal/Mortal/mortal
 PY=/home/twu/Projects/better_mortal/.venv/bin/python
 V4=/home/twu/Projects/better_mortal/baseline/mortal_v4.pth
-name=$1; ck=$2; tag=$3; P=${P:-8}
+name=$1; ck=$2; tag=$3; P=${P:-4}   # 8 片曾在 trainer 重生时把显存挤爆(09-14), 降到 4 并加显存闸
 mkdir -p $E/probe/shards $E/done
 out=$E/probe/${tag}_${name}
 t0=$(date +%s)
 echo "$(date +%m-%d_%H:%M:%S) PROBE START $tag $name P=$P" >> $E/evalwatch.log
+bash $E/gpugate.sh ${NEED:-12000} 3600 || echo "$(date +%m-%d_%H:%M:%S) WARN 显存闸等待超时, 仍继续 $tag $name" >> $E/evalwatch.log
 cd /home/twu/Better_mortal/jax_rl/mjai_bot
 per=$(( (1000 + P - 1) / P ))
 for ((i=0; i<P; i++)); do echo $((10000 + i*per)); done | \
