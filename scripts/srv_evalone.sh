@@ -37,16 +37,4 @@ run_seg() {  # name ck tag seg_start iters
   [ "$ok" -ge 1 ] && touch $E/done/${name}.s${s}
 }
 
-say "EVALWATCH START FROM=$FROM PREFIX=$PREFIX"
-while true; do
-  for n in $(grep -a -oE "archived ${PREFIX}_s[0-9]+\.pth" $S/archiver.log | grep -oE "_s[0-9]+" | tr -d _s | sort -n -u); do
-    [ "$n" -lt "$FROM" ] && continue
-    name=${PREFIX}_s$n; ck=$S/archive_resume/$name.pth
-    tag=$(cat $E/tag.txt 2>/dev/null || echo run)
-    [ -f $E/done/$name.probe ] || bash $E/probe_par.sh $name $ck $tag
-    if grep -q -x "$name" $E/full12k.txt 2>/dev/null && [ ! -f $E/done/$name.s14000 ]; then
-      run_seg $name $ck $tag 14000 20
-    fi
-  done
-  sleep 30
-done
+run_seg "$1" "$2" "$3" "$4" "$5"

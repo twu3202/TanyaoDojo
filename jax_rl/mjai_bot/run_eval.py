@@ -34,6 +34,15 @@ from libriichi.arena import OneVsThree
 PTS = np.array([90.0, 45.0, 0.0, -135.0])
 
 
+def cap_gpu_mem(device: str) -> None:
+    """按 GPU_MEM_FRAC 给本进程的显存封顶(评测/探针与 trainer 共用一块卡)。
+    2026-09-16:探针每个分片的 PyTorch 缓存能涨到 6-17GB,4 个分片就把 47GB 占满,
+    trainer 每 4000 步重生子进程时分配不到几 GB 直接 CUDA OOM 退出(两次,第一次丢了 48 小时训练)。"""
+    frac = float(os.environ.get("GPU_MEM_FRAC", "0") or 0)
+    if frac > 0 and str(device).startswith("cuda"):
+        torch.cuda.set_per_process_memory_fraction(frac, torch.device(device).index or 0)
+
+
 def load_champion(state_file: str, device: str, amp: str = "auto") -> MortalEngine:
     state = torch.load(state_file, weights_only=True, map_location="cpu")
     cfg = state["config"]
@@ -74,6 +83,7 @@ def main():
                     help="写进牌谱 names 的名字;必须 != mortal-v4,否则 diag_gap 找不到挑战者座位")
     args = ap.parse_args()
 
+    cap_gpu_mem(args.device)
     cham = load_champion(args.champion, args.device, args.amp)
     if args.challenger_type == "mortal":
         chal = load_champion(args.params, args.device, args.amp)

@@ -11,6 +11,7 @@ mkdir -p $E/probe/shards $E/done
 out=$E/probe/${tag}_${name}
 t0=$(date +%s)
 echo "$(date +%m-%d_%H:%M:%S) PROBE START $tag $name P=$P" >> $E/evalwatch.log
+export GPU_MEM_FRAC=${GPU_MEM_FRAC:-0.12} PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True   # 每片封顶约 5.7GB: 09-16 不封顶时单片涨到 6-17GB 把 trainer 挤崩
 bash $E/gpugate.sh ${NEED:-12000} 3600 || echo "$(date +%m-%d_%H:%M:%S) WARN 显存闸等待超时, 仍继续 $tag $name" >> $E/evalwatch.log
 cd /home/twu/Better_mortal/jax_rl/mjai_bot
 per=$(( (1000 + P - 1) / P ))

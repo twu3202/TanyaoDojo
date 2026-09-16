@@ -119,6 +119,15 @@ def bucket_of(mask: np.ndarray, cans) -> str:
     return "discard"
 
 
+def cap_gpu_mem(device: str) -> None:
+    """按 GPU_MEM_FRAC 给本进程的显存封顶(评测/探针与 trainer 共用一块卡)。
+    2026-09-16:探针每个分片的 PyTorch 缓存能涨到 6-17GB,4 个分片就把 47GB 占满,
+    trainer 每 4000 步重生子进程时分配不到几 GB 直接 CUDA OOM 退出(两次,第一次丢了 48 小时训练)。"""
+    frac = float(os.environ.get("GPU_MEM_FRAC", "0") or 0)
+    if frac > 0 and str(device).startswith("cuda"):
+        torch.cuda.set_per_process_memory_fraction(frac, torch.device(device).index or 0)
+
+
 def load_model(path: str, device: torch.device):
     st = torch.load(path, weights_only=True, map_location="cpu")
     cfg = st["config"]
@@ -210,6 +219,7 @@ def main():
     ap.add_argument("--dump", default=None)
     args = ap.parse_args()
 
+    cap_gpu_mem(args.device)
     dev = torch.device(args.device)
     ref = load_model(args.ref, dev)
     same = os.path.realpath(args.ref) == os.path.realpath(args.sub)
