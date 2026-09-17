@@ -1,0 +1,120 @@
+# 对手池实验(2026-09-17): 与 online_selfplay_tenhoupt.toml 只差 [online.server] capacity(4000→5000, 保持 drain 9,600);
+# 对手换成 v4 在 worker 配置 worker_v4_N.toml 里([baseline.train] state_file = mortal_v4.pth)。
+# [本地服务器] Track C 自对弈在线 RL —— trainer 配置(每晚分段跑,state.pth 续跑)。
+# 单机拆分:server(CPU) + N worker(CPU 生成) + trainer(本配置, GPU)。
+# worker 用 run_selfplay.sh 自动生成的 device→cpu 副本(online_selfplay_worker.toml)。
+#
+# ✅ 已按基座填定(2026-07-18):**基座 = v11**(v18 评测 -3.02±0.53 无增益,判读见 RESULTS.md)。
+#   version=4 / conv_channels=192 / num_blocks=40,与 runs/v11/best.pth 一致。
+#   首夜 --base 指 runs/v11/best.pth(run_selfplay.sh 会拷成 state.pth + BASE.pth)。
+
+[control]
+version = 4                 # 基座 v11:version 4(无防守特征)
+online = true
+device = 'cuda:0'           # trainer 用 GPU(run_selfplay 会把 worker 副本改成 cpu)
+enable_cudnn_benchmark = true
+enable_amp = true
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/runs/selfplay/state.pth'
+best_state_file = '/home/twu/Projects/better_mortal/runs/selfplay/best.pth'
+tensorboard_dir = '/home/twu/Projects/better_mortal/runs/selfplay/tb'
+batch_size = 512
+# ⭐ 2026-07-20 实验 A' 验证的止血配方(勿回退):opt_step_every=8 梯度累积(Equim #33 亲述要点,
+#   有效步长÷8;首夜 =1 时 49万局单调崩至 -32,=8 后 8 测稳定在基座水平)
+opt_step_every = 8
+save_every = 200            # state.pth 每 200 步存盘 → 每晚停最多丢 200 步(续跑无损)
+test_every = 4000           # 每 4000 步对 baseline.test(=v4)打一次 test_play(噪声大, 仅参考)
+submit_every = 400          # 对齐上游(首夜 20 过于激进)
+
+[online]
+history_window = 10
+enable_compile = false
+
+[online.remote]
+host = '127.0.0.1'
+port = 5577
+
+[online.server]
+buffer_dir = '/home/twu/Projects/better_mortal/runs/selfplay/buffer'
+drain_dir = '/home/twu/Projects/better_mortal/runs/selfplay/drain'
+sample_reuse_rate = 0       # 每条样本用几次(0=用完即弃, 提高可省生成量但增 off-policy 偏差)
+sample_reuse_threshold = 0
+capacity = 5000             # 2026-09-17 对手池实验: 6 个 v4 worker × 800 局 × 2 轮 = 每次 drain 9,600(与此前相同)
+force_sequential = false
+
+[test_play]
+games = 800                # 2026-09-14 2000->800: 只供崩溃保险(连续两次<-8), 800 局 SE~3pt 足够; 省 ~2 分钟/周期
+log_dir = '/home/twu/Projects/better_mortal/runs/selfplay/test_play'
+
+[train_play.default]
+games = 800                # 每个 worker 每轮生成的对局数(对齐上游;轮次短→参数更新鲜)
+log_dir = '/home/twu/Projects/better_mortal/runs/selfplay/train_play'
+boltzmann_epsilon = 0.005  # 探索(TRACK_C 文档值): ε-greedy + 温度
+boltzmann_temp = 0.1
+top_p = 1.0
+repeats = 1
+
+[dataset]
+globs = []                 # 在线不用离线数据; 从 drain 出来的自对弈对局训练
+file_index = '/home/twu/Projects/better_mortal/runs/selfplay/file_index.pth'
+file_batch_size = 1
+reserve_ratio = 0.0
+num_workers = 12          # 2026-09-14 0->8->12: buffer 满后 8 进程 loader 把 trainer 限在 7.7 batch/s
+player_names_files = []
+num_epochs = 1000000000
+enable_augmentation = false
+augmented_first = false
+
+[env]
+gamma = 1
+pts = [2.390, 1.195, 0.0, -3.585]   # 2026-09-14 由 [6,4,2,0] 改为评测协议 [90,45,0,-135] 同比例(×0.02656, 与旧值同标准差)
+
+[resnet]
+conv_channels = 192        # 基座 v11:192 宽(推理比 256 快 ~50%,自对弈吞吐优先)
+num_blocks = 40
+
+[cql]
+min_q_weight = 5           # 在线模式下被 `if not online` 关掉, 此值无效(留档一致性)
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = true              # 在线惯例: 冻结 BatchNorm 统计
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 1.0        # 在线开梯度裁剪防爆(离线基座是 0=不裁)
+
+[optim.scheduler]
+peak = 1e-5
+final = 1e-5
+warm_up_steps = 0
+max_steps = 1000000000     # 巨大 → LR 恒定在 final, 不衰减(在线无 epoch 概念)
+
+[baseline.train]
+device = 'cuda:0'          # 自对弈对手: trainee 打 3×它。FILL: 基座 best.pth(自我提升)或 mortal_v4(直接对抗)
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/runs/selfplay/BASE.pth'   # = v11_best(run_selfplay.sh --base 自动拷入)
+
+[baseline.test]
+device = 'cuda:0'          # test_play 对手 = v4, 直接量"vs v4"强度
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+
+# ⭐ 锚定值微调(C' 方案,2026-07-21 备妥待发;需配合补丁版 train.py):
+#   把全部合法动作的 Q 锚在冻结基座上,治"未采取动作漂移→排序侵蚀"(A' 验尸的慢速 churn)。
+#   weight=0 或删除本节 = 完全关闭(行为同上游)。部署脚本:scratchpad/deploy_anchor.sh。
+#   配套建议:boltzmann_temp 0.05→0.1(有锚后可开一点探索),由部署脚本按需 sed。
+[anchor]
+weight = 0.1   # 2026-09-14 08:4x 由 0.2 放松(锚 C' final 下 4.3 万步稳而不涨: 12k 配对 +0.22)
+state_file = '/home/twu/Projects/better_mortal/runs/selfplay/cprime_final_0724_0939.pth'   # 2026-09-13 判别实验二: 锚住 C' final 而非 rl1_best
+
+[grp]
+state_file = '/home/twu/Projects/better_mortal/runs/grp_full/grp.pth'  # 已核实:服务器与本地 WSL 均为此路径(根目录无 grp_full.pth)
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
