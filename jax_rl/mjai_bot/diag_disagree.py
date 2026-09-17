@@ -163,7 +163,10 @@ def replay_game(path: str, seat_name: str):
     me = names.index(seat_name)
     ps = PlayerState(me)
     out = []
+    my_score = 25000                              # 本局开局时我们的点数(按 start_kyoku 的权威 scores)
     for i, ev in enumerate(events):
+        if ev.get("type") == "start_kyoku":
+            my_score = int(ev["scores"][me])
         cans = ps.update(json.dumps(ev))
         if not cans.can_act:
             continue
@@ -200,7 +203,7 @@ def replay_game(path: str, seat_name: str):
             j += 1
         if logged is None or not mask[logged]:
             logged = -1                               # 还原失败,只计入"未还原"
-        out.append((np.asarray(obs, np.float32), mask, bucket_of(mask, cans), logged))
+        out.append((np.asarray(obs, np.float32), mask, bucket_of(mask, cans), logged, my_score))
     return out, None
 
 
@@ -217,6 +220,9 @@ def main():
     ap.add_argument("--max-games", type=int, default=0)
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--dump", default=None)
+    ap.add_argument("--by-score", action="store_true",
+                    help="再按本局开局时我们的点数分档(<8k / 8-15k / >15k)报立直桶与鸣牌桶的选择率 —— "
+                         "100k 读数显示缺口集中在被飞提前结束的对局, 这里量的是低分局面下我们与 v4 的选择差")
     args = ap.parse_args()
 
     cap_gpu_mem(args.device)
@@ -241,6 +247,8 @@ def main():
     S = defaultdict(lambda: dict(n=0, unmapped=0, ref_ok=0, sub_ok=0, dis=0, qgap=0.0,
                                  ref_riichi=0, sub_riichi=0, ref_pass=0, sub_pass=0, lgap=0.0))
     n_games, bad = 0, 0
+    BANDS = ((-10**9, 8000, "<8k"), (8000, 15000, "8-15k"), (15000, 10**9, ">15k"))
+    SB = defaultdict(lambda: dict(n=0, ref_riichi=0, sub_riichi=0, dis=0))
     for gi, p in enumerate(files):
         try:
             recs, err = replay_game(p, args.seat_name)
@@ -260,7 +268,14 @@ def main():
         q_sub = q_ref if same else qvals(sub, obs, mask, dev)
         a_ref = q_ref.argmax(-1)
         a_sub = q_sub.argmax(-1)
-        for k, (_, _, b, logged) in enumerate(recs):
+        for k, (_, _, b, logged, sc) in enumerate(recs):
+            if args.by_score and b in ("riichi", "call"):
+                lab = next(l for lo, hi, l in BANDS if lo <= sc < hi)
+                t = SB[(b, lab)]
+                t["n"] += 1
+                t["ref_riichi"] += int(a_ref[k] == (37 if b == "riichi" else 45))
+                t["sub_riichi"] += int(a_sub[k] == (37 if b == "riichi" else 45))
+                t["dis"] += int(a_ref[k] != a_sub[k])
             s = S[b]
             s["n"] += 1
             if logged < 0:
@@ -310,10 +325,22 @@ def main():
         s = S["call"]
         print(f"  鸣牌桶:ref 选过 {s['ref_pass'] / max(s['n'], 1):.2%},"
               f"sub 选过 {s['sub_pass'] / max(s['n'], 1):.2%}")
+    if args.by_score:
+        print("")
+        print("  按本局开局点数分档(ref=v4 / sub=被测; 立直桶看选立直率, 鸣牌桶看选过率):")
+        print(f"  {'桶':<8}{'分档':>7}{'决策点':>9}{'ref':>8}{'sub':>8}{'差':>8}{'分歧率':>8}")
+        for b in ("riichi", "call"):
+            for _, _, lab in BANDS:
+                t = SB.get((b, lab))
+                if not t or not t["n"]:
+                    continue
+                r, u = t["ref_riichi"] / t["n"], t["sub_riichi"] / t["n"]
+                print(f"  {b:<9}{lab:>7}{t['n']:>9,}{r:>8.2%}{u:>8.2%}{u - r:>+8.2%}{t['dis'] / t['n']:>8.2%}")
     if args.dump:
         with open(args.dump, "w", encoding="utf-8") as f:
             json.dump({"n_games": n_games, "bad": bad, "seat": args.seat_name,
-                       "ref": args.ref, "sub": args.sub, "buckets": dict(S)}, f,
+                       "ref": args.ref, "sub": args.sub, "buckets": dict(S),
+                       "by_score": {f"{b}@{lab}": v for (b, lab), v in SB.items()}}, f,
                       ensure_ascii=False, indent=1)
         print(f"  → {args.dump}")
 
