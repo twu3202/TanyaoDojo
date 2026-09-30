@@ -1,0 +1,165 @@
+--- a/mortal/player.py
++++ b/mortal/player.py
+@@ -7,6 +7,7 @@
+ from os import path
+ from model import Brain, DQN
+ from engine import MortalEngine
++from explore_engine import FrontierExploreEngine, KINDS
+ from libriichi.stat import Stat
+ from libriichi.arena import OneVsThree
+ from config import config
+@@ -117,11 +118,19 @@
+         self.repeats = cfg['repeats']
+         self.repeat_counter = 0
+ 
++        # 本地补丁(2026-09-30,B 分支 Stage 1):决策边界定向探索,见 explore_engine.py
++        ex = config.get('explore', {})
++        self.explore = bool(ex.get('enable', False))
++        if self.explore:
++            pts = config['env']['pts']
++            assert abs(pts[0] / 90 * 45 - pts[1]) < 1e-6 and abs(pts[0] / 90 * -135 - pts[3]) < 1e-6, pts
++            self.explore_margin = ex['margin_pt'] * pts[0] / 90
++            self.explore_prob = ex['prob']
++            logging.info(f'frontier exploration: margin {ex["margin_pt"]} pt = {self.explore_margin:.4f} Q, prob {self.explore_prob}')
++
+     def train_play(self, mortal, dqn, device):
+         torch.backends.cudnn.benchmark = False
+-        engine_chal = MortalEngine(
+-            mortal,
+-            dqn,
++        engine_kwargs = dict(
+             is_oracle = False,
+             version = self.chal_version,
+             boltzmann_epsilon = self.boltzmann_epsilon,
+@@ -131,6 +140,11 @@
+             enable_amp = True,
+             name = 'trainee',
+         )
++        if self.explore:
++            engine_chal = FrontierExploreEngine(mortal, dqn, explore_margin=self.explore_margin,
++                                                explore_prob=self.explore_prob, **engine_kwargs)
++        else:
++            engine_chal = MortalEngine(mortal, dqn, **engine_kwargs)
+ 
+         if path.isdir(self.log_dir):
+             shutil.rmtree(self.log_dir)
+@@ -145,6 +159,10 @@
+             seed_start = (self.train_seed, self.train_key),
+             seed_count = self.seed_count,
+         )
++        if self.explore:
++            el, ex_ = engine_chal.stats
++            logging.info('frontier exploration this round (eligible/explored): ' +
++                         ', '.join(f'{k} {e}/{x}' for k, e, x in zip(KINDS, el, ex_)))
+         self.repeat_counter += 1
+         if self.repeat_counter == self.repeats:
+             self.train_seed += self.seed_count
+--- a/mortal/dataloader.py
++++ b/mortal/dataloader.py
+@@ -1,3 +1,6 @@
++import gzip
++import json
++import logging
+ import random
+ import torch
+ import numpy as np
+@@ -7,6 +10,62 @@
+ from libriichi.dataset import GameplayLoader
+ from config import config
+ 
++# 本地补丁(2026-09-30,B 分支 Stage 1):Q 目标是整局奖励(gamma=1),同局所有决策共用。
++# 一次探索(非贪心动作)会改变该局结果,所以同一局里它之前的决策的目标不再是当前策略的回报 → 丢弃。
++# 探索那一步本身及之后保留(目标 = 采取探索动作后按策略继续)。样本与牌谱事件逐条对齐:
++# 去掉开杠后的选杠样本,标签 <=36 对应该玩家的 dahai、37 对应 reach、38-42 对应吃/碰/杠,顺序一致。
++DROP_PRE_EXPLORE = bool(config.get('explore', {}).get('drop_pre_explore', False))
++_TILE = {t: i for i, t in enumerate(
++    [f'{n}{s}' for s in 'mps' for n in range(1, 10)] + ['E', 'S', 'W', 'N', 'P', 'F', 'C', '5mr', '5pr', '5sr'])}
++
++
++def explore_keep_mask(raw_lines, player_id, actions, at_kyoku):
++    """Boolean keep mask over one player's entries, or None if the log and the entries do not line up."""
++    evs = []
++    for ln in raw_lines:
++        ev = json.loads(ln)
++        t = ev['type']
++        if t == 'start_kyoku':
++            evs.append({'dahai': [], 'reach': [], 'call': []})
++        elif t in ('dahai', 'reach', 'chi', 'pon', 'daiminkan', 'kakan', 'ankan') and ev.get('actor') == player_id:
++            g = (ev.get('meta') or {}).get('is_greedy', True)
++            key = 'dahai' if t == 'dahai' else 'reach' if t == 'reach' else 'call'
++            evs[-1][key].append((_TILE[ev['pai']] if t == 'dahai' else t, g))
++    keep = np.ones(len(actions), dtype=bool)
++    at_kyoku = (np.frombuffer(at_kyoku, dtype=np.uint8) if isinstance(at_kyoku, (bytes, bytearray))
++                else np.asarray(at_kyoku))   # libriichi hands Vec<u8> over as bytes
++    for k in np.unique(at_kyoku):
++        idx = np.nonzero(at_kyoku == k)[0]
++        if k >= len(evs):
++            return None
++        ptr = {'dahai': 0, 'reach': 0, 'call': 0}
++        last_ng = -1
++        prev = None
++        for j in idx:
++            a = int(actions[j])
++            if prev == 42:                      # kan-select entry right after a kan entry
++                prev = 'ks'
++                continue
++            prev = a
++            key = 'dahai' if a <= 36 else 'reach' if a == 37 else 'call' if a <= 42 else None
++            if key is None:
++                continue
++            lst = evs[k][key]
++            if ptr[key] >= len(lst):
++                return None
++            what, g = lst[ptr[key]]
++            ptr[key] += 1
++            if key == 'dahai' and what != a:
++                return None
++            if not g:
++                last_ng = j
++        if any(ptr[key] != len(evs[k][key]) for key in ptr):
++            return None
++        if last_ng >= 0:
++            keep[idx[idx < last_ng]] = False
++    return keep
++
++
+ class FileDatasetsIter(IterableDataset):
+     def __init__(
+         self,
+@@ -87,7 +146,8 @@
+             import logging
+             logging.warning(f"skipping unreadable log batch {file_list[:3]}: {str(e).splitlines()[0]}")
+             return
+-        for file in data:
++        for fpath, file in zip(file_list, data):
++            raw_lines = None
+             for game in file:
+                 # per move
+                 obs = game.take_obs()
+@@ -120,7 +180,26 @@
+                     if not dones[i]:
+                         steps_to_done[i] = steps_to_done[i + 1] + int(apply_gamma[i])
+ 
++                keep = None
++                if DROP_PRE_EXPLORE:
++                    if raw_lines is None:
++                        with gzip.open(fpath, 'rt') as f:
++                            raw_lines = f.read().splitlines()
++                    keep = explore_keep_mask(raw_lines, player_id, actions, at_kyoku)
++                    st = self.__dict__.setdefault('_explore_stats', [0, 0, 0, 0])   # games, misaligned, entries, dropped
++                    st[0] += 1
++                    st[2] += game_size
++                    if keep is None:
++                        st[1] += 1
++                    else:
++                        st[3] += int((~keep).sum())
++                    if st[0] % 2000 == 0:
++                        logging.info(f'drop_pre_explore: {st[0]:,} games, {st[1]} misaligned (kept whole), '
++                                     f'dropped {st[3]:,}/{st[2]:,} entries ({st[3] / max(1, st[2]):.2%})')
++
+                 for i in range(game_size):
++                    if keep is not None and not keep[i]:
++                        continue
+                     entry = [
+                         obs[i],
+                         actions[i],
