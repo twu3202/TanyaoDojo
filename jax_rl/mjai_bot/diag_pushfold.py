@@ -108,6 +108,7 @@ def replay(path, side):
     after = [set() for _ in range(4)]
     dora, ndisc = [], [0] * 4
     seen = [False] * 4                                   # 本局该座位是否已出现过暴露决策(入口 = 第一个)
+    kyoku = -1
     recs = []
     for i, ev in enumerate(events):
         t = ev.get("type")
@@ -119,6 +120,7 @@ def replay(path, side):
             dora = [dora_of(kind_of_pai(ev["dora_marker"]))]
             ndisc = [0] * 4
             seen = [False] * 4
+            kyoku += 1
         elif t == "dora":
             dora.append(dora_of(kind_of_pai(ev["dora_marker"])))
         elif t == "dahai":
@@ -163,7 +165,8 @@ def replay(path, side):
             tehai = p.tehai
             first, seen[s] = not seen[s], True
             recs.append(dict(
-                first=first, nsafe=sum(int(tehai[k]) for k in safe if k < 34),
+                first=first, nsafe=sum(int(tehai[k]) for k in safe if k < 34), seat=s, kyoku=kyoku,
+                ndanger=sum(int(tehai[k]) for k in danger if k < 34), nwait=len(danger),
                 role="sub" if s == sub_seat else "ref",
                 obs=np.asarray(obs, np.float32), mask=mask, safe=safe_mask, has_safe=bool(safe_mask.any()),
                 danger=danger_mask,

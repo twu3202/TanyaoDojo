@@ -1,0 +1,126 @@
+# [本地服务器] B1 离线基座 = v11 配方 × v4 的骨干尺寸(256×54),其余逐项不变(单变量对照)
+# 为什么:离线三强(v11 -2.50 / v5 -2.67 / v18 -3.02)只试过「256 宽 + v5 防守特征」这一种放大,
+#   宽度和特征是绑在一起变的;「v4 观测 + v4 骨干尺寸 + 上游配方」从未单独测过。
+#   256×54 是我们与 v4 之间唯一已知的结构差异(v4 checkpoint 里只存了 version=4 / 256 / 54)。
+# 对照:v11(同数据 2019-2026、同 pts [6,4,2,0]、同 CQL 5、同 LR 余弦 1e-4→1e-5、同 1 epoch、同 batch 512)。
+# 判读:12k 复式 vs v4 + EV 分歧图 8k,与 v11(100k -2.50 ± 0.53;EV 图局口径合计 -2.50)比;
+#   明显更好(≥ +0.5)才接在线 RL(tpt 配方)。
+# 预计:单步算力约 v11 的 2.4 倍 → 1.21M 步约 4 天(v11 独占 trx 约 38.5 小时)。
+# file_index 与 v11 完全相同(同 globs),开跑前从 runs/v11/file_index.pth 拷一份省掉建索引。
+# 用法:cd ~/Projects/better_mortal/Mortal/mortal && . ../../.venv/bin/activate
+#       MORTAL_CFG=~/Projects/better_mortal/configs/local_train_b1_256x54.toml python train.py
+[control]
+version = 4
+online = false
+state_file = '/home/twu/Projects/better_mortal/runs/b1_256x54/mortal.pth'
+best_state_file = '/home/twu/Projects/better_mortal/runs/b1_256x54/best.pth'
+tensorboard_dir = '/home/twu/Projects/better_mortal/runs/b1_256x54/tb'
+device = 'cuda:0'
+enable_cudnn_benchmark = true
+enable_amp = true
+enable_compile = true
+batch_size = 512
+opt_step_every = 1
+save_every = 400
+test_every = 20000
+submit_every = 400
+
+[test_play]
+games = 1000
+log_dir = '/home/twu/Projects/better_mortal/runs/b1_256x54/test_play'
+
+[dataset]
+globs = [
+    '/home/twu/Projects/better_mortal/data/houou/2019/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2020/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2021/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2022/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2023/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2024/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2025/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2026/*.mjson*',
+]
+file_index = '/home/twu/Projects/better_mortal/runs/b1_256x54/file_index.pth'
+file_batch_size = 1
+reserve_ratio = 0.0
+num_workers = 6
+player_names_files = []
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+
+[env]
+gamma = 1
+pts = [6.0, 4.0, 2.0, 0.0]
+
+[resnet]
+conv_channels = 256
+num_blocks = 54
+
+[cql]
+min_q_weight = 5
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = false
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0
+
+[optim.scheduler]
+# ⭐ Track A1 核心修复:cosine 退火 peak→final,覆盖整个 epoch
+peak = 1e-4
+final = 1e-5
+warm_up_steps = 2000
+max_steps = 1210000
+
+[baseline.train]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[baseline.test]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[grp]
+state_file = '/home/twu/Projects/better_mortal/runs/grp_full/grp.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
+
+[1v3]
+seed_key = 20260711
+games_per_iter = 2000
+iters = 50
+log_dir = '/home/twu/Projects/better_mortal/runs/b1_256x54/1v3'
+
+[1v3.challenger]
+device = 'cuda:0'
+name = 'v11'
+state_file = '/home/twu/Projects/better_mortal/runs/b1_256x54/best.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = 'cuda:0'
+name = 'mortal-v4'
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ''
+tactics = ''
