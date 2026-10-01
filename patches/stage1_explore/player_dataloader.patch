@@ -154,7 +154,7 @@
 +                    else:
 +                        st[3] += int((~keep).sum())
 +                    if st[0] % 2000 == 0:
-+                        logging.info(f'drop_pre_explore: {st[0]:,} games, {st[1]} misaligned (kept whole), '
++                        logging.warning(f'drop_pre_explore: {st[0]:,} games, {st[1]} misaligned (kept whole), '
 +                                     f'dropped {st[3]:,}/{st[2]:,} entries ({st[3] / max(1, st[2]):.2%})')
 +
                  for i in range(game_size):
