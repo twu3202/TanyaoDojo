@@ -1,345 +1,374 @@
 # TanyaoDojo
 
-**JAX 全 GPU 向量化的麻将 AI 训练场**:行为克隆 + 自博弈强化学习全栈,
-每一步强度都用**复式 1v3 对抗**量化到小数点后两位。
+**A mahjong AI training ground, fully GPU-vectorized in JAX**: a complete behavior-cloning + self-play
+reinforcement-learning stack, with every step in strength quantified to two decimal places by **duplicate 1v3 matches**.
 
-当前基准对手是开源最强之一的 **Mortal v4**(256ch×54blk,23.8M 参数),目标是稳定超越;
-同时孵化川麻纯 RL 线。评测桥依赖上游 [Mortal](https://github.com/Equim-chan/Mortal)
-的 libriichi(AGPL-3.0,不随本仓库分发,见 [SETUP.md](SETUP.md))。
+The current benchmark opponent is **Mortal v4** (256ch×54blk, 23.8M parameters), one of the strongest open-source
+mahjong AIs; the goal is to beat it consistently. A pure-RL line for Sichuan mahjong is being incubated alongside.
+The evaluation bridge depends on libriichi from upstream [Mortal](https://github.com/Equim-chan/Mortal)
+(AGPL-3.0, not distributed with this repository; see [SETUP.md](SETUP.md)).
 
-> **许可**:根目录 MIT,`jax_rl/mjai_bot/` 为 AGPL-3.0(链接 libriichi)——见 [LICENSING.md](LICENSING.md)。
-> **数据**:天凤牌谱及其派生数据集**不分发**,请自备牌谱按 SETUP.md 重建。
-> **权重**:四份 checkpoint(含一份 RL 负结果)已发布在 [🤗 Twu31/TanyaoDojo](https://huggingface.co/Twu31/TanyaoDojo)。
+> **License**: MIT at the root; `jax_rl/mjai_bot/` is AGPL-3.0 (it links libriichi) — see [LICENSING.md](LICENSING.md).
+> **Data**: Tenhou game logs and any datasets derived from them are **not distributed**; bring your own logs and rebuild them following SETUP.md.
+> **Weights**: four checkpoints (including one negative RL result) are published at [🤗 Twu31/TanyaoDojo](https://huggingface.co/Twu31/TanyaoDojo).
 
-- **数据**:天凤凤凰卓 16 年牌谱(251 万局 mjai 格式;受天凤条款约束不入库、不再分发)
-- **评测协议(神圣不可变)**:复式 1v3,challenger 轮换 4 座打同一批牌山,
-  seed_key=20260711,pt=[90,45,0,-135],champion=mortal_v4。
-  分层:400 局=冒烟(±8.5)/ 4k 局=选型(±2.7)/ **100k 局=里程碑(±0.55,CI>0 = 真超 v4)**。
+- **Data**: 16 years of Tenhou Phoenix-room game logs (2.51M games in mjai format; bound by Tenhou's terms, so neither checked in nor redistributed)
+- **Evaluation protocol (sacred, never changed)**: duplicate 1v3 — the challenger rotates through all 4 seats over the same set of walls;
+  seed_key=20260711, pt=[90,45,0,-135], champion=mortal_v4.
+  Tiers: 400 games = smoke test (±8.5) / 4k games = candidate selection (±2.7) / **100k games = milestone (±0.55; CI > 0 = genuinely beats v4)**.
 
-## 现状(2026-09-30)
+## Status (2026-09-30)
 
-两代技术栈,一条记分册:
+Two generations of tech stack, one scorecard:
 
 ```mermaid
 xychart-beta
-    title "对 v4 强度里程(avg_pt,越高越好)"
-    x-axis ["离线v11", "价值线rl1峰", "BC 20k场", "BC 353k场", "BC宽网192x8", "大网十年池", "大网14年池", "精修g402", "v2精修g186"]
+    title "Strength milestones vs v4 (avg_pt, higher is better)"
+    x-axis ["Offline v11", "Value line rl1 peak", "BC 20k games", "BC 353k games", "BC wide 192x8", "Large net 10-yr pool", "Large net 14-yr pool", "Refined g402", "v2 refined g186"]
     y-axis "avg_pt vs v4" -16 --> 0
     line [-2.50, -1.96, -14.29, -12.52, -8.87, -6.95, -5.76, -5.07, -4.66]
 ```
 
-| 线 | 状态 | 最优 | 备注 |
+| Line | Status | Best | Notes |
 |---|---|---|---|
-| **价值线**(Mortal 栈,在线值回归 + 锚定) | 自建管线 100k **-0.64**;离线基座放大到 v4 尺寸(256×54)100k -2.68,配对 v11 -0.18 ± 0.62 → 容量排除 | 从 v4 出发微调 4 万步:110 万局 **+0.123 ± 0.101(显著)**,但这是「v4 + 我们的 RL」,不算自建目标 | 缺口已定价到决策(反事实推演,真牌山):押退 -0.15、立直判断约 -0.18,普通打牌为零;多押由在线 RL 造成。GRP 截断在决策层无可见偏差。详见 [RESULTS.md](RESULTS.md) 的 A²、Step 0、B1、GRP 四节 |
-| **Mahjax 线**(JAX 全 GPU 向量化) | 已停(2026-09-11) | **-4.66 ± 0.535**(BC 基座 100k);RL 最好 12k -3.38(z=1.77,不显著) | 修目标错配、牌山 RNG、GAE 重置后干净重跑仍横盘(同算力 vs 污染线 +0.09 ± 1.91);**缺口定位:攻 -95 / 守 -13 点/局,立直率比 v4 少 2.41pp —— 太保守** |
-| 川麻纯 RL | **P2 通过**,P3 暂停 | 1.05 亿步超 L1 **+2.92(z=10.1)** | P3 四个干预(步数×6、容量×3.8、GAE 修正、dual-clip)在谱系外尺度上全为零;平台 vs 3×L1 ≈ +2.2 |
+| **Value line** (Mortal stack, online value regression + anchoring) | Own pipeline 100k **-0.64**; offline base scaled up to v4's size (256×54): 100k -2.68, paired vs v11 -0.18 ± 0.62 → capacity ruled out | Fine-tuned from v4 for 40k steps: **+0.123 ± 0.101 over 1.1M games (significant)** — but that is "v4 + our RL" and does not count toward the own-pipeline goal | The gap has been priced down to individual decisions (counterfactual rollouts on the true walls): push/fold -0.15, riichi judgment about -0.18, ordinary tile choice zero; the excess pushing is caused by online RL. GRP truncation shows no visible bias at the decision level. See the A², Step 0, B1 and GRP sections of [RESULTS.md](RESULTS.md) |
+| **Mahjax line** (fully GPU-vectorized JAX) | Stopped (2026-09-11) | **-4.66 ± 0.535** (BC base, 100k); best RL 12k -3.38 (z=1.77, not significant) | A clean rerun after fixing the objective mismatch, the wall RNG and the GAE reset was still flat (vs the contaminated line at equal compute: +0.09 ± 1.91); **gap located: offense -95 / defense -13 points per hand, riichi rate 2.41pp below v4 — too passive** |
+| Sichuan pure RL | **P2 passed**, P3 paused | Beats L1 by **+2.92 (z=10.1)** at 105M steps | All four P3 interventions (steps ×6, capacity ×3.8, GAE fix, dual-clip) are zero on the out-of-lineage scale; plateau vs 3×L1 ≈ +2.2 |
 
-> **2026-09-12 更正:价值线并未"守稳不涨"。** 当年关线只看了 test_play;按神圣协议重评,锚定线 C' 在锚权重从 0.5
-> 放松到 0.2 后仅 9 小时,12k 即达 **-0.75 ± 1.31**,配对强于 rl1_best **+1.75(z=2.58)**、强于 λ=0.5 阶段快照
-> +1.56(z=2.37);而 λ=0.5 的约 36 小时毫无变化(+0.19,z=0.33)。已从该快照续跑,目标追平 v4。
-> 细节见 [RESULTS.md](RESULTS.md) 末节。
+> **Correction, 2026-09-12: the value line had not "held steady without improving".** When the line was shut down, only
+> test_play had been looked at. Re-evaluated under the sacred protocol, the anchored line C' reached **-0.75 ± 1.31** at 12k
+> only 9 hours after the anchor weight was relaxed from 0.5 to 0.2 — paired, stronger than rl1_best by **+1.75 (z=2.58)** and
+> than the λ=0.5-phase snapshot by +1.56 (z=2.37), whereas the roughly 36 hours at λ=0.5 changed nothing (+0.19, z=0.33).
+> Training has been resumed from that snapshot, aiming to match v4. Details in the last section of [RESULTS.md](RESULTS.md).
 
-## Mahjax 线架构
+## Mahjax line architecture
 
 ```mermaid
 graph LR
-    A[天凤 mjson<br/>251万局] -->|mjai 解析+牌山重构| B[重放回路<br/>合法性 100%]
-    B -->|obs_lean 34x20 平面| C[BC 数据集<br/>~16亿决策样本]
-    C -->|bc_stream 流式| D[BC 基座<br/>LeanACNet]
-    D -->|magnet 锚| E[league PPO<br/>对手池+自快照]
-    E -->|滚动检查点| F[评测桥<br/>libriichi mjai-log]
+    A[Tenhou mjson<br/>2.51M games] -->|mjai parsing + wall reconstruction| B[Replay loop<br/>100% legality]
+    B -->|obs_lean 34x20 planes| C[BC dataset<br/>~1.6B decision samples]
+    C -->|bc_stream streaming| D[BC base<br/>LeanACNet]
+    D -->|magnet anchor| E[league PPO<br/>opponent pool + self-snapshots]
+    E -->|rolling checkpoints| F[Eval bridge<br/>libriichi mjai-log]
     D --> F
-    F -->|4k/100k 复式| G[记分册 vs v4]
+    F -->|4k/100k duplicate| G[Scorecard vs v4]
 ```
 
-- **吞吐**(实测):env 30 万步/秒(Ada);PPO 全训 57.8k 步/秒(窄网 Ada)/ 21k(宽网单 4090)
-- **评测桥**:events→obs 无状态重建(差分 100 场逐位全等),64 万决策 fallback=0
+- **Throughput** (measured): env 300k steps/s (Ada); full PPO training 57.8k steps/s (narrow net, Ada) / 21k (wide net, single 4090)
+- **Eval bridge**: stateless events→obs reconstruction (bit-identical over 100 games in a differential test), fallback=0 across 640k decisions
 
-## 完整记分册(同一评测协议,可直接互比)
+## Full scorecard (same evaluation protocol, directly comparable)
 
-**价值线时代**(100k 局,±0.53):
+**Value line era** (100k games, ±0.53):
 
-| 日期 | 模型 | 方案 | avg_pt vs v4 |
+| Date | Model | Method | avg_pt vs v4 |
 |---|---|---|---|
-| 2026-07 | v1_best | 离线 SL(192 宽,近 8 年) | -3.99 |
-| 2026-07 | **v11** | 离线 SL(+LR 余弦) | **-2.50(离线天花板)** |
-| 2026-07 | v5 | 离线 SL(256 宽+防守通道) | -2.67 |
-| 2026-07 | v18 | 离线 SL(全 18 年数据) | -3.02 |
-| 2026-07 | rl1_best | 在线 RL(值回归+锚) | -1.96(100k) |
-| 2026-07-24(09-12 重评) | **C' final** | **在线值回归 + Q 锚定(λ 0.5→0.2)** | **-0.75 ± 1.31(12k,项目最优)** |
+| 2026-07 | v1_best | Offline SL (192 wide, most recent 8 years) | -3.99 |
+| 2026-07 | **v11** | Offline SL (+ cosine LR) | **-2.50 (offline ceiling)** |
+| 2026-07 | v5 | Offline SL (256 wide + defense channels) | -2.67 |
+| 2026-07 | v18 | Offline SL (all 18 years of data) | -3.02 |
+| 2026-07 | rl1_best | Online RL (value regression + anchor) | -1.96 (100k) |
+| 2026-07-24 (re-evaluated 09-12) | **C' final** | **Online value regression + Q anchoring (λ 0.5→0.2)** | **-0.75 ± 1.31 (12k, project best)** |
 
-**Mahjax 线**(分辨率随进程升级:4k ±2.7 / 12k ±1.54 / **100k ±0.535**):
+**Mahjax line** (resolution upgraded as the line progressed: 4k ±2.7 / 12k ±1.54 / **100k ±0.535**):
 
-| 日期 | 模型 | 方案 | avg_pt vs v4 |
+| Date | Model | Method | avg_pt vs v4 |
 |---|---|---|---|
-| 07-29 | BC 353k 场 | BC(窄网 1.75M 参数) | -12.52 |
-| 07-29 | league run1 @2.7 亿步 | BC+league RL | -14.81 |
-| 08-02 | 宽网欠训 | BC(192×8,1 epoch) | -10.53(欠训假象) |
-| 08-02 | **宽网足训** | **BC(192×8,2 epochs)** | **-8.87(本线最优)** |
-| 08-03 | 窄网六年池 v3.5 | BC(数据+40%) | -10.46(窄网平台) |
-| 08-04 | league m30lr3 @10 亿步 | BC+league RL | -9.70 |
-| 08-04 | league m20lr1 @10 亿步 | BC+league RL | -10.41 |
-| 08-05 | league 终点 @30 亿步 | BC+league RL(m20lr1/m30lr3) | -9.19 / -9.41(六点横盘,线关闭) |
-| 08-04 | 大网 256×10 ep1 | BC(十年池,val 81.2%) | -6.95 |
-| 08-04 | 大网 ep2 | BC(过训,val 回落 80.9%) | -9.25(过训回落) |
-| 08-06 | 大网 × 14 年池 g1080 | BC(逐档选峰,12k 局定音) | -5.76 ± 1.54 |
-| 08-06 | **精修 ft2-g402** | **BC(lr 1e-4 从 g1080 精修,12k 定音)** | **-5.07 ± 1.54(新最优)** |
-| 08-08 | 16 年池两轮(+2013-14) | BC(数据+16%,连跑两 epoch) | -5.79 / -5.68(12k,无增量,数据杠杆见底) |
-| 08-14 | obs v2 十年池(四档) | BC(观测加富 34×36+32) | -6.18 / -5.90 / -5.64 / -5.52(12k) |
-| 08-17 | v2 精修 g186 | BC(obs v2 + lr 1e-4 精修) | -4.86 ± 1.54(12k) |
-| 08-21 | **v2 精修 g186** | **同上 · 100k 局里程碑**(1600 万决策 fallback=0) | **-4.66 ± 0.535(本线里程碑)** |
+| 07-29 | BC 353k games | BC (narrow net, 1.75M parameters) | -12.52 |
+| 07-29 | league run1 @ 270M steps | BC + league RL | -14.81 |
+| 08-02 | Wide net, undertrained | BC (192×8, 1 epoch) | -10.53 (undertraining artifact) |
+| 08-02 | **Wide net, fully trained** | **BC (192×8, 2 epochs)** | **-8.87 (line best at the time)** |
+| 08-03 | Narrow net, 6-year pool v3.5 | BC (+40% data) | -10.46 (narrow-net plateau) |
+| 08-04 | league m30lr3 @ 1B steps | BC + league RL | -9.70 |
+| 08-04 | league m20lr1 @ 1B steps | BC + league RL | -10.41 |
+| 08-05 | league endpoint @ 3B steps | BC + league RL (m20lr1/m30lr3) | -9.19 / -9.41 (flat across six checkpoints; line closed) |
+| 08-04 | Large net 256×10 ep1 | BC (10-year pool, val 81.2%) | -6.95 |
+| 08-04 | Large net ep2 | BC (overtrained, val falls back to 80.9%) | -9.25 (overtraining regression) |
+| 08-06 | Large net × 14-year pool g1080 | BC (peak picked checkpoint by checkpoint, settled at 12k games) | -5.76 ± 1.54 |
+| 08-06 | **Refined ft2-g402** | **BC (refined from g1080 at lr 1e-4, settled at 12k)** | **-5.07 ± 1.54 (new best)** |
+| 08-08 | 16-year pool, two passes (+2013-14) | BC (+16% data, two epochs back to back) | -5.79 / -5.68 (12k; no gain, data lever exhausted) |
+| 08-14 | obs v2, 10-year pool (four checkpoints) | BC (richer observation 34×36+32) | -6.18 / -5.90 / -5.64 / -5.52 (12k) |
+| 08-17 | v2 refined g186 | BC (obs v2 + lr 1e-4 refinement) | -4.86 ± 1.54 (12k) |
+| 08-21 | **v2 refined g186** | **Same as above · 100k-game milestone** (16M decisions, fallback=0) | **-4.66 ± 0.535 (this line's milestone)** |
 
-两线注解:价值线的强来自"站在 Mortal 完整基建上微调";本线从零重建全栈,
-用缩放律(数据/容量/观测)把差距从 -14.3 压到 **-4.86**。三个 BC 杠杆现已全部见底
-(平台 ≈ -5),最后一段交给 RL —— 但 RL 至今四连负,见下表。
+A note on the two lines: the value line's strength comes from "fine-tuning on top of Mortal's complete infrastructure";
+this line rebuilt the whole stack from scratch and used scaling laws (data / capacity / observation) to squeeze the gap
+from -14.3 down to **-4.86**. All three BC levers have now bottomed out (plateau ≈ -5), and the last stretch is handed
+to RL — but RL has so far failed four times in a row; see the table below.
 
-## ⚠️ 最大的一次教训:训练目标 ≠ 评测目标(2026-08-23 定位并修正)
+## ⚠️ The biggest lesson: training objective ≠ evaluation objective (located and fixed 2026-08-23)
 
-四次 RL 全部失败(-19.5 / -14.8 / -9.7 / -8.4,每次都低于各自的 BC 基座)。事后定位到
-一个与算法选型无关的共同根因:
+All four RL runs failed (-19.5 / -14.8 / -9.7 / -8.4, each below its own BC base). In hindsight they were traced to
+a common root cause that has nothing to do with the choice of algorithm:
 
-| | RL 训练时优化的 | 竞技场评的 |
+| | What RL optimized during training | What the arena scores |
 |---|---|---|
-| episode | **一盘**(`round_mode="single"`,一盘结束即终止) | **整个半庄**(8 局) |
-| 奖励 | **素点转移**(百点单位) | **顺位点 [90, 45, 0, −135]** |
+| Episode | **One hand** (`round_mode="single"`; the episode terminates as soon as the hand ends) | **The entire hanchan** (8 hands) |
+| Reward | **Raw point transfer** (in units of 100 points) | **Placement points [90, 45, 0, −135]** |
 
-**实测证据**(直接量,不是读码推断):
+**Measured evidence** (measured directly, not inferred from reading the code):
 
-- `single` 模式下 600 步 × 256 env 产生 **1541 个 episode** → episode 确实只有一盘;
-- 奖励值域 [−120, 130]、样例 `[+30, −10, −10, −10]`、行和 ≈ 0 → 是素点转移;
-- mahjax 在终局只把 `order_points` 写进 `state.round_state.score`,**从不写进 `rewards`**
-  ——任何 `round_mode` 都一样。
+- In `single` mode, 600 steps × 256 envs produce **1541 episodes** → an episode really is a single hand;
+- Rewards range over [−120, 130], with samples like `[+30, −10, −10, −10]` and rows summing to ≈ 0 → raw point transfers;
+- At game end mahjax writes `order_points` only into `state.round_state.score`, **never into `rewards`**
+  — under every `round_mode`.
 
-**为什么这一条解释了全部四次失败**:单盘素点最大化器**没有"第四名"这个概念**——跌到第四
-不产生额外代价,所以它应当无限激进。而本项目历版记录的失分来源恰恰是四位率偏高。它还预测
-"RL 步数越多越差"(实测如此),并解释了 oracle critic 为何比无用更糟:更准的 critic 只是让
-策略更快收敛到**错误的**目标——v_loss 下降 100 倍是对错误目标的真实优化进展。
+**Why this one item explains all four failures**: a single-hand raw-point maximizer **has no concept of "fourth place"** —
+dropping to fourth costs it nothing extra, so it should be maximally aggressive. And the source of lost points recorded
+in every past version of this project is precisely an elevated fourth-place rate. The mismatch also predicts that "more
+RL steps make things worse" (which is what we measured), and it explains why the oracle critic was worse than useless:
+a more accurate critic only makes the policy converge faster onto the **wrong** objective — the 100× drop in v_loss was
+genuine optimization progress on the wrong objective.
 
-**修正**([`jax_rl/reward_placement.py`](jax_rl/reward_placement.py)):`round_mode="half"`
-+ episode 内奖励恒 0 + 终局发竞技场同款顺位点。注意 `auto_reset` 在终局把 state 换成新局、
-只保留 `(terminated, truncated, rewards)`,终局分数会丢失,所以顺位必须在重置前算好写进
-`rewards`。验证:51 万非终局步奖励恒 0、终局恰为 pt 的置换、行和恒 0、随机策略下均值 0.0000
-(顺带复现了 `A(π, π) ≡ 0` 这个代数恒等式——四座同策的复式期望必然为零)。
+**The fix** ([`jax_rl/reward_placement.py`](jax_rl/reward_placement.py)): `round_mode="half"`
++ reward fixed at 0 inside the episode + the arena's own placement points paid at game end. Note that at game end
+`auto_reset` swaps the state for a new game and keeps only `(terminated, truncated, rewards)`, so the final scores are
+lost — the placements must be computed before the reset and written into `rewards`. Verification: reward is 0 on all
+510k non-terminal steps, terminal rewards are exactly a permutation of pt, rows always sum to 0, and the mean under a
+random policy is 0.0000 (which incidentally reproduces the algebraic identity `A(π, π) ≡ 0` — with the same policy in
+all four seats, the duplicate expectation must be zero).
 
-**修正后的第一个结果(2026-08-23→25,跑满 10 亿步)**:从 -4.66 的冠军基座出发,
-沿途 11 次外评(各 1600 局,2.77 亿→9.82 亿步)= **-4.88 ± 0.81**,与基座**统计持平**。
+**First result after the fix (2026-08-23→25, full 1B steps)**: starting from the -4.66 champion base,
+11 external evaluations along the way (1600 games each, 277M→982M steps) = **-4.88 ± 0.81**, **statistically level**
+with the base.
 
-| | 之前四次(错目标) | 修正后 |
+| | The four earlier runs (wrong objective) | After the fix |
 |---|---|---|
-| 相对各自基座 | **-3.2 ~ -10 pt** | **-0.2 pt(持平)** |
-| 训练越久 | 越差 | 不再变差 |
+| Relative to each run's base | **-3.2 to -10 pt** | **-0.2 pt (level)** |
+| The longer it trains | The worse it gets | No longer gets worse |
 
-**"越训越差"被止住了,但也还没涨。** 原因在指标里写着:`approx_kl≈4e-5/update`、
-跑满 10 亿步后离基座仅 `mag_kl=0.011` —— 紧信任域(ε=0.02)加上每 rollout 只有
-**0.75 个半庄终局**,策略几乎没动。所以下一步不是换算法,而是**把信号变密**:
-GRP 势函数塑形(`reward_placement.auto_reset_shaped`),用 752 万人类对局样本训一个
-"局面 → 终局顺位点期望"的势函数 Φ,奖励改成 `Φ(s') − Φ(s)`,终局补 `pt − Φ(s_T)`。
-按势能塑形定理这是**策略不变**的,实测 telescoping 精确成立(奖励和 + Φ(s₀) = pt 的精确置换),
-而非零奖励步占比从 0.1% 升到 **1.10%(信号密度 ×11)**。
+**"The longer it trains, the worse it gets" has been stopped — but it has not started improving either.** The metrics say
+why: `approx_kl≈4e-5/update`, and after a full 1B steps the policy is only `mag_kl=0.011` away from the base — a tight
+trust region (ε=0.02) plus only **0.75 hanchan terminals** per rollout left the policy almost unmoved. So the next step
+is not a different algorithm but **denser signal**:
+GRP potential shaping (`reward_placement.auto_reset_shaped`) trains a potential Φ, "position → expected final placement
+points", on 7.52M samples from human games; the reward becomes `Φ(s') − Φ(s)`, with `pt − Φ(s_T)` added at game end.
+By the potential-based shaping theorem this is **policy-invariant**; the telescoping holds exactly in measurement (the
+reward sum + Φ(s₀) is exactly a permutation of pt), and the share of steps with non-zero reward rises from 0.1% to
+**1.10% (signal density ×11)**.
 
-**给同类项目的提醒**:上游 Mahjax 论文自身的实验用的就是 single-round 模式,其 PPO 超参
-被本项目整套移植——**包括那个 `round_mode`**。移植一份配方时,先确认它的 episode 边界与
-奖励定义和你的评测目标是同一个函数。
+**A warning for similar projects**: the upstream Mahjax paper's own experiments use single-round mode, and this project
+ported its PPO hyperparameters wholesale — **including that `round_mode`**. When you port a recipe, first confirm that
+its episode boundary and reward definition are the same function as your evaluation objective.
 
-## 关键实验结论(全部 4k 局同协议)
+## Key experimental findings (all 4k games, same protocol)
 
-| 实验 | 结果 | 教训 |
+| Experiment | Result | Lesson |
 |---|---|---|
-| BC 数据缩放(窄网) | 20k 场 -14.3 → 353k 场 -12.5,**每翻倍 +2.3pt**;1.05M 场后平台 | 数据杠杆有平台 |
-| 容量缩放 | 192×8 足训 **-8.87**(破台);欠训 1 epoch 时假象 -10.5 | **宽网欠训敏感** |
-| 纯自博弈 PPO | 50 亿步 -19.5(低于 BC 基座) | 四座同策不迁移(且**目标错配**,见上) |
-| 自家族 league(8 臂 ×10 亿步扫描) | 最优 -9.70,均未超基座 | 选优偏差实为 ~0.78pt(只有 2 臂做过外评,非 8);**目标错配** |
-| obs 勘误 | env 从不写 discards/meld_tiles(死数组) | 半盲 obs 曾封顶 -10.2 |
-| obs v2 加富(时序/手切/立直位/现物) | 峰 **-4.86**(12k),但精修后才显现 | 观测杠杆 ≈ 4 年数据,不与数据叠加 |
-| oracle critic(Suphx 式非对称 AC) | 8 亿步 **-8.38**,较基座退 3.2pt | **该结论作废**:跑在错误目标上,非方法本身失败 |
-| **100k 里程碑**(v2 精修 g186) | **-4.66 ± 0.535**,CI 全域 < 0 | 距超越 v4 尚差 4.66pt;BC 独走到此为止 |
-| **RL 四连负**(自博弈/窄 league/8 臂 league/oracle) | 内部指标漂亮、外部强度掉 | 根因=目标错配;四条线**全部需在修正后重做** |
-| **目标修正后重跑**(10 亿步,顺位奖励) | **-4.88 ± 0.81**,与基座持平 | 退化被止住;mag_kl 0.011(当时据此判为"策略几乎没动",**后经行为换算证伪**,见下) |
-| GRP 势函数塑形 | 信号密度 0.1%→**1.10%**,telescoping 精确;10.7 亿步 mag_kl **0.022**(旧版同期 0.011) | 策略不变前提下解稀疏,策略位移翻倍 |
-| 塑形版外评(第一段 14.8 亿步止) | 两次 12k 定音 **-3.79** / **-4.04**;全线合并 **-3.78 ± 0.85** | 相对基座 **+0.88 ± 1.00**,z=1.73;**两次定音各自都不显著**(0.87/1.05σ、0.62/0.74σ) |
-| 锚是否约束住"被打分的分布" | KL_human/KL_self = **0.89**(非 ≫1);人类 top-1 仅掉 0.26pp | 锚有效,该担忧在当前漂移量级下**不成立** |
-| 单局尺度 ρ(报告主张 <0.15) | 实测 **0.235**(70.8 万半庄 / 2724 万「局×家」样本),R²=0.055 | 报告的**数值不成立**(高估约 57%);但单局仅解释 5.5% 顺位方差,组相对路线仍低效 |
-| 熵系数方向(报告自陈可能反了) | 评测本就走 argmax;策略自身 Q 下 τ∈[0.01,2] 每决策价值变化 |Δ|≤0.0004pt(CI 全含 0),熵 13 亿步稳在 0.50±0.01 | **两个方向都无价值可回收**,ent_coef 不是当前杠杆 |
-| sp 求解器特征 +1.0~1.5pt(报告主张) | 弃张效率实测:RL 13.4 亿步与 BC 基座**几乎全等**(向听最优 96.42% vs 96.36%,受入亏欠 3.85% vs 3.72%) | 偏离是**取舍不是错误**(模仿人类的基座偏离得一样多);该增益最廉价的来源被排除,主张存疑 |
-| 8 臂选优偏差 ~1.9pt(报告主张) | 算术对(E[max₈]=1.4236σ,4k 的 σ=1.38pt → 1.96pt);但当年**只有 2 臂做过外评**,其余 6 臂被内部指标 lr_r 先筛掉 → 适用值 E[max₂]=**0.78pt** | 公式成立、**套在本次扫描上不成立**;-9.70 去偏到 ≈-10.5(上界 -11.7),结论不变 |
-| 4k 亮点必回拉(本项目铁律) | 第 5 次坐实:b1408 的 4k -3.57 → 12k **-4.04**;b512 的 4k -1.29/-3.50 → 12k -3.79 | 单段 4k 只配做筛选,**任何纪录/结论一律以 12k 双段为准** |
-| 我们自己的 CI 口径(复核) | `run_eval` 按**局**算 CI,但複式同一副牌四个旋转不独立;实测 ICC = **−0.079**,按**牌局组**算的 CI 只有按局的 **0.873 倍** | 现行 CI **偏保守 13%**,真实分辨率 4k ±2.36 / 12k ±1.34 / 100k ±0.467;过去所有判读都是低估显著性,结论方向不变 |
-| **配对头对头**(b1408 vs 基座 g186,**同 2000 副牌**) | **+0.636 ± 1.90**,z=0.66;同牌相关 r=+0.307,配对削减方差 **30.7%** | 迄今最干净的一次比较:效应真在正侧但**8000 局分辨不出来**;ICC 在两个模型上复现(−0.079 / −0.093) |
-| 测量预算(由上式反推) | 把 +0.64pt 打到 2σ 需 **7.15 万局×2 ≈ 86 小时 CPU**;+2pt 只需 7 千局×2 ≈ 9 小时 | **做大效应比测细效应便宜一个量级** —— 下一步应放开信任域而不是加评测局数 |
-| **KL→行为换算**(自我订正) | b1408 与基座 top-1 **不一致 3.10%**(≈30 决策/半庄),非"几乎没动";对照:错目标的 oracle 臂不一致 **5.30%** 却退 3.3pt | **"锚过紧"这个前提站不住**;距离本身不决定强弱,方向才决定。`policy_shift.py` 从此作为免费**先行指标**(几分钟出,替代 9 小时外评) |
+| BC data scaling (narrow net) | 20k games -14.3 → 353k games -12.5, **+2.3pt per doubling**; plateaus after 1.05M games | The data lever has a plateau |
+| Capacity scaling | 192×8 fully trained **-8.87** (breaks through the plateau); undertrained at 1 epoch it shows a misleading -10.5 | **Wide nets are sensitive to undertraining** |
+| Pure self-play PPO | 5B steps -19.5 (below the BC base) | Four seats playing one policy does not transfer (and the **objective was mismatched**; see above) |
+| Self-family league (8 arms × 1B-step sweep) | Best -9.70; none beat the base | The selection bias is really ~0.78pt (only 2 arms were evaluated externally, not 8); **objective mismatch** |
+| obs erratum | The env never writes discards/meld_tiles (dead arrays) | The half-blind obs once capped strength at -10.2 |
+| obs v2 enrichment (temporal order / hand-discard flags / riichi tile position / genbutsu) | Peak **-4.86** (12k), but it only showed after refinement | The observation lever ≈ 4 years of data, and it does not stack with data |
+| Oracle critic (Suphx-style asymmetric AC) | 800M steps **-8.38**, 3.2pt below the base | **This conclusion is void**: it ran on the wrong objective; it is not a failure of the method itself |
+| **100k milestone** (v2 refined g186) | **-4.66 ± 0.535**, the whole CI < 0 | Still 4.66pt short of beating v4; this is as far as BC alone goes |
+| **Four RL failures in a row** (self-play / narrow league / 8-arm league / oracle) | Internal metrics look great, external strength drops | Root cause = objective mismatch; all four lines **must be redone after the fix** |
+| **Rerun after the objective fix** (1B steps, placement reward) | **-4.88 ± 0.81**, level with the base | Degradation stopped; mag_kl 0.011 (read at the time as "the policy barely moved" — **later refuted by translating KL into behavior**; see below) |
+| GRP potential shaping | Signal density 0.1%→**1.10%**, telescoping exact; at 1.07B steps mag_kl **0.022** (0.011 for the unshaped version at the same point) | Fixes reward sparsity without changing the optimal policy, and doubles how far the policy moves |
+| External evals of the shaped run (first segment, stopped at 1.48B steps) | Two 12k adjudications **-3.79** / **-4.04**; whole run pooled **-3.78 ± 0.85** | Relative to the base **+0.88 ± 1.00**, z=1.73; **neither adjudication is significant on its own** (0.87/1.05σ, 0.62/0.74σ) |
+| Does the anchor constrain "the distribution being scored"? | KL_human/KL_self = **0.89** (not ≫1); human top-1 agreement drops only 0.26pp | The anchor works; the concern **does not hold** at the current magnitude of drift |
+| Single-hand scale ρ (the report claimed < 0.15) | Measured **0.235** (708k hanchan / 27.24M "hand × player" samples), R²=0.055 | The report's **number does not hold** (the true value is about 57% higher); but a single hand explains only 5.5% of placement variance, so group-relative routes remain inefficient |
+| Direction of the entropy coefficient (the report admitted it might be backwards) | Evaluation already uses argmax; under the policy's own Q, τ∈[0.01,2] changes per-decision value by \|Δ\|≤0.0004pt (every CI contains 0), and entropy held at 0.50±0.01 for 1.3B steps | **No value to recover in either direction**; ent_coef is not a current lever |
+| sp-solver features worth +1.0~1.5pt (the report's claim) | Discard efficiency measured: RL at 1.34B steps and the BC base are **almost identical** (shanten-optimal 96.42% vs 96.36%, ukeire given up 3.85% vs 3.72%) | The deviations are **trade-offs, not errors** (the human-imitating base deviates just as much); the cheapest source of that gain is ruled out, so the claim is doubtful |
+| 8-arm selection bias ~1.9pt (the report's claim) | The arithmetic is right (E[max₈]=1.4236σ, σ at 4k = 1.38pt → 1.96pt); but back then **only 2 arms were evaluated externally** — the other 6 were screened out beforehand by the internal metric lr_r → the applicable value is E[max₂]=**0.78pt** | The formula holds, **but does not apply to this sweep**; -9.70 debiases to ≈-10.5 (worst case -11.7), conclusion unchanged |
+| 4k highlights always regress (an iron rule of this project) | Confirmed for the 5th time: b1408's 4k -3.57 → 12k **-4.04**; b512's 4k -1.29/-3.50 → 12k -3.79 | A single 4k segment is only good for screening; **every record and conclusion is based on the 12k double segment** |
+| Our own CI convention (audit) | `run_eval` computes the CI per **game**, but the four rotations of one duplicate deal are not independent; measured ICC = **−0.079**, so the CI computed per **deal group** is only **0.873×** the per-game one | The current CI is **13% too conservative**; true resolution 4k ±2.36 / 12k ±1.34 / 100k ±0.467; every past call underestimated significance, and none changes direction |
+| **Paired head-to-head** (b1408 vs base g186, **same 2000 deals**) | **+0.636 ± 1.90**, z=0.66; same-deal correlation r=+0.307, pairing cuts variance by **30.7%** | The cleanest comparison so far: the effect really is on the positive side, but **8000 games cannot resolve it**; the ICC replicates on both models (−0.079 / −0.093) |
+| Measurement budget (inverted from the above) | Taking +0.64pt to 2σ needs **71.5k games × 2 ≈ 86 hours of CPU**; +2pt needs only 7k games × 2 ≈ 9 hours | **Making a big effect is an order of magnitude cheaper than measuring a small one** — the next step should be loosening the trust region, not adding evaluation games |
+| **KL → behavior translation** (self-correction) | b1408 and the base **disagree on the top-1 action 3.10%** of the time (≈30 decisions per hanchan), not "barely moved"; for comparison, the wrong-objective oracle arm disagrees **5.30%** and lost 3.3pt | **The premise "the anchor is too tight" does not stand**; distance itself does not decide strength, direction does. `policy_shift.py` is now a free **leading indicator** (results in minutes, replacing a 9-hour external eval) |
 
-## 川麻线(血战到底)进展
+## Sichuan line (Xuezhan, "bloody to the end") progress
 
-从零 RL 的第二条线,与立直线共用 JAX 栈与评测方法论,但**结构性免疫目标错配**
-——川麻现实中逐盘结钱,训练目标 = 评测目标 = 钱,不存在"半庄顺位"这层转换。
+A second from-scratch RL line that shares the JAX stack and the evaluation methodology with the riichi line, but is
+**structurally immune to objective mismatch** — in real play Sichuan mahjong settles money hand by hand, so training
+objective = evaluation objective = money, and there is no "hanchan placement" conversion layer.
 
-| 阶段 | 内容 | 判据 | 状态 |
+| Phase | Content | Criterion | Status |
 |---|---|---|---|
-| P0 | 规则冻结 + Python 参考实现 + 查表核心 + L0-L3 规则梯子 + 复式竞技场 | 862 单测全绿;查表 3 万例零不符;A(π,π)≡0 | ✅ |
-| **P1** | **`sichuan/env_jax.py`(551 行,定长数组 / jit-vmap 友好)** | **百万局逐决策点差分零失配** | ✅ |
-| **P2** | **观测 + 网络(1.52M) + 手工向听塑形 + 三条免费仪表 + 评测桥** | **1.05 亿步即达标(预算的 35%)** | ✅ |
-| P3 | 100 亿步 + league(池含 L0/L1/L3 谱系外对手) | 对 L5 组级 bootstrap CI 全域 > 0 | **改序**:先解熵塌缩再上 league |
+| P0 | Rules frozen + Python reference implementation + lookup-table core + L0-L3 rule ladder + duplicate arena | 862 unit tests all green; 30k lookup cases with zero mismatches; A(π,π)≡0 | ✅ |
+| **P1** | **`sichuan/env_jax.py` (551 lines, fixed-size arrays / jit-vmap friendly)** | **Zero mismatches at every decision point in a million-game differential test** | ✅ |
+| **P2** | **Observation + network (1.52M) + hand-crafted shanten shaping + three free instruments + eval bridge** | **Bar cleared at 105M steps (35% of the budget)** | ✅ |
+| P3 | 10B steps + league (pool includes out-of-lineage opponents L0/L1/L3) | Group-level bootstrap CI vs L5 entirely > 0 | **Reordered**: fix entropy collapse first, then add the league |
 
-**P2 结果(2026-09-06,1.05 亿步 / 3 亿步预算)**:复式 1v3,挑战者轮坐四座打同一副牌山。
+**P2 result (2026-09-06, 105M steps / 300M-step budget)**: duplicate 1v3, with the challenger rotating through all four
+seats on the same walls.
 
-| 挑战者 | vs 3×L0(300 副牌) | 配对差 vs L1 |
+| Challenger | vs 3×L0 (300 deals) | Paired difference vs L1 |
 |---|---|---|
-| 手写规则 L1(贪心向听) | +3.949 ± 0.355 | — |
-| **从零 RL b800(1.05 亿步)** | **+6.872 ± 0.500** | **+2.922 ± 0.565,z=10.1** |
-| 从零 RL b2272(2.98 亿步,跑满预算) | +6.343 ± 0.486 | +2.394 ± 0.548,z=8.6 |
+| Hand-written rule bot L1 (greedy shanten) | +3.949 ± 0.355 | — |
+| **From-scratch RL b800 (105M steps)** | **+6.872 ± 0.500** | **+2.922 ± 0.565, z=10.1** |
+| From-scratch RL b2272 (298M steps, full budget) | +6.343 ± 0.486 | +2.394 ± 0.548, z=8.6 |
 
-判据是"3 亿步内显著超过 L1",实际在 **35% 的预算内**通过。效应大(+2.9pt)所以
-300 副牌就够——这正是 [测量预算](#) 那条教训的反面用例:大效应便宜,小效应测不起。
+The criterion was "significantly beat L1 within 300M steps"; it actually passed within **35% of the budget**. Because
+the effect is large (+2.9pt), 300 deals were enough — the flip side of the
+[measurement budget](#key-experimental-findings-all-4k-games-same-protocol) lesson: large effects are cheap to measure,
+small ones are unaffordable.
 
-### ⚠️ 订正(2026-09-07):上表的"vs 3×L0"是一把**饱和**的尺子
+### ⚠️ Correction (2026-09-07): the "vs 3×L0" column above is a **saturated** ruler
 
-本节最初写着"b2272 − b800 = −0.528(z=−2.13),多跑 1.9 亿步不但没买到东西、名义上
-还退了",并据此说"学习在 1 亿步前就停了"。**两句都不准确,原因是测量工具本身。**
+This section originally said "b2272 − b800 = −0.528 (z=−2.13): 190M more steps not only bought nothing but nominally
+went backwards", and concluded from it that "learning stopped before 100M steps". **Neither statement is accurate, and
+the cause is the measuring instrument itself.**
 
-L0 是均匀随机策略,对随机对手能榨出的分数有硬上限。实测该尺度在 **+6 附近饱和,
-而且在饱和区内会给出反向排序**:
+L0 is a uniform-random policy, and there is a hard ceiling on the points you can squeeze out of random opponents.
+Measured, this scale **saturates around +6, and inside the saturated band it inverts the ordering**:
 
-| | vs 3×L0 | 直接对打(不饱和) |
+| | vs 3×L0 | Direct head-to-head (unsaturated) |
 |---|---|---|
-| b192(2517 万步) | **+6.775** | −1.422 ± 0.411 |
-| b2272(2.98 亿步) | +6.343 | **0**(锚点) |
+| b192 (25.17M steps) | **+6.775** | −1.422 ± 0.411 |
+| b2272 (298M steps) | +6.343 | **0** (anchor) |
 
-即 L0 尺度判 b192 强于 b2272,而两者**直接对打** b2272 赢 **+1.59**(双向一致,
-z=+7.9 / −6.8)。阳性对照 `b800 vs 3×b32 = +5.614 ± 0.465` 证明该仪表分辨力充足。
+That is, the L0 scale rates b192 above b2272, while in **direct head-to-head** play b2272 wins by **+1.59** (consistent
+in both directions, z=+7.9 / −6.8). The positive control `b800 vs 3×b32 = +5.614 ± 0.465` shows that this instrument has
+ample resolving power.
 
-**改用"对当前最强快照直接对打"重建曲线后**(全部同一批 300 副牌山,
-锚点自身按 `A(π,π)≡0` 恒为 0):
+**After rebuilding the curve as "direct head-to-head against the current strongest snapshot"** (all on the same 300
+walls; the anchor itself is identically 0 by `A(π,π)≡0`):
 
-| 档 | 步数 | vs 3×b2272 | 相邻档配对差 |
+| Checkpoint | Steps | vs 3×b2272 | Paired difference vs the previous checkpoint |
 |---|---|---|---|
-| b32 | 419 万 | −5.216 ± 0.344 | — |
-| b96 | 1259 万 | −5.124 ± 0.365 | +0.092,z=0.45 |
-| b192 | 2517 万 | −1.422 ± 0.411 | **+3.703,z=15.5** |
-| **b384** | **5033 万** | **−0.245 ± 0.369** | **+1.177,z=4.51** |
-| b800 | 1.05 亿 | −0.058 ± 0.323 | +0.187,z=0.91 |
-| b1408 | 1.85 亿 | −0.085 ± 0.333 | −0.027,z=−0.13 |
-| b2272 | 2.98 亿 | 0(恒等) | +0.085,z=0.50 |
+| b32 | 4.19M | −5.216 ± 0.344 | — |
+| b96 | 12.59M | −5.124 ± 0.365 | +0.092, z=0.45 |
+| b192 | 25.17M | −1.422 ± 0.411 | **+3.703, z=15.5** |
+| **b384** | **50.33M** | **−0.245 ± 0.369** | **+1.177, z=4.51** |
+| b800 | 105M | −0.058 ± 0.323 | +0.187, z=0.91 |
+| b1408 | 185M | −0.085 ± 0.333 | −0.027, z=−0.13 |
+| b2272 | 298M | 0 (identity) | +0.085, z=0.50 |
 | L1 | — | −2.062 ± 0.336 | — |
 
-**结论订正**:
+**Corrected conclusions**:
 
-- **学习在 b384 = 5033 万步(预算的 17%)完成**,之后 83% 的预算买到
-  +0.245 ± 0.369(z=1.30,不显著)。
-- **`b2272 − b800` 的正确读数是直接对打的 +0.035 ± 0.270(z=0.26)**,不是 −0.528。
-  "多跑 1.9 亿步没变强"成立;"名义上还退了"**撤回**。
-- L0 尺度**整段漏掉了 b192→b384 那次真实的 +1.18** 增长。
-- **P2 判据的结论不变**:b2272 相对 L1 在不饱和尺度上是 +2.06,与 L0 尺度上的
-  +2.4~+2.9 同量级。但**上表所有 vs 3×L0 的 margin 不应再当作进展刻度。**
+- **Learning finished at b384 = 50.33M steps (17% of the budget)**; the remaining 83% of the budget bought
+  +0.245 ± 0.369 (z=1.30, not significant).
+- **The correct reading of `b2272 − b800` is the head-to-head +0.035 ± 0.270 (z=0.26)**, not −0.528.
+  "190M more steps did not make it stronger" stands; "nominally went backwards" is **withdrawn**.
+- The L0 scale **missed the entire real +1.18 gain from b192 to b384**.
+- **The P2 verdict is unchanged**: b2272 vs L1 is +2.06 on the unsaturated scale, the same order as the
+  +2.4 to +2.9 on the L0 scale. But **none of the vs 3×L0 margins in the tables above should be used as a progress scale any more.**
 
-**教训**:这与本项目最大的那次教训(训练目标 ≠ 评测目标)是同一个形状 ——
-**测量工具比被测对象先到极限,而它不会报错,只会给出一条平坦甚至反向的曲线。**
-判"没有进步"之前,必须先证明尺子还能分辨(阳性对照),以及尺子没有饱和(换锚重测)。
-仪表见 [`sichuan/eval_h2h.py`](sichuan/eval_h2h.py)。
+**Lesson**: this has the same shape as this project's biggest lesson (training objective ≠ evaluation objective) —
+**the measuring instrument reaches its limit before the thing being measured does, and it raises no error; it just
+returns a flat or even inverted curve.** Before concluding "no progress", you must first show that the ruler can still
+resolve a known difference (positive control) and that it has not saturated (re-anchor and re-measure).
+Instrument: [`sichuan/eval_h2h.py`](sichuan/eval_h2h.py).
 
-### 同一族的第二个坑:自谱系对决把外部进步放大 2.3 倍(2026-09-08)
+### A second pitfall from the same family: self-lineage matchups inflated external progress 2.3× (2026-09-08)
 
-换成"对当前最强快照直接对打"之后,又撞上它的对偶问题:**那个锚也在自己的谱系里。**
+After switching to "direct head-to-head against the current strongest snapshot", we ran into its dual problem:
+**that anchor is also inside its own lineage.**
 
-在这套不饱和的自谱系尺度上,一条加了 dual-clip 的臂"打赢自己的过去"跑出两段
-**各 z≈3**(5033 万→1.51 亿 +0.491,1.51 亿→3.02 亿 +0.512,合计 +1.003)。
-换到**谱系外**对手(手写规则 L1,不在任何 RL 谱系里)重测:
+On this unsaturated self-lineage scale, an arm with dual-clip added "beat its own past" in two segments of
+**z≈3 each** (50.33M→151M +0.491, 151M→302M +0.512, +1.003 in total).
+Re-measured against an **out-of-lineage** opponent (the hand-written rule bot L1, which is not in any RL lineage):
 
-| | 步数 | vs 3×L1 |
+| | Steps | vs 3×L1 |
 |---|---|---|
-| 老线 b384 | 5033 万 | +1.903 ± 0.367 |
-| 老线 b2272 | 2.98 亿 | +2.078 ± 0.354 |
-| dual-clip | 5033 万 | +1.720 ± 0.372 |
-| dual-clip | 3.02 亿 | +2.157 ± 0.380 |
+| Old line b384 | 50.33M | +1.903 ± 0.367 |
+| Old line b2272 | 298M | +2.078 ± 0.354 |
+| dual-clip | 50.33M | +1.720 ± 0.372 |
+| dual-clip | 302M | +2.157 ± 0.380 |
 
-外部实测只有 **+0.437 ± 0.438(z=1.96)**,而且**终点与老线持平**(+0.079,z=0.38):
-它起点低 0.182,涨得多一点,回到同一个地方。**放大倍数 1.003 / 0.437 = 2.3。**
+Measured externally the gain is only **+0.437 ± 0.438 (z=1.96)**, and **its endpoint is level with the old line**
+(+0.079, z=0.38): it started 0.182 lower, rose a little more, and ended up in the same place. **Inflation factor
+1.003 / 0.437 = 2.3.**
 
-**但自谱系曲线并非不可用** —— 用于看**同一条线内部的形状**时它是可信的:
-老线的锚定读数 +1.177 / +0.245 被 L1 的 +0.807 / +0.175 独立确认,
-"学习在 5033 万步完成"因此站得住。
+**But the self-lineage curve is not useless** — it is trustworthy for reading **the shape within a single line**:
+the old line's anchored readings of +1.177 / +0.245 are independently confirmed by L1's +0.807 / +0.175,
+so "learning finished at 50.33M steps" stands.
 
-> **规矩**:判"某配方更强"必须有**谱系外**对手的读数;
-> 自谱系曲线只能用来看同一条线内部的形状。
+> **Rule**: claiming "recipe X is stronger" requires a reading against an **out-of-lineage** opponent;
+> a self-lineage curve can only show the shape within one line.
 
-**本轮四个干预在谱系外尺度上全部为零**:加步数 ×6(+0.175,z=0.82)、
-容量 ×3.8(+0.065,z=0.44)、GAE 差一位修正(+0.022,z=0.10)、
-dual-clip(终点 +0.079,z=0.38)。dual-clip 确凿做到的只有机制层面的两件事:
-自由决策点熵 +58%,以及把"平台"换成一条仍在缓慢上升的曲线 —— 但 6 倍预算下净收益为零。
+**All four interventions in this round are zero on the out-of-lineage scale**: steps ×6 (+0.175, z=0.82),
+capacity ×3.8 (+0.065, z=0.44), the GAE off-by-one fix (+0.022, z=0.10), and
+dual-clip (endpoint +0.079, z=0.38). The only things dual-clip demonstrably did are two at the mechanism level:
++58% entropy at free decision points, and replacing the "plateau" with a curve that is still slowly rising — but at
+6× the budget the net gain is zero.
 
-**这个读数为什么可信**:评测桥用"参考实现跑对局 + JAX 影子状态同步"的方式接网络
-(规则机器人都是写给参考实现的),影子一旦失步,网络就是在看错的局面下棋,而分数
-照样算得出来——这种 bug 不崩,只会把评测安静地变成噪声。所以每个网络决策点都对一次
-合法集并统计动作回退:**58,132 次决策,合法集不符 0,回退 0**。基准侧让 L1 走完全
-同一套评测代码、同一批牌山,得 +3.949,与方案记录的 +3.867 吻合。
+**Why this reading can be trusted**: the eval bridge connects the network by "running the game in the reference
+implementation + keeping a JAX shadow state in sync" (the rule bots are all written against the reference
+implementation). If the shadow ever desyncs, the network is playing a position it is misreading, while scores still get
+computed — a bug like this does not crash; it quietly turns the evaluation into noise. So at every network decision
+point we cross-check the legal-action set and count action fallbacks: **58,132 decisions, 0 legal-set mismatches,
+0 fallbacks**. On the baseline side, L1 goes through exactly the same evaluation code on the same walls and scores
++3.949, matching the +3.867 recorded in the plan.
 
-**P3 因此改序,预算也要重估**:原计划直接上 100 亿步 + league,但证据说这个配方在
-**5033 万步**就停止学习,堆 200 倍算力只会把同一个塌缩策略跑得更久。三件事按序做:
+**P3 is therefore reordered, and its budget has to be re-estimated**: the original plan was to go straight to 10B steps
++ league, but the evidence says this recipe stops learning at **50.33M steps**, and piling on 200× the compute would only
+run the same collapsed policy for longer. Three things, in order:
 
-1. **换刻度**:今后学习曲线一律用"对当前最强快照的直接对打"来量,并常设阳性对照;
-   规则梯子只在 +6 以下有分辨力。P3 的 100 亿步是按饱和刻度定的,须重估。
-2. **先证明策略能重新移动**再谈对手池:提熵之后用 `policy_shift.py` 那套先行指标看。
-   注意**熵仪表本身要改**:实测 **72.9% 的决策点只有 1 个合法动作**,均值熵有 73%
-   结构性恒为 0,`|legal|≥5` 桶从 b32 的 0.495 掉到 b2272 的 0.173(−65%),
-   而均值只掉 14%。拿均值当被控量等于调一个动不了的数。
-3. 对手池按外部证据取"课程 + 快照池 + 保留最好的 checkpoint",
-   **不做 exploiter、不做 PFSP 加权**。
+1. **Change the scale**: from now on, learning curves are always measured as "direct head-to-head against the current
+   strongest snapshot", with a standing positive control; the rule ladder only has resolving power below +6. P3's
+   10B steps was sized on the saturated scale and must be re-estimated.
+2. **First prove the policy can move again**, before talking about opponent pools: after raising entropy, check it with
+   the leading indicator from `policy_shift.py`. Note that **the entropy instrument itself has to change**: measured,
+   **72.9% of decision points have only 1 legal action**, so 73% of the mean entropy is structurally fixed at 0; the
+   `|legal|≥5` bucket fell from 0.495 at b32 to 0.173 at b2272 (−65%), while the mean fell only 14%. Using the mean as
+   the controlled variable means tuning a number that cannot move.
+3. Build the opponent pool on external evidence: "curriculum + snapshot pool + keep the best checkpoint";
+   **no exploiters, no PFSP weighting**.
 
-**同时必须记下的隐患**:该策略的熵已塌到 **0.048 nats**,
-逐状态 max_ratio 冲到 3-6、max_kl 到 1.5-4;均值型指标(clip_frac 0.006、
-adv_osc 0.02、vloss 在降)全都好看,**只有尾部仪表报警**——这就是把它们做成
-免费常驻指标的理由。
+**A hazard that must also be recorded**: this policy's entropy has collapsed to **0.048 nats**,
+per-state max_ratio spikes to 3-6 and max_kl to 1.5-4; the average-type metrics (clip_frac 0.006,
+adv_osc 0.02, vloss falling) all look fine, **and only the tail instruments raise the alarm** — which is exactly why
+they were made into free, always-on metrics.
 
-**但这个 0.048 本身也是一把钝尺(2026-09-07 补测)**:它是对**所有**决策点求的平均,
-而实测 **72.9% 的决策点只有 1 个合法动作**(摸切/被迫应答),熵结构性恒为 0。
-按 `|legal|` 分桶后:
+**But this 0.048 is itself a blunt ruler (follow-up measurement, 2026-09-07)**: it is an average over **all** decision
+points, and measured, **72.9% of decision points have only 1 legal action** (tsumogiri / forced responses), where
+entropy is structurally 0. Bucketed by `|legal|`:
 
-| 档 | 全部决策点均值熵 | `|legal|≥5` 桶 | 有效动作 |
+| Checkpoint | Mean entropy over all decision points | `\|legal\|≥5` bucket | Effective actions |
 |---|---|---|---|
-| b32(419 万步) | 0.0808 | **0.4947** | 1.64 |
-| b800(1.05 亿步) | 0.0609 | 0.1973 | 1.22 |
-| b2272(2.98 亿步) | 0.0702 | **0.1729** | 1.19 |
+| b32 (4.19M steps) | 0.0808 | **0.4947** | 1.64 |
+| b800 (105M steps) | 0.0609 | 0.1973 | 1.22 |
+| b2272 (298M steps) | 0.0702 | **0.1729** | 1.19 |
 
-**真正有得选的决策点熵掉了 65%,而均值只掉 14%** —— 塌缩是真的(判据线是
-"`|legal|≥5` 仍有 0.5+ nats 则为假象",实测 0.17,不成立),但**我们一直看的那个数
-低报了它**。推论:任何以均值熵为被控量的闭环控制器,调的是一个 73% 动不了的数;
-目标带必须按 `|legal|≥2` 或 `≥5` 标定。
+**At the decision points that actually offer a choice, entropy fell 65%, while the mean fell only 14%** — the collapse
+is real (the falsification line was "if the `|legal|≥5` bucket still has 0.5+ nats, it is an artifact"; measured 0.17,
+so that does not hold), but **the number we had been watching under-reported it**. Corollary: any closed-loop
+controller that uses mean entropy as its controlled variable is regulating a number that is 73% immovable; the target
+band must be calibrated on `|legal|≥2` or `≥5`.
 
-**P1 的价值在于它抓到了什么**:百万局差分在 40 万-42.5 万 seed 段报出 2 例失配
-(发生率 2.7e-4)。实例 seed=402578:玩家 2 打出一张牌,响应队列 `[3,0,1]`,玩家 3
-与 0 **同时荣和**;参考实现把牌判给队列首位的玩家 3,而 JAX 版用 `argmax(ron_flag)`
-取到了编号最小的玩家 0——响应队列自打牌者下家起算,与编号顺序不一致,**只有一炮多响
-时才暴露**。而牌数守恒、零和这些不变量在该 bug 下**全部照常通过**。
+**P1's value lies in what it caught**: the million-game differential test reported 2 mismatches in the 400k–425k seed
+range (incidence 2.7e-4). Example, seed=402578: player 2 discards a tile, the response queue is `[3,0,1]`, and players 3
+and 0 **both declare ron**; the reference implementation awards the tile to player 3 at the head of the queue, whereas
+the JAX version used `argmax(ron_flag)` and picked player 0, the lowest index — the response queue starts from the
+player after the discarder and does not follow index order, **so the bug only shows up on multiple ron**. Invariants
+such as tile conservation and zero-sum scoring **all still pass** under this bug.
 
-另一个同类陷阱:**JAX 对越界索引静默截断到末元素而不报错**,曾让发牌循环给每家发了
-13 张同一张牌,同样骗过全部不变量。两者都印证同一条:环境 bug 会无声毒化 RL,
-**差分测试通过前不开训练**。
+Another trap of the same kind: **JAX silently clamps out-of-bounds indices to the last element instead of raising an
+error**, which once made the dealing loop give every player 13 copies of the same tile — again fooling every invariant.
+Both confirm the same point: environment bugs silently poison RL, so **no training starts until the differential test
+passes**.
 
-## 基础设施
+## Infrastructure
 
-| 机器 | 硬件 | 角色 | 状态 |
+| Machine | Hardware | Role | Status |
 |---|---|---|---|
-| 本机(Win11+WSL2) | RTX 5060 Ti 8GB / 20T | 训练·评测·开发(当前唯一在岗) | 长期在跑 |
-| 训练服务器 | RTX 6000 Ada 49GB / 48C | BC 大训练(共享,让位优先) | 长期不可用 |
-| 云 8×4090(compshare) | 8×RTX 4090 / 112C | league 扫描·数据构建 | 已释放 |
+| Local (Win11 + WSL2) | RTX 5060 Ti 8GB / 20 threads | Training · evaluation · development (currently the only one on duty) | Running long jobs |
+| Training server | RTX 6000 Ada 49GB / 48 cores | Large BC training (shared; yields to other users) | Unavailable for long stretches |
+| Cloud 8×4090 (compshare) | 8×RTX 4090 / 112 cores | League sweeps · dataset building | Released |
 
-单机长跑的取舍:8GB 显存下 league PPO(learner + 3 对手前向)约 3.9k 步/秒,
-1 亿步 ≈ 7 小时;评测把冠军放 CPU、训练独占 GPU,两边同时满载。
+Trade-offs of long runs on a single machine: with 8GB of VRAM, league PPO (learner + forward passes for 3 opponents)
+runs at about 3.9k steps/s, so 100M steps ≈ 7 hours; evaluation puts the champion on the CPU and gives training the GPU
+to itself, so both run at full load at the same time.
 
-## 布局速览
+## Repository layout
 
-- `jax_rl/` **当前主线**:ppo_fast / ppo_league / bc_stream / obs_lean / net_lean、
-  `data_bridge/`(mjai 解析+重放)、`mjai_bot/`(评测桥)、cloud_setup.sh
-- `sichuan/` `common/` **川麻线**:规则参考实现(862 测试)、L0-L3 规则梯子、复式竞技场、
-  5 进制查表核心(胡牌/向听 O(1),3 万例零不符)、势能塑形(telescoping 已验证)
-- `Mortal/`(**不入库**)上游 clone,评测桥的 libriichi 由此构建 —— 见 SETUP.md
-- `configs/` `scripts/` 价值线时代的训练/评测/自对弈(历史)
-- `data/` `runs/` `weights_backup/` gitignore(数据不可分发;权重超 GitHub 单文件限)
+- `jax_rl/` **the current main line**: ppo_fast / ppo_league / bc_stream / obs_lean / net_lean,
+  `data_bridge/` (mjai parsing + replay), `mjai_bot/` (eval bridge), cloud_setup.sh
+- `sichuan/` `common/` **Sichuan line**: rules reference implementation (862 tests), L0-L3 rule ladder, duplicate arena,
+  base-5 lookup-table core (win and shanten checks in O(1), 30k cases with zero mismatches), potential shaping (telescoping verified)
+- `Mortal/` (**not checked in**) an upstream clone; the eval bridge's libriichi is built from it — see SETUP.md
+- `configs/` `scripts/` training / evaluation / self-play from the value line era (historical)
+- `data/` `runs/` `weights_backup/` gitignored (the data cannot be distributed; the weights exceed GitHub's per-file limit)
 
-## 文档地图
+## Documentation map
 
-| 文档 | 内容 |
+| Document | Contents |
 |---|---|
-| [SETUP.md](SETUP.md) | 环境搭建:依赖版本、Mahjax/libriichi 克隆、数据自建、冒烟自检 |
-| [RESULTS.md](RESULTS.md) | 价值线时代记分册(历史) |
-| [sichuan/RULES.md](sichuan/RULES.md) | 川麻规则冻结 v0 |
-| [LICENSING.md](LICENSING.md) | 分目录双许可说明(MIT / AGPL-3.0) |
+| [SETUP.md](SETUP.md) | Environment setup: dependency versions, Mahjax/libriichi clones, building the data yourself, smoke self-checks |
+| [RESULTS.md](RESULTS.md) | Value-line-era scorecard (historical) |
+| [sichuan/RULES.md](sichuan/RULES.md) | Sichuan rules, frozen v0 |
+| [LICENSING.md](LICENSING.md) | Per-directory dual licensing (MIT / AGPL-3.0) |
