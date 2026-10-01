@@ -1,95 +1,100 @@
-# 川麻(血战到底)规则冻结 v0(2026-07-24)
+# Sichuan mahjong (Xuezhan Daodi, "bloody to the end"): rules frozen at v0 (2026-07-24)
 
-**目的**:为纯 RL 环境提供唯一事实源。参考实现(reference_impl.py)与未来的 JAX 环境都以本文档为准;
-规则争议以本文档裁决,修改需升版本号并重跑差分测试。基调:成都血战到底主流规则,含刮风下雨与
-查叫退税;v0 刻意排除的变体在文末列出。
+**Purpose**: the single source of truth for the pure-RL environment. Both the reference implementation (reference_impl.py)
+and the future JAX environment follow this document; rule disputes are settled by it, and any change requires a version
+bump and a rerun of the differential tests. Baseline: the mainstream Chengdu Xuezhan Daodi rules, including "wind and
+rain" (immediate kong payments) and the ready-hand check with kong refunds at an exhaustive draw; variants deliberately
+excluded from v0 are listed at the end.
 
-## 1. 牌与人数
+## 1. Tiles and players
 
-- 108 张:万/筒/条 各 1-9 × 4。**无字牌、无花牌。**
-- 4 人。庄家(dealer)首局固定 0 号位(RL 环境轮换由外层控制)。
+- 108 tiles: characters / dots / bamboos (wan / tong / tiao), 1-9 × 4 each. **No honor tiles, no flowers.**
+- 4 players. The dealer sits in seat 0 for the first hand (dealer rotation in the RL environment is controlled by the outer layer).
 
-## 2. 开局
+## 2. Opening
 
-- 庄家 14 张,余家 13 张(实现上:各发 13,庄家再摸第 1 张,即庄家先行)。
-- **换三张:v0 不做**(见 §9)。
-- **定缺(必做)**:发牌后、行牌前,每家同时声明一门花色为"缺门"。
-  - RL 动作:3 选 1(缺万/缺筒/缺条)。参考实现提供启发式缺省(选手中张数最少的花色,平手取序号小者)。
-  - 约束 A(胡牌):胡牌时手牌+副露中**不得含缺门花色**。
-  - 约束 B(行牌):手中仍有缺门牌时,**只能打缺门牌**(打牌动作掩码仅开放缺门张)。
-  - 缺门牌不可用于碰/杠。
+- The dealer holds 14 tiles, the others 13 (implementation: everyone is dealt 13, then the dealer draws the first tile, i.e. the dealer moves first).
+- **Exchanging three tiles (huan san zhang): not in v0** (see §9).
+- **Declaring a void suit (ding que, mandatory)**: after the deal and before play, every player simultaneously declares one suit as their "void suit".
+  - RL action: choose 1 of 3 (void characters / dots / bamboos). The reference implementation provides a heuristic default (the suit with the fewest tiles in hand; ties go to the lower index).
+  - Constraint A (winning): at the time of winning, hand + melds **must contain no tiles of the void suit**.
+  - Constraint B (play): while the hand still holds void-suit tiles, **only void-suit tiles may be discarded** (the discard mask opens only the void-suit tiles).
+  - Void-suit tiles cannot be used for pungs or kongs.
 
-## 3. 行牌与响应
+## 3. Play and responses
 
-- 顺序:摸牌 → (可选:暗杠/补杠/自摸胡) → 打牌 → 他家响应。
-- **无吃**。响应动作只有:碰、直杠(点杠)、荣胡(点炮)、过。
-- 响应优先级:**胡 > 碰/杠**;多家同时可胡 = **一炮多响**(全部成立,见 §6)。
-- 碰/杠后须打牌(杠后先摸一张"杠上"牌)。
-- 杠的三种:直杠(他家打出第 4 张)、补杠(碰后自摸第 4 张)、暗杠(手中 4 张)。
-  - 补杠可被抢:他家听该张可荣胡(**抢杠**,计入 §5 番种)。抢杠成立时补杠不成立(牌归胡家,
-    杠者不获刮风下雨钱)。
+- Order: draw → (optional: concealed kong / added kong / self-drawn win) → discard → responses from the other players.
+- **No chow.** The only responses are: pung, exposed kong (on a discard), win on the discard, pass.
+- Response priority: **win > pung/kong**; several players able to win at once = **multiple winners on one discard** (all of them stand; see §6).
+- A pung or kong must be followed by a discard (after a kong, first draw a replacement "on the kong" tile).
+- Three kinds of kong: exposed kong (another player discards the 4th tile), added kong (self-drawing the 4th tile after a pung), concealed kong (4 tiles in hand).
+  - An added kong can be robbed: a player waiting on that tile can win on it (**robbing the kong**, counted as a fan type in §5). When the robbing win stands, the added kong does not (the tile goes to the winner,
+    and the player who declared the kong gets no wind-and-rain payment).
 
-## 4. 胡牌型
+## 4. Winning hands
 
-- 标准型:4 面子(刻子/顺子,顺子仅同花色连续 3 张)+ 1 对。副露的碰/杠占用面子位。
-- **七对**:7 个对子(门清限定;含 4 张同牌视作 2 对,若其中有"根"另计,见 §5)。
-- 必须满足缺门约束(§2A)。**无起胡番数门槛**(平胡即可胡)。
+- Standard: 4 sets (pungs / chows; a chow is only 3 consecutive tiles of the same suit) + 1 pair. Melded pungs and kongs occupy set slots.
+- **Seven pairs**: 7 pairs (concealed hands only; 4 identical tiles count as 2 pairs, and any "gen" among them is counted separately, see §5).
+- The void-suit constraint (§2A) must hold. **There is no minimum fan to win** (a plain hand can win).
 
-## 5. 计分:番与倍率
+## 5. Scoring: fan and multipliers
 
-底分 = 1。得分 = 底分 × 2^番,**封顶 4 番(2^4=16 底)**(呼叫转移/花猪罚等 v0 不做)。
+Base = 1. Score = base × 2^fan, **capped at 4 fan (2^4 = 16 × base)** (call transfer, flower-pig penalties and the like are not in v0).
 
-| 番种 | 番数 | 说明 |
+| Fan type | Fan | Notes |
 |---|---|---|
-| 平胡 | 0 | |
-| 对对胡 | 1 | 4 刻子(含杠)+ 对 |
-| 清一色 | 2 | 全部同一花色 |
-| 七对 | 2 | |
-| 龙七对 | 3 | 七对含 ≥1 组 4 张同牌(该 4 张不再另计根) |
-| 金钩钓 | 1(加计) | 手中仅剩 1 张单钓(其余全部副露) |
-| 杠上花 | 1(加计) | 杠后摸牌自摸 |
-| 杠上炮 | 1(加计,胡家计) | 杠后打牌被荣 |
-| 抢杠胡 | 1(加计,胡家计) | |
-| 海底捞月 | 1(加计) | 摸最后一张牌自摸 |
-| 自摸 | 1(加计) | |
-| 根 | 每根 +1 | 胡牌时每一组 4 张同牌(含杠)为一根 |
+| Plain win (ping hu) | 0 | |
+| All pungs (dui dui hu) | 1 | 4 pungs (kongs included) + a pair |
+| Full flush (qing yi se) | 2 | All tiles of one suit |
+| Seven pairs (qi dui) | 2 | |
+| Dragon seven pairs (long qi dui) | 3 | Seven pairs containing ≥1 set of 4 identical tiles (those 4 are not counted again as a gen) |
+| Golden hook (jin gou diao) | 1 (additive) | Only 1 tile left in hand as a single wait (everything else melded) |
+| Bloom on the kong (gang shang hua) | 1 (additive) | Self-drawn win on the replacement tile after a kong |
+| Cannon on the kong (gang shang pao) | 1 (additive, counted for the winner) | Winning on a discard made right after a kong |
+| Robbing the kong (qiang gang hu) | 1 (additive, counted for the winner) | |
+| Moon from the sea floor (hai di lao yue) | 1 (additive) | Self-drawn win on the last tile |
+| Self-draw (zi mo) | 1 (additive) | |
+| Gen | +1 per gen | Every set of 4 identical tiles (kongs included) in the winning hand is one gen |
 
-番种可叠加(如清一色+对对胡=3 番),叠加后仍受封顶约束。
+Fan types stack (e.g. full flush + all pungs = 3 fan), and the cap still applies after stacking.
 
-结算:自摸 = 三家(未胡且在场者,见 §6)各付 2^番;点炮 = 放炮者独付 2^番。
+Settlement: self-draw = each of the other three players (those who have not won and are still in play, see §6) pays 2^fan;
+win on a discard = the discarder alone pays 2^fan.
 
-## 6. 血战到底(多胡续行)
+## 6. Bloody to the end (play continues after wins)
 
-- 胡牌者亮牌离场:不再摸打,**手牌与副露冻结**,不再参与后续响应与结算(杠钱除外,见 §7 退税)。
-- 一炮多响:同一张打牌多家可荣 → **全部成立**,放炮者对每个胡家分别结算。
-- 终局条件:**3 家胡牌** 或 **牌墙摸空**。
-- 点炮者已胡?不可能——已胡者不再打牌。已胡者不参与后续自摸/点炮的支付。
+- A winner reveals the hand and leaves play: no more drawing or discarding, **hand and melds are frozen**, and the winner takes no further part in responses or settlements (except kong payments; see the refund in §7).
+- Multiple winners on one discard: if several players can win on the same discard → **all of them stand**, and the discarder settles with each winner separately.
+- End condition: **3 players have won**, or **the wall is exhausted**.
+- Could the discarder be a player who has already won? No — players who have won no longer discard. Players who have won do not pay for later self-draws or discards.
 
-## 7. 刮风下雨(杠的即时结算)与退税
+## 7. Wind and rain (immediate kong payments) and refunds
 
-杠成立时**立即**收钱(只向未胡且在场的玩家收):
-- 直杠(点杠):放杠者付 2 底。
-- 补杠(巴杠):每家各付 1 底。
-- 暗杠:每家各付 2 底。
+When a kong stands, it is paid **immediately** (only by players who have not won and are still in play):
+- Exposed kong (on a discard): the player who discarded the tile pays 2 × base.
+- Added kong (ba gang): every player pays 1 × base.
+- Concealed kong: every player pays 2 × base.
 
-**退税**:流局(牌墙摸空)时,**未听牌**的玩家须退还本局收到的全部杠钱(原路退还给支付者;
-支付者已胡的照退)。听牌者的杠钱保留。已胡者视同听牌,不退。
+**Refund (tui shui)**: at an exhaustive draw (the wall is exhausted), any player who is **not ready** must refund all kong
+payments received during this hand (each back to whoever paid it, even if the payer has since won). Ready players keep
+their kong payments. Players who have won count as ready and refund nothing.
 
-## 8. 查大叫(流局查叫)
+## 8. Ready-hand check at an exhaustive draw (cha da jiao)
 
-流局时:**未听牌者向每个听牌者支付"该听牌者所听牌型的最大可能番"对应分值**(按 2^番,受封顶)。
-听牌者之间、未听牌者之间互不支付。已胡者不参与查叫。
+At an exhaustive draw: **each player who is not ready pays each ready player the value of "the maximum possible fan of
+the hand that ready player is waiting on"** (at 2^fan, subject to the cap). Ready players do not pay one another, and
+neither do players who are not ready. Players who have won take no part in the check.
 
-## 9. v0 明确排除(升版再议)
+## 9. Explicitly excluded from v0 (to be revisited in a later version)
 
-- 换三张(开局换牌)— v1 计划项,影响策略深度但不影响状态机骨架。
-- 呼叫转移、花猪(查花猪)罚则、雨/风的地区倍率变体。
-- 底分梯度/台费、连庄规则(RL 单局制,由外层控制庄位轮换)。
+- Exchanging three tiles (swapping tiles at the start) — planned for v1; it affects strategic depth but not the skeleton of the state machine.
+- Call transfer, flower-pig (cha hua zhu) penalties, regional multiplier variants for rain/wind.
+- Base-score tiers / table fees, dealer-repeat rules (the RL setup plays single hands; the outer layer controls dealer rotation).
 
-## 10. 不变量(测试锚点)
+## 10. Invariants (test anchors)
 
-1. 分数零和:任意时刻四家分数变化之和 = 0。
-2. 牌数守恒:墙 + 四家手牌 + 副露 + 弃牌河 = 108。
-3. 已胡者状态冻结:手牌/副露不再变化。
-4. 缺门约束:任何胡牌的 14(或 14+3k)张中无缺门花色;手有缺门牌时打牌掩码仅含缺门牌。
-5. 终局必达:任何合法动作序列在有限步内到达终局(墙空或 3 胡)。
+1. Zero-sum scoring: at any moment, the four players' score changes sum to 0.
+2. Tile conservation: wall + four hands + melds + discard rivers = 108.
+3. A winner's state is frozen: hand and melds no longer change.
+4. Void-suit constraint: no winning set of 14 (or 14+3k) tiles contains the void suit; while a hand holds void-suit tiles, the discard mask contains only void-suit tiles.
+5. Termination is guaranteed: any legal action sequence reaches the end of the game (empty wall or 3 wins) in a finite number of steps.

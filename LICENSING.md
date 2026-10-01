@@ -1,18 +1,18 @@
-# 许可说明(分目录双许可)
+# Licensing (dual-licensed by directory)
 
-| 路径 | 许可 | 原因 |
+| Path | License | Reason |
 |---|---|---|
-| 仓库根下除下列目录外的全部代码<br/>(`jax_rl/` 的环境/观测/网络/训练/数据桥、`scripts/`、`configs/`、文档) | **MIT** | 本项目原创,无 copyleft 依赖 |
-| `jax_rl/mjai_bot/` | **AGPL-3.0** | 运行时链接上游 [Mortal](https://github.com/Equim-chan/Mortal) 的 `libriichi`(AGPL-3.0) |
+| All code in the repository except the directory below<br/>(the environment / observation / network / training / data-bridge code in `jax_rl/`, `scripts/`, `configs/`, the docs) | **MIT** | Original to this project, with no copyleft dependencies |
+| `jax_rl/mjai_bot/` | **AGPL-3.0** | Links `libriichi` from upstream [Mortal](https://github.com/Equim-chan/Mortal) (AGPL-3.0) at runtime |
 
-## 说明
+## Notes
 
-- 评测桥(`jax_rl/mjai_bot/`)通过 `import libriichi` 使用上游的对局引擎与合法性校验,
-  按 AGPL-3.0 的链接条款,该目录以 AGPL-3.0 发布。
-- 上游 Mortal 源码**不随本仓库分发**,请按 [SETUP.md](SETUP.md) 自行克隆构建;
-  其许可与版权声明归上游所有。
-- 训练/推理主干(Mahjax 环境适配、`obs_lean`/`obs_v2` 观测、`net_lean` 网络、
-  `bc_stream`/`ppo_*` 训练器、`data_bridge` 牌谱重放)不依赖 libriichi,以 MIT 提供。
-- 本项目不分发天凤牌谱及其派生数据集(见 SETUP.md §4)。
+- The evaluation bridge (`jax_rl/mjai_bot/`) uses the upstream game engine and legality checks through `import libriichi`;
+  under the linking terms of AGPL-3.0, that directory is released under AGPL-3.0.
+- The upstream Mortal source is **not distributed with this repository**; clone and build it yourself following [SETUP.md](SETUP.md).
+  Its license and copyright notices belong to upstream.
+- The training/inference core (the Mahjax environment adaptation, the `obs_lean`/`obs_v2` observations, the `net_lean` network,
+  the `bc_stream`/`ppo_*` trainers, and `data_bridge` log replay) does not depend on libriichi and is provided under MIT.
+- This project does not distribute Tenhou game logs or any datasets derived from them (see SETUP.md §4).
 
-*本说明不构成法律意见。*
+*This note does not constitute legal advice.*

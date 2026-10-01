@@ -1,23 +1,27 @@
-# B 分支 Stage 1:决策边界定向探索(2026-09-30)
+# Branch B Stage 1: targeted exploration at the decision boundary (2026-09-30)
 
-Stage 0(`jax_rl/mjai_bot/stage0_stale.py`)发现:押/弃与立直决策上,被采取动作的 Q 已校准,
-未被采取的另一侧被低估约 49 pt(离线 CQL 遗留,rl1 之后冻结),在线 RL 从不给它目标。
-这里让 worker 在决策边界上探索另一侧,并让训练丢掉被探索污染的样本。
+Stage 0 (`jax_rl/mjai_bot/stage0_stale.py`) found that on push/fold and riichi decisions, the Q of the action actually
+taken is calibrated, while the untaken side is underestimated by about 49 pt (left over from offline CQL and frozen since
+rl1), and online RL never gives it a target. Here the workers explore the other side at the decision boundary, and
+training drops the samples contaminated by that exploration.
 
-- `explore_engine.py`:放进 `Mortal/mortal/`。worker 端引擎,向 libriichi 要 v5 观测(v4 + 10 行防守特征),
-  网络只吃前 1012 行;贪心动作与其押/弃或立直/默听对侧的 Q 差 < `margin_pt` 时以 `prob` 改走对侧。
-  `is_greedy` 改记为「动作 == argmax Q」。
-- `player_dataloader.patch`:`Mortal/mortal/player.py`(`[explore] enable` 时 TrainPlayer 用上面的引擎,
-  每轮日志记可探索/已探索次数)与 `dataloader.py`(`drop_pre_explore` 时丢弃同一局里最后一次非贪心动作
-  之前的样本;样本与牌谱事件逐条对齐,对不上的整局保留并计数)。配置缺省时两处补丁完全惰性。
-  应用:`cd ~/Mortal && patch -p1 < player_dataloader.patch`。
-- `test_frontier.py`:引擎向量化分类 vs PlayerState 重放的纯 Python 参考,逐决策比对(trx:40,114 决策 0 不一致;
-  选杠标志行 494/494)。
-- `test_explore_run.py`:小批真实对局 + 加载器对齐(trx:200 局探索局 + 800 局旧局 0 对不上;
-  每局探索约 1.07 次;丢弃 8.1% 样本)。
-- `stage1_setup.sh`:在 trx 上建 `runs/stage1_explore`(起点 tpt 408k,md5 6fb1d3e1…)、配置、启动/停止脚本、
-  每 8000 步归档与崩溃保险。除 `[explore]` 外与 tpt 408k→448k 历史续跑完全相同
-  (7 worker,对手池 base×4 / v4×2 / C392k×1,锚 cprime_final λ=0.1,ε 0.005 温度 0.1)。
+- `explore_engine.py`: goes into `Mortal/mortal/`. A worker-side engine that requests the v5 observation from libriichi
+  (v4 + 10 rows of defense features), while the network consumes only the first 1012 rows; when the Q gap between the
+  greedy action and its push/fold or riichi/dama counterpart is < `margin_pt`, it switches to the counterpart with
+  probability `prob`. `is_greedy` is now recorded as "action == argmax Q".
+- `player_dataloader.patch`: patches `Mortal/mortal/player.py` (with `[explore] enable`, TrainPlayer uses the engine above
+  and logs the explorable/explored counts every round) and `dataloader.py` (with `drop_pre_explore`, it drops the samples
+  in a game that come before that game's last non-greedy action; samples are aligned one by one with the log events, and
+  games that fail to align are kept whole and counted). With the config absent, both patches are completely inert.
+  Apply with: `cd ~/Mortal && patch -p1 < player_dataloader.patch`.
+- `test_frontier.py`: compares the engine's vectorized classification, decision by decision, against a pure-Python
+  reference that replays PlayerState (trx: 40,114 decisions, 0 mismatches; kan-choice flag rows 494/494).
+- `test_explore_run.py`: a small batch of real games plus loader alignment (trx: 200 exploration games + 800 old games,
+  0 misalignments; about 1.07 explorations per game; 8.1% of samples dropped).
+- `stage1_setup.sh`: sets up `runs/stage1_explore` on trx (starting from tpt 408k, md5 6fb1d3e1…), the config, start/stop
+  scripts, archiving every 8000 steps, and the crash guard. Apart from `[explore]`, everything is identical to the
+  historical tpt 408k→448k continuation (7 workers, opponent pool base×4 / v4×2 / C392k×1, anchor cprime_final λ=0.1,
+  ε 0.005, temperature 0.1).
 
-启动:`bash scripts/run_selfplay_stage1.sh --resume --workers 7 --pool base,base,v4,<C392k>,base,base,v4`;
-停止:`bash scripts/stop_selfplay_stage1.sh`(按 PID 进程组,含归档与保险)。
+Start: `bash scripts/run_selfplay_stage1.sh --resume --workers 7 --pool base,base,v4,<C392k>,base,base,v4`;
+stop: `bash scripts/stop_selfplay_stage1.sh` (by PID process group, including the archiver and the guard).
