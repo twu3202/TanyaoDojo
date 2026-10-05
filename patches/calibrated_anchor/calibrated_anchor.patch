@@ -1,0 +1,55 @@
+# M1 calibrated anchor (2026-10-03; margin_level 10-04; margin_states 10-04): on top of patches/anchor_train.patch, scale the
+# anchor target's action margins about the anchor model's best action by [anchor] margin_scale. margin_level = 'trainee'
+# hangs the target on the trainee's own detached Q of that action (collapsed in a pilot, do not use); margin_states =
+# 'pushfold_riichi' compresses only in exposed states (an opponent's riichi accepted, own not) and riichi-legal states
+# (v4 obs rows 857-859 / 869). Absent keys = the original anchor.
+# Usage: cd ~/Mortal && patch -p1 < patches/calibrated_anchor/calibrated_anchor.patch
+# Upstream: https://github.com/Equim-chan/Mortal (AGPL-3.0, not distributed with this repo, see SETUP.md)
+--- a/mortal/train.py	2026-10-03 18:47:47
++++ b/mortal/train.py	2026-10-04 10:58:12
+@@ -92,6 +92,26 @@
+             p.requires_grad_(False)
+         del anchor_state
+         logging.info(f'anchor enabled: weight={anchor_weight}, state_file={anchor_cfg["state_file"]}')
++    # 本地补丁(2026-10-03,M1 校准锚):锚目标按锚模型自己的最优动作把各动作差值缩到 margin_scale 倍。
++    # 推演实测(D2):Q 差值比真实差值放大 10–30 倍(CQL 遗留),锚把未采取动作钉在放大的距离上,
++    # 采取动作的蒙特卡洛更新永远翻不过去。按最优值缩放不改 argmax 和排序,只把差值换成实测量级。
++    # margin_scale 缺省 1.0 = 与原锚逐字一致。
++    anchor_margin_scale = float(anchor_cfg.get('margin_scale', 1.0))
++    assert 0 < anchor_margin_scale <= 1.0, 'anchor margin_scale must be in (0, 1]'
++    # margin_level = 'anchor'(缺省):目标挂在锚模型自己的最优值上;'trainee':挂在 trainee 当前(不回传梯度)
++    # 对锚最优动作的 Q 上 —— 锚只约束相对差值,绝对水平交给蒙特卡洛(10-04:cprime 与 tpt408 的水平差 SD 2.6 pt,
++    # 压缩后与差值同量级)。
++    anchor_margin_level = anchor_cfg.get('margin_level', 'anchor')
++    assert anchor_margin_level in ('anchor', 'trainee'), 'anchor margin_level must be anchor or trainee'
++    # margin_states = 'all'(缺省)| 'pushfold_riichi':只在押退局面(有对手立直已成立、自己未立直)与可立直局面压缩差值,
++    # 普通打牌/副露保持原锚(10-04:全局 c=0.3 时普通打牌改选 4.8%、副露少 4pp,100k 前 4 万局 −1.09 vs 408k;
++    # 收益只出现在押退/立直)。行号只对 v4 观测(1012 行)有效:857–859 = 三家对手 riichi_accepted,869 = 自家
++    # riichi_accepted,按回放标签实测定位(18,506 个决策里与 exposed 只差 19 个 = 自家宣言立直那一打)。
++    anchor_margin_states = anchor_cfg.get('margin_states', 'all')
++    assert anchor_margin_states in ('all', 'pushfold_riichi'), 'anchor margin_states must be all or pushfold_riichi'
++    assert anchor_margin_states == 'all' or version == 4, 'margin_states pushfold_riichi needs obs version 4'
++    if anchor_mortal is not None and (anchor_margin_scale != 1.0 or anchor_margin_level != 'anchor'):
++        logging.info(f'calibrated anchor: margin_scale={anchor_margin_scale}, margin_level={anchor_margin_level}, margin_states={anchor_margin_states}')
+ 
+     decay_params = []
+     no_decay_params = []
+@@ -263,6 +283,18 @@
+                 if anchor_mortal is not None:
+                     with torch.no_grad():
+                         anchor_q = anchor_dqn(anchor_mortal(obs), masks)
++                        if anchor_margin_scale != 1.0 or anchor_margin_level != 'anchor':
++                            # 非法动作是 -inf:最优值取合法动作最大,缩放后非法仍为 -inf(下面只取合法位)
++                            a_star = anchor_q.argmax(-1, keepdim=True)
++                            q_star = anchor_q.gather(-1, a_star)
++                            level = q_star if anchor_margin_level == 'anchor' else q_out.detach().gather(-1, a_star).to(q_star.dtype)
++                            comp = level - anchor_margin_scale * (q_star - anchor_q)
++                            if anchor_margin_states == 'pushfold_riichi':
++                                exposed = (obs[:, 857:860, 0] > 0.5).any(-1) & (obs[:, 869, 0] < 0.5)
++                                sel = exposed | masks[:, 37]
++                                anchor_q = torch.where(sel[:, None], comp, anchor_q)
++                            else:
++                                anchor_q = comp
+                     # 只在合法动作上取差(布尔索引先选后归约,规避 mask 填充值参与运算)
+                     anchor_loss = (q_out[masks] - anchor_q[masks]).pow(2).mean()
+ 
