@@ -1,0 +1,95 @@
+# Suit x dragon symmetry augmentation for offline training (2026-10-05), on top of the trx dataloader (unreadable-log
+# skip, 2026-09-27) and the anchor train.py (patches/anchor_train.patch). [dataset] symmetry_augmentation = true
+# relabels every log by a uniform random one of 18 exact symmetries (6 suit permutations x 3 dragon rotations, see
+# symaug.py) before libriichi parses it; the number of samples per epoch is unchanged. Absent key = the original.
+# Needs symaug.py next to dataloader.py. Usage: cd ~/Mortal && patch -p1 < patches/symmetry_augmentation/symmetry_augmentation.patch
+# Upstream: https://github.com/Equim-chan/Mortal (AGPL-3.0, not distributed with this repo, see SETUP.md)
+--- a/mortal/dataloader.py
++++ b/mortal/dataloader.py
+@@ -1,4 +1,7 @@
++import gzip
++import logging
+ import random
++import symaug
+ import torch
+ import numpy as np
+ from torch.utils.data import IterableDataset
+@@ -21,8 +24,14 @@
+         num_epochs = 1,
+         enable_augmentation = False,
+         augmented_first = False,
++        symmetry_augmentation = False,
+     ):
+         super().__init__()
++        # 本地补丁(2026-10-05,patches/symmetry_augmentation):每个牌谱文件按均匀随机的一个对称(花色 6 种置换 ×
++        # 三元牌 3 种轮换 = 18,含恒等)重新标号后再交给 libriichi 解析;样本数与不开时相同,只是每局换一种花色/三元牌标号。
++        # 与上游的 enable_augmentation(万↔饼对换、整个 epoch 再过一遍)互斥。
++        assert not (enable_augmentation and symmetry_augmentation), 'symmetry_augmentation replaces enable_augmentation'
++        self.symmetry_augmentation = symmetry_augmentation
+         self.version = version
+         self.file_list = file_list
+         self.pts = pts
+@@ -81,12 +90,15 @@
+         # 本地补丁(2026-09-27):天凤转换牌谱里有极少数违规局(如 2022010616gm-00a9-0000-d4d83e3e:
+         # kakan 5sr 配 consumed [5s,5s,5s] → libriichi 报 "fifth 5sr"),会让离线训练整个崩掉(B1 在 1,035,600 步)。
+         # 读不了的文件跳过并记日志;file_batch_size=1 时只丢这一个文件。
+-        try:
+-            data = self.loader.load_gz_log_files(file_list)
+-        except RuntimeError as e:
+-            import logging
+-            logging.warning(f"skipping unreadable log batch {file_list[:3]}: {str(e).splitlines()[0]}")
+-            return
++        if self.symmetry_augmentation:
++            data = self.load_symmetrized(file_list)
++        else:
++            try:
++                data = self.loader.load_gz_log_files(file_list)
++            except RuntimeError as e:
++                import logging
++                logging.warning(f"skipping unreadable log batch {file_list[:3]}: {str(e).splitlines()[0]}")
++                return
+         for file in data:
+             for game in file:
+                 # per move
+@@ -133,6 +145,20 @@
+                         entry.insert(1, invisible_obs[i])
+                     self.buffer.append(entry)
+ 
++    def load_symmetrized(self, file_list):
++        # 逐文件读 gz 文本 → symaug.relabel → GameplayLoader.load_log(与 load_gz_log_files 内部同一条解析路径);
++        # 读不了的文件按上面的补丁同样跳过
++        data = []
++        for filename in file_list:
++            try:
++                with gzip.open(filename, 'rt', encoding='utf-8') as f:
++                    raw = f.read()
++                g = random.randrange(symaug.N_ELEMENTS)
++                data.append(self.loader.load_log(symaug.relabel(raw, g)))
++            except (RuntimeError, OSError, EOFError, UnicodeDecodeError) as e:
++                logging.warning(f"skipping unreadable log {filename}: {str(e).splitlines()[0]}")
++        return data
++
+     def __iter__(self):
+         if self.iterator is None:
+             self.iterator = self.build_iter()
+--- a/mortal/train.py
++++ b/mortal/train.py
+@@ -54,6 +54,10 @@
+     num_epochs = config['dataset']['num_epochs']
+     enable_augmentation = config['dataset']['enable_augmentation']
+     augmented_first = config['dataset']['augmented_first']
++    # 本地补丁(2026-10-05):花色 × 三元牌对称增强,见 dataloader.py / symaug.py;缺省关闭 = 与原版一致
++    symmetry_augmentation = config['dataset'].get('symmetry_augmentation', False)
++    if symmetry_augmentation:
++        logging.info('symmetry augmentation: each log relabelled by a uniform random one of 18 symmetries')
+     eps = config['optim']['eps']
+     betas = config['optim']['betas']
+     weight_decay = config['optim']['weight_decay']
+@@ -215,6 +219,7 @@
+             num_epochs = num_epochs,
+             enable_augmentation = enable_augmentation,
+             augmented_first = augmented_first,
++            symmetry_augmentation = symmetry_augmentation,
+         )
+         data_loader = iter(DataLoader(
+             dataset = file_data,
