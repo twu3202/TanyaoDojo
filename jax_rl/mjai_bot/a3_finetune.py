@@ -23,6 +23,14 @@ d_grp of the held-out pairs the tuned model now flips to `alt`, per game.
     python a3_finetune.py --labels L.jsonl --log-dir DIR --base tpt_s408000.pth --out a3.pth \
         [--steps 6000 --batch 256 --lr 1e-5 --anchor 1.0]
 
+Learning-curve mode (10-02): `--train-frac F` keeps a nested fraction of the training seed groups (by a fixed
+hash of the seed, so 25% is a subset of 50%), and `--test-pairs P` takes riichi-eval `tools/label_noise.py`
+output: its games leave the training set and become a low-noise test set whose target is each pair's label
+averaged over the logged wall and K re-dealt walls (label variance about 1/3.4 of a single-wall label). At
+every eval the test reports the correlation of the model's predicted margin with that target (scale-free, so
+merely shrinking the Q gaps cannot improve it), the calibration slope, and the first-order gain of the flips the
+model now makes, priced with the low-noise target; per-pair predictions go to `<out>.testpred.npz`.
+
 Needs riichi-eval on the path (RIICHI_EVAL_SRC, default ~/riichi-eval/src) plus its env vars
 (MORTAL_DIR, RIICHI_EVAL_LIBRIICHI).
 """
@@ -125,6 +133,80 @@ class A3Data(IterableDataset):
             epoch += 1
 
 
+def keep_frac(seed: int, frac: float) -> bool:
+    """Nested subsampling of seed groups: a fixed multiplicative hash, so smaller fractions are subsets."""
+    return frac >= 1.0 or (seed * 2654435761 % 2 ** 32) / 2 ** 32 < frac
+
+
+def build_test(rows, labels, games, ref_name):
+    """Low-noise test set from label_noise.py rows, joined to the label file for (ours, alt)."""
+    want = defaultdict(lambda: defaultdict(list))
+    for r in rows:
+        v = np.asarray(r["v"], np.float64)
+        d = v[:, 1] - v[:, 0]
+        want[(r["seed"], r["rot"])][(r["r"], r["pos"])].append((r["kind"], float(d.mean()), float(d[0])))
+    T, miss = defaultdict(list), 0
+    for key in sorted(want):
+        states, lab = want[key], labels.get(key, {})
+        if key not in games:
+            miss += sum(len(v) for v in states.values())
+            continue
+        g = read_game(games[key])
+        seat = next(i for i, n in enumerate(g.names) if n != ref_name)
+        for d in iter_decisions(g, [seat], select=lambda r, pos, st: (r, pos) in states):
+            if d.bucket == "forced":
+                continue
+            for kind, tgt, d0 in states.get((d.r, d.pos), []):
+                m = [x for x in lab.get((d.r, d.pos), []) if x[3] == kind]
+                if not m or d.logged != m[0][0] or not d.mask[m[0][1]]:
+                    miss += 1
+                    continue
+                for name, val in (("obs", d.obs.astype(np.float16)), ("mask", d.mask), ("ours", m[0][0]),
+                                  ("alt", m[0][1]), ("tgt", tgt), ("d0", d0), ("dlab", m[0][2]), ("kind", kind),
+                                  ("seed", key[0])):
+                    T[name].append(val)
+    out = {n: np.stack(v) if n in ("obs", "mask") else np.array(v) for n, v in T.items()}
+    return out, miss
+
+
+def _cluster_ci(y_by_seed):
+    y = np.asarray(y_by_seed, np.float64)
+    return float(1.96 * y.std(ddof=1) / np.sqrt(len(y))) if len(y) > 1 else float("nan")
+
+
+def test_eval(brain, dqn, T, device, bs=512):
+    """Low-noise test metrics (see module doc). Returns (metrics, per-pair predicted margin in sacred pt)."""
+    brain.eval()
+    qs = []
+    with torch.no_grad(), torch.autocast(device.type, dtype=torch.float16, enabled=device.type == "cuda"):
+        for i in range(0, len(T["obs"]), bs):
+            obs = torch.from_numpy(T["obs"][i:i + bs]).to(device).float()
+            mask = torch.from_numpy(T["mask"][i:i + bs]).to(device)
+            qs.append(dqn(brain(obs), mask).float().cpu().numpy())
+    brain.train()
+    brain.freeze_bn(True)
+    q = np.concatenate(qs)
+    idx = np.arange(len(q))
+    pred = (q[idx, T["alt"]] - q[idx, T["ours"]]) / PT_SCALE
+    out = {}
+    seeds = T["seed"]
+    for half, sel in (("all", np.ones(len(pred), bool)), ("A", seeds % 2 == 0), ("B", seeds % 2 == 1)):
+        p, t, d0 = pred[sel], T["tgt"][sel], T["d0"][sel]
+        us = np.unique(seeds[sel])
+        n_games = 4 * len(us)
+        flip = p > 0
+        g_by = [t[flip & (seeds[sel] == s)].sum() / 4 for s in us]
+        out[half] = {"corr": float(np.corrcoef(p, t)[0, 1]),
+                     "slope": float(np.cov(p, t)[0, 1] / p.var(ddof=1)),
+                     "mse": float(np.mean((p - t) ** 2)),
+                     "flips_per_game": float(flip.sum() / n_games),
+                     "gain_per_game": float(t[flip].sum() / n_games), "gain_ci": _cluster_ci(g_by),
+                     "gain_single_wall": float(d0[flip].sum() / n_games)}
+    out["corr_by_kind"] = {k: float(np.corrcoef(pred[T["kind"] == k], T["tgt"][T["kind"] == k])[0, 1])
+                           for k in sorted(set(T["kind"]))}
+    return out, pred.astype(np.float32)
+
+
 def load_models(path, device):
     env.setup()
     from model import Brain, DQN  # Mortal/mortal/model.py
@@ -201,6 +283,9 @@ def main():
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--train-frac", type=float, default=1.0,
+                    help="keep this fraction of the training seed groups (nested across fractions)")
+    ap.add_argument("--test-pairs", help="label_noise.py pairs.jsonl: low-noise test set, excluded from training")
     ap.add_argument("--smoke", action="store_true",
                     help="pipeline test: allows sacred-key games but never writes a checkpoint")
     args = ap.parse_args()
@@ -212,11 +297,20 @@ def main():
     sacred = [p for p in games.values() if "_20260711_" in os.path.basename(p)]
     if sacred and not args.smoke:
         sys.exit(f"{sacred[0]}: sacred-protocol eval game in the training set; generate label games on another key")
-    keys = sorted(k for k in games if k in labels)
-    train = [(k, games[k]) for k in keys if k[0] % 10 != 0]
+    test_rows = [json.loads(ln) for ln in open(args.test_pairs)] if args.test_pairs else []
+    test_seeds = {r["seed"] for r in test_rows}
+    keys = sorted(k for k in games if k in labels and k[0] not in test_seeds)
+    train = [(k, games[k]) for k in keys if k[0] % 10 != 0 and keep_frac(k[0], args.train_frac)]
     hold_keys = [k for k in keys if k[0] % 10 == 0][args.holdout_offset: args.holdout_offset + args.holdout_games]
-    print(f"{n_lab:,} labelled pairs in {len(keys):,} games; train {len(train):,} games, "
+    print(f"{n_lab:,} labelled pairs in {len(keys):,} games; train {len(train):,} games "
+          f"(frac {args.train_frac:g}, {sum(len(labels[k]) for k, _ in train):,} labelled states), "
           f"held-out check on {len(hold_keys):,} games", flush=True)
+    T = None
+    if test_rows:
+        T, miss = build_test(test_rows, labels, games, args.ref_name)
+        agree = float(np.mean(np.isclose(T["d0"], T["dlab"], atol=1e-3)))
+        print(f"test: {len(T['tgt']):,} pairs from {len(test_seeds):,} seed groups ({miss} unmatched); "
+              f"logged-wall label = label-file label on {agree:.2%}", flush=True)
 
     # the select hook sees every can-act point of our seat (~150 per game, call passes included)
     unl_prob = min(1.0, args.unl_per_game / 150)
@@ -252,6 +346,12 @@ def main():
     n_hold_games = len(hold_keys)
     m0 = holdout_eval(brain, dqn, hold, device, n_hold_games, seeds_of)
     print(f"step 0: {json.dumps(m0)}", flush=True)
+    test_hist, test_preds = [], []
+    if T is not None:
+        t0m, tp = test_eval(brain, dqn, T, device)
+        test_hist.append({"step": 0, **t0m})
+        test_preds.append(tp)
+        print(f"step 0 test: {json.dumps(t0m)}", flush=True)
 
     params = [p for p in list(brain.parameters()) + list(dqn.parameters()) if p.requires_grad]
     opt = torch.optim.AdamW(params, lr=args.lr, weight_decay=0)
@@ -296,6 +396,13 @@ def main():
             m = holdout_eval(brain, dqn, hold, device, n_hold_games, seeds_of)
             hist.append({"step": step, **m})
             print(f"step {step} held-out: {json.dumps(m)}", flush=True)
+            if T is not None:
+                tm, tp = test_eval(brain, dqn, T, device)
+                test_hist.append({"step": step, **tm})
+                test_preds.append(tp)
+                print(f"step {step} test: {json.dumps(tm)}", flush=True)
+                np.savez(args.out + ".testpred.npz", steps=np.array([h["step"] for h in test_hist]),
+                         pred=np.stack(test_preds), tgt=T["tgt"], d0=T["d0"], seed=T["seed"], kind=T["kind"])
 
     if args.smoke:
         print("smoke run: no checkpoint written")
