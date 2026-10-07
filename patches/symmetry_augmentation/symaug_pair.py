@@ -1,9 +1,11 @@
-"""Paired comparison on shared seeds: symaug (v11 recipe + symmetry augmentation, S) vs v11 (same recipe, V) and
-B1 (v11 recipe at 256x54, B).    python symaug_pair.py LO HI [LO HI ...]   (dumps are read from this script's directory)
-Pre-registered (patches/symmetry_augmentation/README.md): 12k S - V < 0 stops; 100k S - V >= +0.5 with z >= 2 passes."""
+"""Paired comparison on shared seeds: a symmetry-augmented base (S; SYMTAG = symaug_final for 192x40, symaug256_final
+for 256x54) vs v11 (v11 recipe, 192x40, V) and B1 (v11 recipe at 256x54, B).
+    python symaug_pair.py LO HI [LO HI ...]   (dumps are read from PAIR_DIR, default this script's directory)
+Pre-registered (patches/symmetry_augmentation/README.md): each arm against its own unaugmented twin (192x40 vs v11,
+256x54 vs B1): 12k < 0 stops; 100k >= +0.5 with z >= 2 passes."""
 import glob, os, sys
 import numpy as np
-D = os.path.dirname(os.path.abspath(__file__))
+D = os.environ.get("PAIR_DIR", os.path.dirname(os.path.abspath(__file__)))
 TAG = os.environ.get("SYMTAG", "symaug_final")
 PAT = {"S": f"{TAG}_s*_gpufp32.npz", "V": "v11_manual_s*.npz", "B": "b1_b1final_s*_gpufp32.npz"}
 NAME = {"S": f"symaug ({TAG})", "V": "v11", "B": "B1 256x54"}

@@ -1,12 +1,15 @@
 #!/bin/bash
-# symaug offline training (5060 Ti / WSL): train.py from the separate Mortal_symaug tree, restarted after a crash
-# (resumes from mortal.pth, saved every 400 steps; the data epoch is reshuffled on restart, as with B1), at most 5
-# times. Stops at 1.22M steps (= v11 best point) and keeps symaug_final.pth. Logs: runs/symaug/{train,run}.log.
-# Start: (setsid nohup bash ~/Projects/better_mortal/runs/symaug/symaug_run.sh > /dev/null 2>&1 &)
-# Stop:  kill -TERM -$(cat runs/symaug/run.pid); kill -TERM -$(cat runs/symaug/train.pid)   (process groups)
+# symaug offline training: train.py from the separate Mortal_symaug tree, restarted after a crash (resumes from
+# mortal.pth, saved every 400 steps; the data epoch is reshuffled on restart, as with B1), at most 5 times. Stops at
+# 1.22M steps (= v11 best point) and keeps ${NAME}_final.pth. NAME = symaug (192x40, 5060 Ti) or symaug256 (256x54,
+# trx; or mjs, the new-data arm, with TREE=Mortal_mjs/mortal): run dir runs/$NAME, config configs/local_train_$NAME.toml,
+# code tree $TREE (default Mortal_symaug/mortal), stop step $STOP. Logs: runs/$NAME/{train,run}.log.
+# Start: (NAME=symaug setsid nohup bash ~/Projects/better_mortal/runs/symaug/symaug_run.sh > /dev/null 2>&1 &)
+# Stop:  kill -TERM -$(cat runs/$NAME/run.pid); kill -TERM -$(cat runs/$NAME/train.pid)   (process groups)
 set -u
-ROOT=$HOME/Projects/better_mortal; T=$ROOT/Mortal_symaug/mortal; R=$ROOT/runs/symaug
-CFG=$ROOT/configs/local_train_symaug.toml; PY=$ROOT/.venv/bin/python
+NAME=${NAME:-symaug}
+ROOT=$HOME/Projects/better_mortal; T=${TREE:-$ROOT/Mortal_symaug/mortal}; R=$ROOT/runs/$NAME
+CFG=$ROOT/configs/local_train_$NAME.toml; PY=$ROOT/.venv/bin/python
 STOP=${STOP:-1220000}; LOG=$R/run.log; MAXRESTART=5
 say() { echo "$(date +%m-%d_%H:%M:%S) $*" >> $LOG; }
 last_step() { grep -a -o "total steps: [0-9,]*" $R/train.log 2>/dev/null | tail -1 | tr -dc 0-9; }
@@ -22,8 +25,8 @@ while true; do
     if [ "$st" -ge $STOP ]; then
       sleep 20   # "total steps" is logged just before torch.save of that step; the next save is 400 steps later
       got=$($PY -c "import torch;print(torch.load('$R/mortal.pth',weights_only=True,map_location='cpu')['steps'])")
-      cp $R/mortal.pth $R/symaug_final.pth
-      say "reached $st (checkpoint steps=$got) -> symaug_final.pth; stopping pid $pid"
+      cp $R/mortal.pth $R/${NAME}_final.pth
+      say "reached $st (checkpoint steps=$got) -> ${NAME}_final.pth; stopping pid $pid"
       kill -TERM -$pid 2>/dev/null || kill -TERM $pid; sleep 60
       kill -0 $pid 2>/dev/null && { say "still alive, SIGKILL"; kill -KILL -$pid 2>/dev/null || kill -KILL $pid; }
       say SYMAUG_TRAIN_DONE
