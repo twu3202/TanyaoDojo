@@ -1,0 +1,73 @@
+# drop_kyoku for the new-data arm (2026-10-06), on top of patches/symmetry_augmentation: every log is read through the
+# text path (the same parse load_gz_log_files does internally) so that start_game.drop_kyoku can be honoured; the
+# samples of those kyoku are skipped (repaired Mahjong Soul jade logs, see jax_rl/mjai_bot/mjs_convert.py). Logs
+# without the field (Tenhou, throne) give exactly the samples of the original path.
+# Usage: cd ~/Mortal && patch -p1 < patches/majsoul_data/dataloader.patch
+--- a/mortal/dataloader.py
++++ b/mortal/dataloader.py
+@@ -1,4 +1,5 @@
+ import gzip
++import json
+ import logging
+ import random
+ import symaug
+@@ -90,16 +91,11 @@
+         # 本地补丁(2026-09-27):天凤转换牌谱里有极少数违规局(如 2022010616gm-00a9-0000-d4d83e3e:
+         # kakan 5sr 配 consumed [5s,5s,5s] → libriichi 报 "fifth 5sr"),会让离线训练整个崩掉(B1 在 1,035,600 步)。
+         # 读不了的文件跳过并记日志;file_batch_size=1 时只丢这一个文件。
+-        if self.symmetry_augmentation:
+-            data = self.load_symmetrized(file_list)
+-        else:
+-            try:
+-                data = self.loader.load_gz_log_files(file_list)
+-            except RuntimeError as e:
+-                import logging
+-                logging.warning(f"skipping unreadable log batch {file_list[:3]}: {str(e).splitlines()[0]}")
+-                return
+-        for file in data:
++        # 本地补丁(2026-10-06,patches/majsoul_data):一律走文本路径(与 load_gz_log_files 内部同一条解析),以便读
++        # start_game 里的 drop_kyoku —— 修补过的雀魂玉间牌谱在这些小局里丢了信息(开杠宝牌指示牌、终局分数),
++        # 这些小局的样本整局跳过;天凤/王座没有这个字段,样本与原路径逐条相同。
++        data, drops = self.load_symmetrized(file_list)
++        for file, drop in zip(data, drops):
+             for game in file:
+                 # per move
+                 obs = game.take_obs()
+@@ -133,6 +129,8 @@
+                         steps_to_done[i] = steps_to_done[i + 1] + int(apply_gamma[i])
+ 
+                 for i in range(game_size):
++                    if at_kyoku[i] in drop:
++                        continue
+                     entry = [
+                         obs[i],
+                         actions[i],
+@@ -146,18 +144,21 @@
+                     self.buffer.append(entry)
+ 
+     def load_symmetrized(self, file_list):
+-        # 逐文件读 gz 文本 → symaug.relabel → GameplayLoader.load_log(与 load_gz_log_files 内部同一条解析路径);
+-        # 读不了的文件按上面的补丁同样跳过
+-        data = []
++        # 逐文件读 gz 文本 →(开对称增强时)symaug.relabel → GameplayLoader.load_log(与 load_gz_log_files 内部同一条
++        # 解析路径);同时取 start_game 的 drop_kyoku。读不了的文件跳过并记日志(同 09-27 补丁)
++        data, drops = [], []
+         for filename in file_list:
+             try:
+                 with gzip.open(filename, 'rt', encoding='utf-8') as f:
+                     raw = f.read()
+-                g = random.randrange(symaug.N_ELEMENTS)
+-                data.append(self.loader.load_log(symaug.relabel(raw, g)))
+-            except (RuntimeError, OSError, EOFError, UnicodeDecodeError) as e:
++                drop = set(json.loads(raw[:raw.index('\n')]).get('drop_kyoku', []))
++                if self.symmetry_augmentation:
++                    raw = symaug.relabel(raw, random.randrange(symaug.N_ELEMENTS))
++                data.append(self.loader.load_log(raw))
++                drops.append(drop)
++            except (RuntimeError, OSError, EOFError, UnicodeDecodeError, ValueError) as e:
+                 logging.warning(f"skipping unreadable log {filename}: {str(e).splitlines()[0]}")
+-        return data
++        return data, drops
+ 
+     def __iter__(self):
+         if self.iterator is None:

@@ -49,3 +49,6 @@ research/
 # 川麻扩展:查表为构建产物(2 秒可重建), docs/ 为内部方案与规则调研(本地保留)
 common/suit_table.npy
 docs/
+
+# 本次牌谱数据扩容调研：本地保留，不入库
+/paipu_data_research_20261006/
