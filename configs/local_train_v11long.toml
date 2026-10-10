@@ -1,0 +1,124 @@
+# [trx] 天凤单源 · 长步数对照 v11long(2026-10-08,用户「可以用 trx 了」)= 新数据臂 mjs 逐项不变,只去掉雀魂数据:
+#   数据 = v11 的 1,289,661 局天凤凤凰 2019–2026(file index 拷自 runs/v11,同集合同顺序);
+#   步数 = mjs 的 max_steps 2,245,200(= v11 的 1.21M × 1.855),停 2,255,200 —— 比 v11 多训 1.855 倍步数(约 1.86 倍于 v11 的数据遍数)。
+# 用途:mjs 把「加雀魂数据」和「训得更长」绑在一起(patches/majsoul_data/README.md 预注册:mjs 过线就用同步数的天凤单源对照拆开)。
+#   本臂与 mjs 并行跑:mjs − v11long = 数据的效应,v11long − v11 = 训练长度的效应。
+# 判读(预注册,同 B1):12k 配对 v11 < 0 止损;否则 100k,v11long − v11 ≥ +0.5 且 z ≥ 2 才算长度本身有用。
+# 代码:Mortal_mjs/mortal(与 WSL 那棵逐文件 md5 一致;天凤牌谱在该 loader 下与原路径逐条相同)。
+
+[control]
+version = 4
+online = false
+state_file = '/home/twu/Projects/better_mortal/runs/v11long/mortal.pth'
+best_state_file = '/home/twu/Projects/better_mortal/runs/v11long/best.pth'
+tensorboard_dir = '/home/twu/Projects/better_mortal/runs/v11long/tb'
+device = 'cuda:0'
+enable_cudnn_benchmark = true
+enable_amp = true
+enable_compile = true
+batch_size = 512
+opt_step_every = 1
+save_every = 400
+test_every = 20000
+submit_every = 400
+
+[test_play]
+games = 1000
+log_dir = '/home/twu/Projects/better_mortal/runs/v11long/test_play'
+
+[dataset]
+globs = [
+    '/home/twu/Projects/better_mortal/data/houou/2019/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2020/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2021/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2022/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2023/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2024/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2025/*.mjson*',
+    '/home/twu/Projects/better_mortal/data/houou/2026/*.mjson*',
+]
+file_index = '/home/twu/Projects/better_mortal/runs/v11long/file_index.pth'
+file_batch_size = 1
+reserve_ratio = 0.0
+num_workers = 8            # v11 = 6;只影响吞吐(每个 loader 进程分一片文件列表)
+player_names_files = []
+num_epochs = 1
+enable_augmentation = false
+augmented_first = false
+symmetry_augmentation = false   # 不加对称增强(v11 配方)
+
+[env]
+gamma = 1
+pts = [6.0, 4.0, 2.0, 0.0]
+
+[resnet]
+conv_channels = 192
+num_blocks = 40
+
+[cql]
+min_q_weight = 5
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = false
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0
+
+[optim.scheduler]
+# ⭐ Track A1 核心修复:cosine 退火 peak→final,覆盖整个 epoch
+peak = 1e-4
+final = 1e-5
+warm_up_steps = 2000
+max_steps = 2245200   # = mjs 的步数(1.21M × 1.855),见文件头
+
+[baseline.train]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[baseline.test]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[grp]
+state_file = '/home/twu/Projects/better_mortal/runs/grp_full/grp.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
+
+[1v3]
+seed_key = 20260711
+games_per_iter = 2000
+iters = 50
+log_dir = '/home/twu/Projects/better_mortal/runs/v11long/1v3'
+
+[1v3.challenger]
+device = 'cuda:0'
+name = 'v11long'
+state_file = '/home/twu/Projects/better_mortal/runs/v11long/best.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = 'cuda:0'
+name = 'mortal-v4'
+state_file = '/home/twu/Projects/better_mortal/baseline/mortal_v4.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ''
+tactics = ''

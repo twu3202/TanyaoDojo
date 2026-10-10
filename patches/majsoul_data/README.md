@@ -148,3 +148,65 @@ copies of both scripts are in this directory). It started on 2026-10-07 at 14:30
 `mjs_chain.sh` then runs:
 - 12k paired with v11: a point estimate < 0 stops;
 - otherwise 100k: mjs − v11 ≥ +0.5 with z ≥ 2 passes.
+
+## 2026-10-08: Tenhou-only length control (v11long, trx)
+
+With trx free, the length control pre-registered above (run only if the arm passes) is started now, in parallel, so
+that both answers arrive together instead of three days apart.
+
+- **Config** `configs/local_train_v11long.toml`: the mjs config item for item without the Mahjong Soul globs.
+  - v11's 1,289,661 Tenhou logs (file index copied from the v11 run: same set, same order);
+  - the same schedule, `max_steps` 2,245,200, stopping at 2,255,200.
+  - Against v11 (identical config apart from the step count and `num_workers`), it trains 1.855 times as many
+    steps over the same data.
+- **Code** `Mortal_mjs/mortal` on trx, every file md5-identical to the WSL tree (Tenhou logs load exactly as on the
+  original path).
+- **Reading.**
+  - mjs − v11long is the effect of the Mahjong Soul data at equal steps;
+  - v11long − v11 is the effect of training length alone.
+- **Gates** (`v11long_chain.sh` on the trx evaluation station, same as B1): 12k paired with v11 < 0 stops;
+  otherwise 100k, and v11long − v11 ≥ +0.5 with z ≥ 2 says length alone helps.
+
+## Result (2026-10-10): futility stop at 12k
+
+mjs reached 2,255,200 steps at 15:07 (`mjs_final`, infer md5 4defd70c), with no crash or loader error in three
+days. Duplicate vs v4 at 12k (s10000 4k + s14000 8k), paired with v11 at the same seeds (pt/hanchan, 95% CI over seed
+groups):
+
+| | difference | z | arm | twin |
+|---|---|---|---|---|
+| mjs − v11 | **−1.38 ± 1.77** | −1.53 | −5.17 | −3.79 |
+| mjs − B1 | −1.85 ± 1.83 | −1.98 | −5.17 | −3.32 |
+
+The point estimate is below 0, so the arm stops here as pre-registered and is not extended to 100k.
+
+**Mechanism readouts** (s14000 8k, against v4 in the same games; symaug, which ties v11 at 100k, alongside):
+
+| | mjs | symaug |
+|---|---|---|
+| avg pt on s14000 | −5.18 | −1.12 |
+| call rate (v4 ≈ 30.6%) | **34.25%** | 30.24% |
+| deal-in rate vs v4 | **+1.98 pp** | +0.52 pp |
+| win rate vs v4 | +0.29 pp | +0.02 pp |
+| riichi rate vs v4 | +0.12 pp | +1.14 pp |
+| net points per kyoku vs v4 (attack / defence) | −104 (+18 / −122) | +2 (+35 / −33) |
+| 4th place vs v4 | +4.40 pp | +1.12 pp |
+| busted | 7.88% (v4 6.36%) | 6.78% (v4 6.66%) |
+
+The loss is almost all defence: mjs calls about 4 points more often and deals in 2 points more often than v4, and
+ends 4th more often. That matches what the source-quality probe saw: jade players agree least with v4, and the
+base copies their more open, less defensive style. Training-time test_play said the same throughout. Over the last
+fifth of each schedule, mjs averaged −5.3 and symaug −2.8 on the same fixed seeds.
+
+**Reading.** Adding the 1.34M Mahjong Soul games (93% jade) makes the offline base worse, not better. The
+pre-registered inclusion rule (exclude both sources) is confirmed by the direct test.
+
+The Tenhou-only length control (v11long) was paused on trx at 550,800 steps on 2026-10-09, when trx was needed.
+Since mjs did not pass, it no longer serves to split data from length. On its own, it would only test whether
+training 1.855 times longer on Tenhou helps.
+
+**2026-10-10: v11long finished on the 5060 Ti.** The user chose to finish it on the 5060 Ti, now free.
+- The 550,800-step state was copied from trx (md5 78b3b82c) and resumed at 16:10. The Mortal_mjs tree is
+  md5-identical on both machines, and the file index is the symaug one, verified identical to v11's. As with B1,
+  the data epoch is reshuffled on resume.
+- `v11long_chain_wsl.sh` (the mjs chain with the tag changed) runs the same gates on the 5060 Ti.
