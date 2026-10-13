@@ -478,7 +478,72 @@ rule 4 narrowly. It is the reported-only selection that passed J/5 under both ju
   readouts with every eval. `q25_chain.sh` is the mjs chain with the tag changed.
 - **Where.** On the 5060 Ti, started automatically by `q25_after_v11long.sh` once the v11long evaluation chain is
   done, so the GPU is never shared.
+- **Where it actually ran (2026-10-13).** The trx GPU came free first, so the run started there at 04:32
+  (`q25_trx_wait.sh`: waits for the GPU and for another session's lock files; `q25_chain_trx.sh` is the same chain on
+  the evaluation station), with the 5060 Ti handover held by `HOLD_TRX`. At 11:34 trx was needed back and the run was
+  stopped at 322,000 steps; the stop landed in the middle of a checkpoint write and truncated `mortal.pth`, so the run
+  continues on the 5060 Ti from trx's `best.pth` (100,000 steps, full optimizer state), after the v11long chain. As
+  with every other restart, the data epoch is reshuffled; the recipe and the gates are unchanged.
 
 What a pass would mean: selecting who is playing, by their own regret, moves an offline base where adding data,
 capacity or symmetry did not. A fail with these margins would say the regret-based quality is not what limits the
 base, or that it is partly AI-likeness.
+
+## v8 (2026-10-13, before any rollout): pricing the disagreement types by rollout
+
+The type costs above come from a regression: how many points the human's seat made in the kyoku, against how often
+the human deviated from the AI in each type, with situation and opportunity controls. A regression on realised
+points can still carry whatever made the human choose differently. Rolling the decision out prices it directly.
+
+**Method (`jax_rl/mjai_bot/quality_rollout.py`).**
+- At each disagreement in a real Tenhou game, roll out both the human's action and the AI's, from the same state,
+  to the end of the kyoku. mortal_v4 plays all four seats after the branch. This is a one-step deviation: only the
+  decision differs, and the continuation is the same policy in both branches.
+- Value: GRP expected placement pt for the deciding seat (primary), raw kyoku points (secondary, the regression's
+  unit).
+- Walls. A Tenhou log has no libriichi seed, so the kyoku's wall is rebuilt from the log: hands, logged draws and
+  revealed indicators in place, never-seen tiles at random (libriichi rollout patch: `wall` in the spec; riichi_eval
+  `log_wall`). Each decision is rolled out on that wall (k = 0) and on K = 8 re-deals of every tile still hidden at
+  the branch (k = 1..8), shared by both branches. Given the four hands the hidden order is uniform, so averaging
+  over re-deals averages over the wall exactly. d = V(AI) − V(human), averaged over k = 1..8; k = 0 is reported
+  as a check (it must agree within noise).
+- Positive control, done before any pricing: every kyoku of 30 houou games replayed from the log on its rebuilt
+  wall ends exactly as logged (336 / 336). With the hidden tiles re-dealt the event sequences are still identical
+  (336 / 336); final scores differ only in riichi wins, where the ura indicators were re-dealt (41 / 41).
+- "AI" = mortal_v4 and C' λ0.2 greedy agree on the action class (call / pass / riichi / discard); the alternative
+  is v4's action. Call decisions with a ron available are excluded.
+
+**Kinds and what the regression predicts** (final regression, raw points per deviation; d = V(AI) − V(human)):
+
+| kind | human | AI | regression | predicted sign of d |
+| --- | --- | --- | --- | --- |
+| pass2call | passes a chi / pon | calls | human +233…+535 (AI over-calls) | d < 0 |
+| call2pass | calls | passes | human −212…−431 | d > 0 |
+| dama2riichi | discards, riichi legal | riichi | human −618…−902 | d > 0 |
+| riichi2dama | riichi | discards | human +466 / +759 in South | d < 0 |
+| disc2disc | another tile kind | same tile kind (both AIs) | ≈ 0 (92% of disagreements, "style") | control |
+
+For dama2riichi a third branch (v4's best discard without riichi) splits d into riichi-vs-dama and the tile choice.
+
+**Built-in tilt, read through the control.** The continuation is v4, whose later play fits its own earlier choices,
+so one-step rollouts lean toward the AI's action in every kind. disc2disc measures that lean where the regression
+says the difference is about zero. A kind is read against it: a pass2call d below zero is evidence against the AI
+despite the lean.
+
+**Sample.** 4,000 houou games drawn with seed 20261013 from the whole 2009–2026 pool, excluding the 12,000-game
+held-out sample and the 130,955-game player sample. Every disagreement of the four rich kinds is kept; disc2disc is
+sampled at 1%. From a 20-game smoke run the yield is about 2.3 pass2call, 4.7 call2pass, 1.3 dama2riichi and 0.8
+riichi2dama per game, so the rarest kind has about 3,000 decisions. The smoke run's spread (about 12 pt per decision
+on two walls) puts the standard error near 0.2 pt for that kind.
+
+**Reading, fixed now.** Per kind, over all phases, in GRP pt:
+- **confirmed** if d has the predicted sign and the 95% CI excludes 0;
+- **contradicted** if d has the opposite sign and the 95% CI excludes 0;
+- **inconclusive** otherwise.
+
+Raw points and the per-phase split (E / S12 / S34) are reported alongside but do not change the reading. For
+riichi2dama the prediction was made for the South round; the South rows are reported with the same rule as a
+secondary reading.
+
+**Where.** On the 5060 Ti alongside the q25 run (inference only, capped with `GPU_MEM_FRAC`); results in
+`research/2026-10-11_data_quality/rollout/`.
