@@ -210,3 +210,42 @@ training 1.855 times longer on Tenhou helps.
   md5-identical on both machines, and the file index is the symaug one, verified identical to v11's. As with B1,
   the data epoch is reshuffled on resume.
 - `v11long_chain_wsl.sh` (the mjs chain with the tag changed) runs the same gates on the 5060 Ti.
+
+## Result (2026-10-13): training 1.855 times longer on Tenhou makes the base worse
+
+v11long reached 2,255,200 steps at 10:11 (one silent exit at 2,220,800, resumed from the last save by
+`symaug_run.sh`); final weights md5 b2af6e59.
+
+| comparison | seeds | Δ pt / hanchan | z |
+| --- | --- | ---: | ---: |
+| v11long − v11 | 12k (s10000 + s14000) | +0.28 ± 1.82 | +0.30 |
+| v11long − v11 | **100k** (s10000–34999) | **−1.26 ± 0.62** | **−3.98** |
+| v11long − v11 | the 88k outside the gate | −1.35 ± 0.71 | |
+| v11long − B1 | 100k | −1.08 ± 0.63 | −3.38 |
+| mjs − v11long (data effect) | 12k | −1.67 ± 1.78 | −1.83 |
+
+The 12k gate passed (≥ 0), so the chain extended to 100k as pre-registered. At 100k the length effect is clearly
+negative, the opposite of the +0.5 / z ≥ 2 the control was set to detect. The 12k seeds happened to favour v11long
+by about 1.6 pt relative to the rest, which is within the 12k noise (±1.8).
+
+Mechanism readouts (s14000 8k vs v4), next to mjs and symaug (≈ v11 recipe, 1.21M steps):
+
+| | v11long | mjs | symaug |
+| --- | ---: | ---: | ---: |
+| call rate (v4 ≈ 30.6%) | 32.65% | 34.25% | 30.24% |
+| deal-in rate vs v4 | +1.01 pp | +1.98 pp | +0.52 pp |
+| win rate vs v4 | +0.32 pp | +0.29 pp | +0.02 pp |
+| riichi rate vs v4 | +0.59 pp | +0.12 pp | +1.14 pp |
+| net points per kyoku vs v4 (attack / defence) | −41 (+21 / −62) | −104 (+18 / −122) | +2 (+35 / −33) |
+| 4th place vs v4 | +1.83 pp | +4.40 pp | +1.12 pp |
+| busted | 7.03% (v4 6.29%) | 7.88% (v4 6.36%) | 6.78% (v4 6.66%) |
+
+**Reading.**
+- More passes over the same 1.29M Tenhou games hurt by about 1.3 pt. The base drifts the same way mjs did (more
+  calls, more deal-ins, losses on defence) by about half as much.
+- So part of mjs's deficit against v11 was its schedule length, not the Mahjong Soul data. The data effect proper
+  (mjs − v11long on the 12k seeds) is −1.7 ± 1.8: most likely negative, not established.
+- For any later arm, training on past the data costs. A sample count (data-quality README v9) gives about 659
+  training samples per game, so one pass over v11's 1.29M games is about 1.66M steps: v11 stops at about 0.74 of a
+  pass, and v11long reaches about 1.36. That bears on q25, which makes about 1.5 passes over 628k games in the
+  same 1.22M steps.

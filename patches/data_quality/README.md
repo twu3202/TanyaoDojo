@@ -469,9 +469,11 @@ rule 4 narrowly. It is the reported-only selection that passed J/5 under both ju
 - **Data.** `select_m3_q25.txt`: 628,106 houou games 2009–2026 with the best mean player score. 461,758 of them are
   in v11's list. The file index is generated from the list and sorted in reverse, as v11's.
 - **Recipe.** v11 item for item: 192×40, pts [6, 4, 2, 0], CQL 5, batch 512, cosine 1e-4 → 1e-5 over 1.21M steps,
-  stop at 1.22M. The only change is the file list (`configs/local_train_q25.toml`). One pass over 628k games is
-  about 590k steps, so `num_epochs = 3` and the run is cut at 1.22M: about two passes over half as many distinct
-  games as v11.
+  stop at 1.22M. The only change is the file list (`configs/local_train_q25.toml`). One pass over 628k games was
+  taken to be about 590k steps, so `num_epochs = 3` and the run is cut at 1.22M: about two passes over half as many
+  distinct games as v11. *(Corrected 2026-10-16: a sample scan gives 658.7 samples per game, so one pass is about
+  808k steps and q25 made about 1.5 passes. The 590k figure assumed v11's 1.21M steps were one pass; they are about
+  0.74 of one. See v9.)*
 - **Code.** Mortal_symaug with `symmetry_augmentation = false`, i.e. the original `load_gz_log_files` path that v11
   used.
 - **Gates (as B1).** 12k paired with v11 < 0 stops; otherwise 100k, and q25 − v11 ≥ +0.5 with z ≥ 2 passes. Mechanism
@@ -547,3 +549,119 @@ secondary reading.
 
 **Where.** On the 5060 Ti alongside the q25 run (inference only, capped with `GPU_MEM_FRAC`); results in
 `research/2026-10-11_data_quality/rollout/`.
+
+## v8 result (2026-10-13 15:19): rollouts reverse two of the regression's "human is better" types
+
+3,991 games (9 of 4,000 unreadable), 36,583 disagreements priced, 0 rollout errors, 8 re-dealt walls + the logged
+wall each. d = V(AI) − V(human), mean over the re-dealt walls, 95% CI over decisions. Primary unit GRP pt, all
+phases; raw kyoku points (the regression's unit) alongside.
+
+| kind | n | d, GRP pt | z | d, raw points | regression predicted | reading |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| pass2call | 9,751 | +0.92 ± 0.23 | +8.0 | +190 ± 39 | d < 0 (AI over-calls) | **contradicted**: the AI's call is better |
+| call2pass | 15,926 | +0.62 ± 0.18 | +6.8 | +124 ± 30 | d > 0 | **confirmed** |
+| dama2riichi | 4,465 | +2.38 ± 0.46 | +10.2 | +720 ± 81 | d > 0 | **confirmed** |
+| riichi2dama | 2,995 | +0.66 ± 0.52 | +2.5 | −344 ± 103 | d < 0 (South) | **contradicted** on the primary reading |
+| disc2disc (control) | 3,446 | +0.13 ± 0.27 | +1.0 | +16 ± 47 | ≈ 0 | ≈ 0 |
+
+- **The continuation tilt is small.** The control, where the regression says the difference is style, comes out at
+  +0.13 ± 0.27 pt. v4 continuing in both branches does not by itself manufacture the AI's margins above.
+- **dama2riichi is about riichi, not the tile.** Split by the third branch: riichi vs v4's own dama discard
+  +2.36 ± 0.44 pt; v4's dama discard vs the human's tile +0.02 ± 0.20. It grows late: E +2.09, S12 +2.06,
+  S34 +3.77.
+- **pass2call reverses the regression.** In every phase the AI's call is worth more (E +0.78, S12 +0.72,
+  S34 +1.47 pt; raw +150…+275). The regression's "human is better when passing the AI's call" (+233…+535) was
+  selection: humans pass in hands where the call would have gone less well anyway, which the regression could not
+  see and the rollout removes.
+- **riichi2dama splits by unit.** Over all phases the AI's dama is better in pt, driven by the East round
+  (E +1.06 ± 0.65; S12 +0.62 ± 0.90; S34 −0.28 ± 1.47). In the South round the human's riichi does win more raw
+  points (S12 −516 ± 185, S34 −761 ± 253, z −5.5 / −5.9), which is what the regression measured, but those points
+  do not turn into placement pt. The pre-registered South secondary reading in pt is inconclusive.
+- k = 0 (the logged wall) agrees with the re-dealt mean within noise in every kind (e.g. pass2call +0.92 vs +0.92,
+  dama2riichi +2.08 vs +2.38).
+
+What it means for the study.
+- In all four rich kinds the AI's recommendation is the better one-step choice under the same continuation,
+  including the two the regression had credited to the humans. The pro's remark holds in a stronger form for these
+  kinds: what the AI recommends is better, not only what it says to avoid.
+- Tile-choice disagreements (disc2disc, and the tile part of dama2riichi) are worth about nothing, which matches
+  the regression's "style" reading of 92% of disagreements.
+- The `typed` variant treated pass2call as style because the regression said humans gained; the rollouts say it is
+  an error. q25 is selected on plain v4 regret, which already counts every deviation by its Q gap, so the arm is
+  unaffected.
+- Caveat: a one-step deviation under v4's continuation, valued at the end of the kyoku by GRP. It says which
+  single choice is better given how v4 plays on, not what a human would make of the line afterwards.
+
+Outputs: `research/2026-10-11_data_quality/rollout/` (`out/shard_*.jsonl`, `report.txt`; contains game paths, not
+distributed).
+
+## q25 result (2026-10-15): the best offline base so far, narrowly short of the pre-registered bar
+
+Training finished at 13:50 on 2026-10-15 (1,220,000 steps; final infer md5 20f9be36). Two crashes on the 5060 Ti at
+773,600 and 786,000 steps, both `assert masks[range(batch_size), actions].all()` (a logged action that is not legal:
+a malformed log, which only q25's pre-2019 games can contain, since v11 used 2019+ only). `symaug_run.sh` resumed
+from the last save each time, reshuffling the epoch, and the run completed.
+
+| comparison | seeds | Δ pt / hanchan | z |
+| --- | --- | ---: | ---: |
+| q25 − v11 | 12k gate | +1.67 ± 1.72 | +1.90 |
+| q25 − v11 | **100k** | **+0.55 ± 0.60** | **+1.80** |
+| q25 − B1 | 100k | +0.73 ± 0.61 | +2.35 |
+| q25 vs mortal_v4 | 100k | −1.95 ± 0.45 | |
+
+- **Verdict (pre-registered: ≥ +0.5 and z ≥ 2): not passed.** The point estimate clears +0.5 but z is 1.80; the CI
+  reaches −0.05.
+- It is still the best offline base the project has made: v11 −2.50, B1 −2.68, symaug −2.49, v11long −3.76 against
+  v4 on the same 100k. It is the first arm since v11 whose 100k estimate is above v11 by more than the noise of a
+  single 12k.
+- It got there with about 1.5 passes over half the games (first written as two; corrected in v9), which v11long
+  suggests may be a handicap: v11long's 1.36 passes cost about 1.3 pt against v11's 0.74, though with a longer
+  schedule.
+
+Mechanism readouts (s14000 8k vs v4):
+
+| | q25 | symaug | v11long | mjs |
+| --- | ---: | ---: | ---: | ---: |
+| call rate (v4 ≈ 30.6%) | 31.28% | 30.24% | 32.65% | 34.25% |
+| deal-in rate vs v4 | +0.38 pp | +0.52 pp | +1.01 pp | +1.98 pp |
+| win rate vs v4 | +0.03 pp | +0.02 pp | +0.32 pp | +0.29 pp |
+| riichi rate vs v4 | +0.50 pp | +1.14 pp | +0.59 pp | +0.12 pp |
+| net points per kyoku vs v4 (attack / defence) | −26 (+2 / −27) | +2 (+35 / −33) | −41 (+21 / −62) | −104 (+18 / −122) |
+| 4th place vs v4 | +1.32 pp | +1.12 pp | +1.83 pp | +4.40 pp |
+| busted | 6.80% (v4 6.44%) | 6.78% (v4 6.66%) | 7.03% (v4 6.29%) | 7.88% (v4 6.36%) |
+
+q25 has the lowest deal-in excess of any arm and a call rate close to v4's: the selected players' defence is what
+the base picked up.
+
+## v9 (2026-10-16, before the run): q25 with one pass (q25one), user decision
+
+After the q25 result the user chose to run q25 again with one pass ("先做 A").
+
+- **Why.** q25 came out +0.55 ± 0.60 against v11 at 100k (z 1.80), just short of the bar. v11long showed that
+  training on past the data costs: 1.36 passes over the same games were about 1.3 pt worse than v11's 0.74. q25 made
+  about 1.5 passes. q25one asks how much of the selection gain the repetition was eating.
+- **Pass length, measured.** `jax_rl/mjai_bot/scan_logs.py` reads files with the trainer's own reader. On 5,000 files
+  drawn from q25's list (seed 20261016) it counts 658.7 samples per game (SD 175, SE 0.38%). That puts one pass over
+  628,106 games at about 808,000 steps at batch 512. The 590k used for q25 was wrong (v7 corrected): it assumed that
+  v11's 1.21M steps were one pass over 1.29M games, when they are about 0.74 of one. The same count puts v11long at
+  1.36 passes and q25 at 1.51.
+- **Recipe.** q25 item for item (`configs/local_train_q25one.toml`), except `num_epochs = 1`, cosine 1e-4 → 1e-5 over
+  785,000 steps, stop at 795,000. That is 10,000 steps at the final LR, as in v11's 1.21M / 1.22M. The stop is 1.5%
+  (about 4 SE) short of the estimated pass end, so the trainer never finishes the epoch and exits on its own.
+- **Data.** q25's file list in q25's order. The Mortal_symaug loader now skips a seat's game when a logged action is
+  marked illegal (`dataloader_skip_illegal.patch`). That is what crashed q25 twice, and every crash reshuffles the
+  epoch, which would break "one pass". No such game was found in 6,777 scanned files, so the skip is a safeguard, not
+  a filter.
+- **Gates.** No 12k futility stop: the arm exists for the 100k pairing with q25. Pass: q25one − v11 ≥ +0.5 with
+  z ≥ 2, the bar of every base arm. Reported with its CI: q25one − q25 on the same 100k (one pass against about 1.5).
+  `q25one_chain.sh`.
+- **Expectation, stated now.** If repetition was the handicap, q25one − q25 > 0. q25one also trains for 35% fewer
+  steps than q25 and v11, so a shortfall could be from length too. The arm cannot split those two.
+- **Where.** On the 5060 Ti, about 31 hours of training at 7.2 steps/s, then about 8.5 hours of evaluation.
+
+**2026-10-17 04:20: q25one restarted from scratch.** The first attempt started at 20:29 on 10-16. It crashed at 250,800
+steps on the first illegal-action game it met: the skip patch referenced `logging` inside `populate_buffer`, where an
+older local `import logging` makes the name local to the whole function (UnboundLocalError). `symaug_run.sh` resumed
+it, but a resume reshuffles the epoch and the arm exists to test exactly one pass, so that run was stopped (kept as
+`runs/q25one_crash1`), the patch fixed (`import logging` in place, the scoping reproduced and tested), and q25one
+restarted from step 0 with the same config. At least one such game is in the list, so the skip is not hypothetical.

@@ -1,0 +1,18 @@
+--- dataloader.py.bak_20261016	2026-10-16 20:21:20.875131982 +0800
++++ dataloader.py	2026-10-17 04:19:54.749301126 +0800
+@@ -107,6 +107,15 @@
+                     invisible_obs = game.take_invisible_obs()
+                 actions = game.take_actions()
+                 masks = game.take_masks()
++                # Local patch (2026-10-16, patches/data_quality v9): q25 crashed twice (773,600 and 786,000 steps) on
++                # train.py's assert masks[range(batch_size), actions].all(): a few pre-2019 Tenhou logs record an action
++                # libriichi marks illegal. Skip that seat's game with a warning instead of letting the run die.
++                legal = np.asarray(masks, dtype=bool)[np.arange(len(actions)), np.asarray(actions, dtype=np.int64)]
++                if not legal.all():
++                    import logging  # populate_buffer imports logging locally below, so the name is local here too
++                    logging.warning(f'skipping a game with an illegal logged action (seat {game.take_player_id()}, '
++                                    f'{int((~legal).sum())} of {len(actions)} samples) in {file_list[:1]}')
++                    continue
+                 at_kyoku = game.take_at_kyoku()
+                 dones = game.take_dones()
+                 apply_gamma = game.take_apply_gamma()
