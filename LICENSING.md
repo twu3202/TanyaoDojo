@@ -4,6 +4,7 @@
 |---|---|---|
 | All code in the repository except the paths below<br/>(the environment / observation / network / training / data-bridge code in `jax_rl/`, `scripts/`, `configs/`, the docs) | **MIT** | Original to this project, with no copyleft dependencies |
 | `jax_rl/mjai_bot/` | **AGPL-3.0** | Links `libriichi` from upstream [Mortal](https://github.com/Equim-chan/Mortal) (AGPL-3.0) at runtime |
+| `deploy/hf_space/` | **AGPL-3.0** | The Space app links libriichi and bundles Mortal's model code |
 | `patches/**/*.patch` | **AGPL-3.0** | Diffs against upstream Mortal's trainer / dataloader / libriichi source (AGPL-3.0), i.e. modifications of that work |
 
 ## Notes
