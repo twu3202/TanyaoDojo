@@ -39,12 +39,15 @@ def final_scores(path):
     reaches = [0, 0, 0, 0]
     deltas = [0, 0, 0, 0]
     hora = False
+    ended = False
     with gzip.open(path, "rt", encoding="utf-8") as f:
         for line in f:
             if not line.strip():
                 continue
             ev = json.loads(line)
             t = ev.get("type")
+            if t == "end_game":
+                ended = True
             if t == "start_kyoku":
                 sc = list(ev["scores"])
                 kyotaku = int(ev.get("kyotaku", 0))
@@ -59,14 +62,14 @@ def final_scores(path):
                 for i, v in enumerate(ev.get("deltas", [0] * 4)):
                     deltas[i] += int(v)
     if sc is None:
-        return [25000] * 4
+        return [25000] * 4, ended
     fin = [sc[i] - 1000 * reaches[i] + deltas[i] for i in range(4)]
     if not hora:                       # 流局:台上残留立直棒归终局第一名
         left = kyotaku + sum(reaches)
         if left:
             top = max(range(4), key=lambda i: (fin[i], -i))
             fin[top] += 1000 * left
-    return fin
+    return fin, ended
 
 
 def main():
@@ -80,6 +83,9 @@ def main():
     ap.add_argument("--dump", default=None,
                     help="把逐牌局组的顺位点存成 npz(seed, pt4, mean),供配对比较。"
                          "⚠️ 日志目录按 seed 命名会被后续 run 覆盖,要配对就必须先 dump")
+    ap.add_argument("--strict", action="store_true",
+                    help="every seed in [seed-lo, seed-hi] must have all four rotations, each ending in end_game; "
+                         "otherwise print INCOMPLETE, dump nothing and exit 2 (chains key on the '正确口径' line)")
     args = ap.parse_args()
 
     groups = defaultdict(dict)
@@ -97,14 +103,34 @@ def main():
     full = {s: d for s, d in groups.items() if len(d) == 4}
     print(f"完整牌局组 = {len(full):,}  (局数 {4*len(full):,})")
     if not full:
+        if args.strict:
+            print(f"INCOMPLETE: 0 of {args.seed_hi - args.seed_lo + 1:,} groups")
+            raise SystemExit(2)
         return
+
+    scores, unended = {}, set()
+    for seed in sorted(full):
+        for suf, path in full[seed].items():
+            sc, ended = final_scores(path)
+            scores[seed, suf] = sc
+            if not ended:
+                unended.add(seed)
+    if unended:
+        print(f"⚠️ {len(unended):,} 组有日志没有 end_game(对局被截断)")
+    if args.strict:
+        want = args.seed_hi - args.seed_lo + 1
+        ok = len(full) - len(unended & set(full))
+        if ok != want:
+            print(f"INCOMPLETE: {ok:,} of {want:,} groups complete "
+                  f"({want - len(full):,} missing or partial, {len(unended):,} truncated)")
+            raise SystemExit(2)
 
     per_game, per_group, seeds = [], [], []
     rows = []
     for seed in sorted(full):
         pts = []
         for suf, path in sorted(full[seed].items()):
-            sc = final_scores(path)
+            sc = scores[seed, suf]
             seat = SUFFIX_SEAT[suf]
             order = sorted(range(4), key=lambda i: (-sc[i], i))
             rank = order.index(seat)

@@ -665,3 +665,64 @@ older local `import logging` makes the name local to the whole function (Unbound
 it, but a resume reshuffles the epoch and the arm exists to test exactly one pass, so that run was stopped (kept as
 `runs/q25one_crash1`), the patch fixed (`import logging` in place, the scoping reproduced and tested), and q25one
 restarted from step 0 with the same config. At least one such game is in the list, so the skip is not hypothetical.
+
+## q25one result (2026-10-18): one pass is as good as 1.5, and neither clears the bar
+
+The restarted run went through without a crash: it stopped at 795,200 steps at 04:52 on 2026-10-18 (final infer md5
+2d110984). The loader skipped one seat's game with an illegal logged action (a 2012 log, 1 of 225 samples), which is
+the case that crashed q25 and the first q25one.
+
+| comparison | seeds | Δ pt / hanchan | z |
+| --- | --- | ---: | ---: |
+| q25one − v11 | 12k | +2.27 ± 1.75 | +2.54 |
+| q25one − v11 | **100k** | **+0.45 ± 0.60** | **+1.47** |
+| q25one − B1 | 100k | +0.63 ± 0.61 | +2.04 |
+| **q25one − q25** (one pass − 1.5 passes) | 100k | **−0.10 ± 0.59** | −0.33 |
+| q25one vs mortal_v4 | 100k | −2.05 ± 0.44 | |
+
+- **Verdict (≥ +0.5 and z ≥ 2 against v11): not passed.**
+- **Repetition was not the handicap.** One pass and 1.5 passes over the same selected games come out the same within
+  ±0.6 pt, and the one-pass arm used 35% fewer steps. The expectation stated in v9 (q25one − q25 > 0) is not borne
+  out. The two factors the arm cannot split (fewer repeats, fewer steps) would have to cancel exactly for a real
+  repetition cost to hide here; the simpler reading is that 1.5 passes do not hurt.
+- **The selection effect, read across both arms.** q25 +0.55 and q25one +0.45 against v11 on the same 100k: two
+  trainings of the same selection agree on about +0.5 pt. Each falls short of z ≥ 2 on its own. The two estimates
+  share v11's noise, so taken together they do not make a pass either.
+- **Practical point.** The same strength costs 65% of the training steps: a cheaper recipe for any later base on this
+  selection.
+
+Mechanism readouts (s14000 8k vs v4):
+
+| | q25one | q25 | symaug |
+| --- | ---: | ---: | ---: |
+| call rate (v4 ≈ 30.6%) | 32.83% | 31.28% | 30.24% |
+| deal-in rate vs v4 | +0.40 pp | +0.38 pp | +0.52 pp |
+| win rate vs v4 | +0.10 pp | +0.03 pp | +0.02 pp |
+| riichi rate vs v4 | −0.49 pp | +0.50 pp | +1.14 pp |
+| net points per kyoku vs v4 (attack / defence) | −27 (+1 / −28) | −26 (+2 / −27) | +2 (+35 / −33) |
+| 4th place vs v4 | +1.25 pp | +1.32 pp | +1.12 pp |
+| busted | 7.03% (v4 6.31%) | 6.80% (v4 6.44%) | 6.78% (v4 6.66%) |
+
+Both q25 arms keep the low deal-in excess; q25one calls more and riichis less than q25.
+
+## v10 (2026-10-19, before the run): select twice as hard (q12one), user decision
+
+After q25one the user chose to tighten the selection ("按A来做吧").
+
+- **Why.** Both q25 arms land about +0.5 pt above v11 at 100k, each short of z ≥ 2, and one pass is as good as 1.5. If
+  the gain comes from who is playing, a stronger selection should give more. If halving the data again costs more
+  than the stronger selection adds, the arm will show it.
+- **Data.** The best 12.5% by the same M3 game score: 314,053 games, the first half of q25's order (rerun of
+  `quality_player_select.py` with a 12.5% output; the q25 list reproduces byte for byte). On the held-out sample,
+  excess regret against v11's set: v4 −0.0384 ± 0.0019 (q25 −0.0286), C' −0.0111 ± 0.0008 (q25 −0.0081), about 1.35
+  times q25's. The mix leans recent: 2024–2025 games are 42% of it (q25: 33%).
+- **Recipe.** q25one item for item (`configs/local_train_q12one.toml`), one pass. 658.3 samples per game on 3,617
+  scanned files of the list (SE 0.43%) put the pass at about 403,800 steps. Cosine 1e-4 → 1e-5 over 386,000 steps,
+  stop at 396,000, about 2% (4.5 SE) short of the pass end. Same loader, which skips a seat's game with an illegal
+  logged action.
+- **Gates.** As q25one: no 12k futility stop, 100k always. Pass: q12one − v11 ≥ +0.5 with z ≥ 2. Reported with
+  CIs: q12one − q25one (twice as hard a selection, one pass each) and q12one − q25.
+- **Expectation, stated now.** If the gain scales with the regret gap, q12one − v11 ≈ +0.6–0.7 and q12one − q25one ≈
+  +0.15–0.2. That difference is far inside the ±0.6 of a 100k pairing, so a pass against v11 is the readable
+  outcome. A clearly negative q12one − q25one would mean data quantity binds at 314k games.
+- **Where.** 5060 Ti: about 12 hours of training at 9 steps/s, then about 7.5 hours of evaluation.

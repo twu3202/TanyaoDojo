@@ -11,6 +11,7 @@
    held-out sample): rule 1 worst minus best quartile of game score >= J/3; rule 4 the best 1,289,661 pool games
    minus v11's set <= -J/5. The best 25% is reported only.
 4. Writes the selected file lists (relative paths) to DIR for the arm, whatever the verdict.
+v10 (2026-10-19): also the best 12.5% (select_m3_q12.txt, the first half of the q25 order), reported the same way.
 """
 from __future__ import annotations
 
@@ -94,8 +95,12 @@ def main():
     order = np.argsort(m["gscore"].to_numpy(), kind="stable")
     sel = set(m["path"].to_numpy()[order[:N_SELECT]])
     q25 = set(m["path"].to_numpy()[order[: len(m) // 4]])
+    q12 = set(m["path"].to_numpy()[order[: len(m) // 8]])
     pd.Series(sorted(sel)).to_csv(os.path.join(a.out_dir, "select_m3_1289661.txt"), index=False, header=False)
     pd.Series(sorted(q25)).to_csv(os.path.join(a.out_dir, "select_m3_q25.txt"), index=False, header=False)
+    pd.Series(sorted(q12)).to_csv(os.path.join(a.out_dir, "select_m3_q12.txt"), index=False, header=False)
+    y12 = m.loc[m["path"].isin(q12), "year"].value_counts().sort_index()
+    print(f"best 12.5%: {len(q12):,} games; by year: " + ", ".join(f"{y}:{c:,}" for y, c in y12.items()))
     ys = m.loc[m["path"].isin(sel), "year"].value_counts().sort_index()
     print("selected 1,289,661 by year: " + ", ".join(f"{y}:{c:,}" for y, c in ys.items()))
     v11 = set(m.loc[m["year"] >= 2019, "path"])
@@ -113,7 +118,7 @@ def main():
         print(f"  {j}: {dd:+.5f} ± {1.96 * se:.5f} (z {dd / se:+.1f}); need >= {J[j] / 3:.5f} -> {'pass' if ok else 'fail'}")
     print(f"\n== v6 rule 4: selected minus v11's set on the held-out sample (need <= -J/5)")
     ok4 = True
-    for label, s in (("best 1,289,661 (rule 3)", sel), ("best 25% (reported only)", q25)):
+    for label, s in (("best 1,289,661 (rule 3)", sel), ("best 25% (reported only)", q25), ("best 12.5% (v10, reported)", q12)):
         gsel = set(hg.loc[hg["path"].isin(s), "game"])
         gv11 = set(hg.loc[hg["year"] >= 2019, "game"])
         for j in JUDGES:

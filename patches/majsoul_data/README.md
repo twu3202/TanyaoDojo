@@ -220,7 +220,7 @@ v11long reached 2,255,200 steps at 10:11 (one silent exit at 2,220,800, resumed 
 | --- | --- | ---: | ---: |
 | v11long − v11 | 12k (s10000 + s14000) | +0.28 ± 1.82 | +0.30 |
 | v11long − v11 | **100k** (s10000–34999) | **−1.26 ± 0.62** | **−3.98** |
-| v11long − v11 | the 88k outside the gate | −1.35 ± 0.71 | |
+| v11long − v11 | the 88k outside the gate | −1.47 ± 0.66 | −4.36 |
 | v11long − B1 | 100k | −1.08 ± 0.63 | −3.38 |
 | mjs − v11long (data effect) | 12k | −1.67 ± 1.78 | −1.83 |
 

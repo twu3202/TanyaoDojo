@@ -1,0 +1,126 @@
+# [5060 Ti / WSL] q12one (2026-10-19 user: "按A来做吧"; patches/data_quality/README.md v10) = q25one item for item, except
+#   the file list: the best 12.5% of houou games by the same M3 game score (314,053 games, the first half of q25's
+#   order; research/.../m3_select_v10/select_m3_q12.txt), one pass.
+# Why: both q25 arms came out about +0.5 pt against v11 at 100k (q25 +0.55, q25one +0.45), each short of z >= 2. A
+#   stronger selection asks whether the gain grows with selection strength (held-out excess regret against v11's
+#   set: v4 -0.0384 vs q25's -0.0286, C' -0.0111 vs -0.0081, i.e. 1.35x) or whether halving the data again costs more.
+# Steps: 658.3 samples per game (3,617 scanned q12 files, SE 0.43%), so one pass is about 403,800 steps at batch 512.
+#   Stop at 396,000 (about 2% / 4.5 SE short of the pass end); cosine 1e-4 -> 1e-5 over 386,000, 10,000 steps at the
+#   final LR as in v11. The Mortal_symaug loader skips a seat's game with an illegal logged action (q25one's fix).
+
+[control]
+version = 4
+online = false
+state_file = '/home/r/Projects/better_mortal/runs/q12one/mortal.pth'
+best_state_file = '/home/r/Projects/better_mortal/runs/q12one/best.pth'
+tensorboard_dir = '/home/r/Projects/better_mortal/runs/q12one/tb'
+device = 'cuda:0'
+enable_cudnn_benchmark = true
+enable_amp = true
+enable_compile = true
+batch_size = 512
+opt_step_every = 1
+save_every = 400
+test_every = 20000
+submit_every = 400
+
+[test_play]
+games = 1000
+log_dir = '/home/r/Projects/better_mortal/runs/q12one/test_play'
+
+[dataset]
+globs = [
+    '/home/r/Projects/better_mortal/data/houou/2019/*.mjson*',
+    '/home/r/Projects/better_mortal/data/houou/2020/*.mjson*',
+    '/home/r/Projects/better_mortal/data/houou/2021/*.mjson*',
+    '/home/r/Projects/better_mortal/data/houou/2022/*.mjson*',
+    '/home/r/Projects/better_mortal/data/houou/2023/*.mjson*',
+    '/home/r/Projects/better_mortal/data/houou/2024/*.mjson*',
+    '/home/r/Projects/better_mortal/data/houou/2025/*.mjson*',
+    '/home/r/Projects/better_mortal/data/houou/2026/*.mjson*',
+]
+file_index = '/home/r/Projects/better_mortal/runs/q12one/file_index.pth'
+file_batch_size = 1
+reserve_ratio = 0.0
+num_workers = 8            # v11 = 6;只影响吞吐(每个 loader 进程分一片文件列表)
+player_names_files = []
+num_epochs = 1   # one pass (~404k steps); symaug_run.sh stops at 396,000, just before the pass ends
+enable_augmentation = false
+augmented_first = false
+symmetry_augmentation = false   # 不加增强:与 v11 同一读法,只有牌谱列表不同
+
+[env]
+gamma = 1
+pts = [6.0, 4.0, 2.0, 0.0]
+
+[resnet]
+conv_channels = 192
+num_blocks = 40
+
+[cql]
+min_q_weight = 5
+
+[aux]
+next_rank_weight = 0.2
+
+[freeze_bn]
+mortal = false
+
+[optim]
+eps = 1e-8
+betas = [0.9, 0.999]
+weight_decay = 0.1
+max_grad_norm = 0
+
+[optim.scheduler]
+# ⭐ Track A1 核心修复:cosine 退火 peak→final,覆盖整个 epoch
+peak = 1e-4
+final = 1e-5
+warm_up_steps = 2000
+max_steps = 386000
+
+[baseline.train]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/home/r/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[baseline.test]
+device = 'cuda:0'
+enable_compile = false
+state_file = '/home/r/Projects/better_mortal/baseline/mortal_v4.pth'
+
+[grp]
+state_file = '/home/r/Projects/better_mortal/runs/grp_full/grp.pth'
+
+[grp.network]
+hidden_size = 64
+num_layers = 2
+
+[1v3]
+seed_key = 20260711
+games_per_iter = 2000
+iters = 50
+log_dir = '/home/r/Projects/better_mortal/runs/q12one/1v3'
+
+[1v3.challenger]
+device = 'cuda:0'
+name = 'q12one'
+state_file = '/home/r/Projects/better_mortal/runs/q12one/best.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.champion]
+device = 'cuda:0'
+name = 'mortal-v4'
+state_file = '/home/r/Projects/better_mortal/baseline/mortal_v4.pth'
+stochastic_latent = false
+enable_compile = false
+enable_amp = true
+enable_rule_based_agari_guard = true
+
+[1v3.akochan]
+enabled = false
+dir = ''
+tactics = ''
