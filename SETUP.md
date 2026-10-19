@@ -77,8 +77,8 @@ are not distributed with this repository; see upstream for how to request them).
 
 ### 3.1 Anchored value fine-tuning patch (value line C', optional)
 
-This project's current strongest model (12k duplicate `-0.75 ± 1.31` vs mortal_v4) relies on an **anchor loss** added
-to the upstream trainer: during online training, the squared error between the Q-values of **all legal actions** and
+Every online-RL model of the value line, including the current best own model (tpt 408k, `−0.64 ± 0.46` vs
+mortal_v4 at 100k), relies on an **anchor loss** added to the upstream trainer: during online training, the squared error between the Q-values of **all legal actions** and
 those of a frozen base is penalized, suppressing the slow failure mode "the Q-values of untaken actions drift without
 supervision → the action ranking erodes". The patch is inert for upstream — with no `[anchor]` section in the config, or
 with `weight = 0`, behavior is identical to upstream.
@@ -91,6 +91,13 @@ cd ~/Mortal && patch -p1 < /path/to/TanyaoDojo/patches/anchor_train.patch
 policy in place, and about 40 hours of training give a 12k pairing of only `+0.19` (z=0.33); relaxed to 0.2, it reaches
 `+1.56` (z=2.37) in 9 hours. Config: [`configs/online_selfplay.toml`](configs/online_selfplay.toml);
 interpretation: [RESULTS.md](RESULTS.md).
+
+### 3.2 Experiment patches
+
+Each later experiment keeps its patch to the upstream trainer or dataloader, its run scripts and its pre-registered
+README under [`patches/`](patches) (for example `patches/data_quality/dataloader_skip_illegal.patch`, which skips a
+seat's game when a logged action is illegal under libriichi's masks). Each README says what its patch changes and how
+the run used it; check a patch's paths before applying it, since some are single-file diffs taken inside `mortal/`.
 
 ## 4. Training data
 
@@ -106,4 +113,11 @@ PYTHONPATH=~/mahjax python make_bc_dataset.py "<log glob>" <num games> <output d
 
 ```bash
 python jax_rl/mjai_bot/test_tracker_diff.py "<log glob>" 100 v2   # the observation diff should match exactly
+```
+
+Evaluation acceptance: after a duplicate run, `group_ci.py --strict` must accept the log directory before any number
+from it is used. It exits 2 if a seed lacks one of its four rotations or a game has no `end_game`:
+
+```bash
+python jax_rl/mjai_bot/group_ci.py --strict --log-dir <eval log dir> --seed-lo 10000 --seed-hi 10999 --dump run.npz
 ```

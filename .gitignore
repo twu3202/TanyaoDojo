@@ -1,30 +1,30 @@
-# 数据(26GB+,且天凤条款禁止再分发——绝不入库)
+# Data (26 GB+; Tenhou's terms forbid redistribution, never check it in)
 data/
 
-# 训练输出与评测日志(大文件;权重快照放 weights_backup/ 本地保存)
+# Training outputs and evaluation logs (large; weight snapshots stay local in weights_backup/)
 runs/
 eval/
 weights_backup/
 data_staging/
 
-# Rust 构建产物
+# Rust build products
 Mortal/target/
 Mortal/mortal/libriichi.so
 
-# 杂项
+# Misc
 __pycache__/
 *.pyc
 .DS_Store
 *.log
 
-# 第三方对手(akochan 源码克隆,不入库;搭建方法见 TRACK_C_SELFPLAY.md 哨兵节)
+# Third-party opponent (akochan source clone, not checked in)
 vendor/
 jax_rl/*.pkl
 
-# 上游 Mortal(AGPL-3.0)不入库:评测桥依赖其 libriichi,搭建见 SETUP.md
+# Upstream Mortal (AGPL-3.0) is not checked in: the evaluation bridge builds its libriichi, see SETUP.md
 Mortal/
 
-# 内部调研/规划文档:本地保留,不进公开仓库
+# Internal research / planning notes: kept locally, not published
 CLAUDE.md
 ARCH_RESEARCH.md
 ARCH_TRACKB_DEFENSE.md
@@ -43,12 +43,12 @@ TRAINING_PLAN.md
 SICHUAN_RL_PLAN.md
 MAHJAX_MIGRATION.md
 
-# 内部调研报告:阶段性总结与行业扫描,本地保留,不进公开仓库
+# Internal research reports and reviews: kept locally, not published
 research/
 
-# 川麻扩展:查表为构建产物(2 秒可重建), docs/ 为内部方案与规则调研(本地保留)
+# Sichuan: the lookup table is a build product (rebuilt in about 2 s); docs/ holds internal plans (kept locally)
 common/suit_table.npy
 docs/
 
-# 本次牌谱数据扩容调研：本地保留，不入库
+# Game-log data expansion survey: kept locally, not checked in
 /paipu_data_research_20261006/

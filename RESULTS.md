@@ -547,3 +547,43 @@ Gap localization (`jax_rl/mjai_bot/diag_gap.py`, pure parsing of the duplicate l
 Net per-hand point-flow gap -109 points = **offense -95 + defense -13**. Defense is already level with v4; the gap is almost entirely offensive, and its shape is "too passive";
 discard efficiency was measured long ago and has no headroom (shanten-optimal 96.4%). Compare the value line: rl1_best's riichi rate is 2.03pp **higher** than v4's and its deal-in rate 0.86pp higher,
 and C' final pulled these back to +0.81 / +0.15pp — the two lines made opposite errors on the same axis (riichi / push-fold judgment), and the closer to v4, the stronger.
+
+## October 2026: every 100k on the same 25,000 seed groups
+
+From October on, each experiment has its own pre-registration and result next to its code under `patches/`. This table
+collects every model with the full sacred 100k (seeds 10000–34999). The CIs are over seed groups (four rotations of
+one wall), so differences between rows can be paired on the same walls.
+
+| Model | What it is | 100k vs v4 |
+| --- | --- | --- |
+| tpt 408k | online RL from v11, eval-proportional reward (own best) | −0.637 ± 0.458 |
+| Stage 1 448k | + targeted exploration ([stage1_explore](patches/stage1_explore/README.md)) | −0.765 ± 0.458 |
+| v4 pool 448k | + v4-heavy opponent pool | −0.863 ± 0.462 |
+| s368000 | λ 0.1 anchor, old reward | −0.886 ± 0.461 |
+| tpt 448k | 40k steps past 408k | −0.932 ± 0.459 |
+| M1-sel 448k | calibrated anchor on push/fold and riichi states only ([calibrated_anchor](patches/calibrated_anchor/README.md)) | −0.996 ± 0.455 |
+| M1 448k | calibrated anchor, global margin 0.3 | −1.038 ± 0.460 |
+| q25 | offline: the 25% of games with the best-scoring players, 1.5 passes ([data_quality](patches/data_quality/README.md)) | −1.947 ± 0.451 |
+| q25one | the same selection, one pass | −2.047 ± 0.443 |
+| symaug | offline: 18-way symmetry augmentation ([symmetry_augmentation](patches/symmetry_augmentation/README.md)) | −2.494 ± 0.459 |
+| v11 | the offline baseline | −2.498 ± 0.455 |
+| B1 | the v11 recipe at v4's size, 256 × 54 | −2.680 ± 0.464 |
+| v11long | v11 trained 1.8× longer ([majsoul_data](patches/majsoul_data/README.md)) | −3.758 ± 0.466 |
+
+**Paired on the same walls.**
+
+| Comparison | Difference | z |
+| --- | --- | --- |
+| Stage 1 448k − 408k | −0.13 ± 0.47 | −0.53 |
+| M1-sel 448k − 408k | −0.36 ± 0.50 | −1.41 |
+| M1 448k − 408k | −0.40 ± 0.55 | −1.44 |
+| v4 pool 448k − 408k | −0.23 ± 0.48 | −0.92 |
+| q25 − v11 | +0.55 ± 0.60 | +1.80 |
+| q25one − v11 | +0.45 ± 0.60 | +1.47 |
+| symaug − v11 | +0.00 ± 0.60 | +0.01 |
+| B1 − v11 | −0.18 ± 0.62 | −0.58 |
+| v11long − v11 | −1.26 ± 0.62 | −3.98 |
+
+No online variant beat 408k. Among offline bases only the data-quality selection points upward, and it has not cleared
+the pre-registered bar (≥ +0.5 with z ≥ 2). Whether its offline gain survives online RL is the
+[online transfer test](patches/online_transfer/README.md).

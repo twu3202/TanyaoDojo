@@ -21,5 +21,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 NOTE: This MIT license covers the project's own code EXCEPT the directory
-`jax_rl/mjai_bot/`, which links against libriichi (AGPL-3.0) at runtime and is
-therefore licensed under AGPL-3.0. See LICENSING.md.
+`jax_rl/mjai_bot/`, which links against libriichi (AGPL-3.0) at runtime, and
+the `.patch` files under `patches/`, which modify upstream Mortal (AGPL-3.0);
+both are therefore licensed under AGPL-3.0. See LICENSING.md.
