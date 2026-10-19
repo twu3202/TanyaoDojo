@@ -17,6 +17,10 @@ for **Sichuan mahjong**.
 >
 > **Evaluation module.** Counterfactual rollouts on the true walls, decision-level EV maps and luck control variates
 > live in a separate repository, [riichi-eval](https://github.com/twu3202/riichi-eval).
+>
+> **Try it.** [🀄 What would the model discard?](https://huggingface.co/spaces/Twu31/TanyaoDojo-decisions) is an
+> interactive Space with the best own model (tpt 408k). It also serves `POST /v1/decisions`, a decision-model
+> interface for any position given as an mjai log ([`decision_api.py`](jax_rl/mjai_bot/decision_api.py)).
 
 ## Where it stands (2026-10-19)
 

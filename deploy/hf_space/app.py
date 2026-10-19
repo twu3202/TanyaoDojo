@@ -319,8 +319,13 @@ if API_ON:
             return JSONResponse({"error": {"type": "invalid_request_error", "message": f"bad JSON: {e}"}}, 400)
         code, out = handle(model, body)
         return JSONResponse(out, status_code=code)
-app = gr.mount_gradio_app(app, demo, path="/", allowed_paths=[TILE_DIR])
+# No server-side rendering under a plain FastAPI mount (there is no Node server to serve its chunks), and behind the
+# Spaces proxy the public origin is SPACE_HOST, not the bind address.
+ROOT = f"https://{os.environ['SPACE_HOST']}" if os.environ.get("SPACE_HOST") else ""
+app = gr.mount_gradio_app(app, demo, path="/", allowed_paths=[TILE_DIR], ssr_mode=False, root_path=ROOT)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host=os.environ.get("HOST", "0.0.0.0"), port=int(os.environ.get("PORT", 7860)))
+    # Gradio Spaces route traffic to GRADIO_SERVER_PORT (7860); PORT can belong to something else there
+    uvicorn.run(app, host=os.environ.get("GRADIO_SERVER_NAME", "0.0.0.0"), port=int(os.environ.get("GRADIO_SERVER_PORT", 7860)),
+                proxy_headers=True, forwarded_allow_ips="*")
