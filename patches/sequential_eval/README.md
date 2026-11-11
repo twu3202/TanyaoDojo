@@ -61,7 +61,9 @@ At α 0.05 the historical 448k − 408k pair would have been promoted at 12k. It
 +2.11 ± 1.42, a fluctuation of about 3σ in a comparison that ends at −0.30. That one false promote is why α 0.025 is
 the proposal.
 
-## Proposal (needs approval before it replaces any rule)
+## Rule (adopted 2026-10-21)
+
+Approved on 2026-10-21. From then on, every screening comparison uses it.
 
 - **Screening comparisons.** Candidate vs control, e.g. a new base vs v11, or an online snapshot vs 408k:
   - SPRT 0 vs +1.0, α 0.025, β 0.2;

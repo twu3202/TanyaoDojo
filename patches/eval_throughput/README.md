@@ -54,3 +54,80 @@ deterministic. b3 and b4 are allowed to fail identity; they tell whether batch w
 The same harness shape (fixed workload, identity judge) is meant for self-play generation next: the online workers'
 games/s at an equal policy decides how much fresh data each online batch sees (2.0–2.3× reuse on the 5060 Ti against
 1.3× on trx).
+
+## Round 0 result (2026-10-20 07:10–07:44, 5060 Ti, nothing else on the GPU)
+
+| layout | games/s | vs b0 | identical games | readout shift | GPU util | GPU memory | CPU load (20 threads) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| b0 1 × 400 (today's) | 3.72 | 1.00 | 1600 / 1600 | 0 | 40% | 1.2 GB | 5.0 |
+| b1 2 × 400 | 4.96 | 1.33 | 1600 / 1600 | 0 | 58% | 1.8 GB | 10.9 |
+| **b2 4 × 400** | **5.46** | **1.47** | **1600 / 1600** | 0 | 65% | 2.8 GB | 22.4 |
+| b3 1 × 1600 | 4.76 | 1.28 | 0 / 1600 | −0.03 pt | 49% | 1.7 GB | 5.1 |
+| b4 2 × 800 | 5.43 | 1.46 | 0 / 1600 | −0.06 pt | 61% | 2.0 GB | 12.4 |
+
+- **Determinism holds across days.** b0 reproduces the 10-15 logs game for game, q_values included.
+- **Kept: b2.** It gives 1.47× the throughput with every game identical, so a 100k drops from about 7.5 to about
+  5.1 hours. The online transfer test's evaluation (`xfer_eval.sh`) uses it from 10-20. The seeds are split by whole
+  100-seed iterations, so every batch is the one a single process would play.
+- **Rejected: wider batches.** b3 and b4 change every game: the batch width moves kernel choices, so near-tie decisions
+  flip. They are also no faster than b2.
+- **Next.** CPU load is now above the 20 threads, so the next candidates are:
+  - per-process thread caps (OMP / torch threads);
+  - 6 processes;
+  - pinned host memory in `MortalEngine`.
+
+  They run in the next GPU gap.
+
+## Round 1 result (2026-10-21 17:26–18:05, `bench_round1.sh`, 5060 Ti, nothing else on the GPU)
+
+Each candidate is one change against b2 (4 × 400). b2r repeats b2 to measure the timing spread a candidate must beat.
+
+| layout | games/s | vs b2 | identical games | GPU util | GPU memory | CPU load |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| b2r: repeat of b2 | 5.42 | 0.99 | 1600 / 1600 | 65% | 2.8 GB | 21.0 |
+| b5: `RAYON_NUM_THREADS=5` | 5.68 | 1.04 | 1600 / 1600 | 69% | 2.8 GB | 11.3 |
+| b6: `OMP_NUM_THREADS=1 MKL_NUM_THREADS=1` | 5.45 | 1.00 | 1600 / 1600 | 69% | 2.8 GB | 26.0 |
+| **b7: both caps** | **5.78** | **1.06** | **1600 / 1600** | 68% | 2.8 GB | 10.6 |
+| b2w: b2 on 800 groups | 5.58 | (base) | 3200 / 3200 | 69% | 2.9 GB | 21.7 |
+| b8: 8 × 400 on 800 groups | 5.67 | 1.02 vs b2w | 3200 / 3200 | 59% | 4.9 GB | 42.9 |
+
+- **Spread.** b2 and its repeat differ by 0.04 games/s (0.7%).
+- **Kept: b7.** It gives 1.06× b2, about 1.55× b0 (today's layout before 10-20). Every game stays identical, since
+  thread caps do not change any batch.
+  - libriichi's arena runs its games on a rayon pool that defaults to all 20 threads in each of the 4 processes.
+    Capping it at 5 per process halves the CPU load and is the useful part.
+  - torch's own CPU threads matter little on their own.
+- **Rejected: 8 processes.** They are only 1.6% faster than 4 on the same 800-group workload. They also use 4.9 GB of
+  the card's 8 GB, and the load reaches 42.9 on 20 threads.
+- **Adopted.** b7 runs in `xfer_eval.sh` and in the early-end-gap generation (`patches/early_end_gap`) from 10-21. A
+  100k drops from about 7.5 hours (b0) to about 4.8.
+- **Budget used.** 11 of 12 candidates in about 80 GPU-minutes. CUDA-graph capture and pinned memory would need
+  engine changes for at most the GPU-side share, while GPU utilisation is already 68%. They wait until throughput
+  matters again.
+
+## X1: inference architecture on the real card (2026-11-04 02:24–02:46, `x1_5060.sh`, 5060 Ti, nothing else on the GPU)
+
+The variants were developed on trx (`research/2026-11-03_rl_infra_survey`, section 8, gitignored) and timed here on
+the b7 workload.
+
+**Single process, 400 games, timed variant:** 2.97 games/s.
+- Inference takes 58% of the wall time (35% on trx).
+- Of that, the forward pass is 82–86%, the host-to-GPU copy 8–9% and stacking 4–8%.
+
+**4 × 400 (b7):**
+
+| Variant | games/s | vs base | Games | GPU util |
+| --- | ---: | ---: | --- | ---: |
+| base | 5.75 | (base) | hash 756a3285 | 69% |
+| base2: repeat | 5.71 | 0.99 | identical | 69% |
+| pinned: pinned host buffers + async copies | 5.70 | 0.99 | identical | 69% |
+| free: one inference server, 4 arena clients | 5.98 | 1.04 | not reproducible | 64% |
+
+- **Free server batching.** It merges 183 decisions per forward for v4 and 76 for the challenger. That buys only 4%.
+- **Spread.** base and its repeat differ by 0.6%.
+- **CUDA graphs.** They were left out. On trx they were slower than base at 4 × 400. They also reserve 5.6–9.2 GiB per
+  process, more than four processes can have on this 8 GB card.
+- **Verdict: nothing adopted.** The adoption bar was 1.3×. As on trx, the inference architecture is worth at most a
+  few percent: four processes already overlap one process's inference with another's CPU work.
+- **Where the time goes.** The remaining cost is CPU work in the arena. The likeliest part is the v4 'sp' feature
+  encoding, which libriichi itself marks as CPU-intensive; it has not been profiled yet.

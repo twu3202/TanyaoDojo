@@ -1,0 +1,14 @@
+39a40,43
+>     # Cal-QL (Nakamoto et al. 2023; patches/calibrated_base): the conservative term stops pushing an action's Q below
+>     # the data's Monte Carlo return, so untaken actions are not pessimized beyond the behaviour policy's value.
+>     # Off unless [cql] calibrated = true; offline only, like the conservative term itself.
+>     cql_calibrated = config['cql'].get('calibrated', False)
+280c284,289
+<                     cql_loss = q_out.logsumexp(-1).mean() - q.mean()
+---
+>                     if cql_calibrated:
+>                         q_lb = q_target_mc.to(q_out.dtype)[:, None]
+>                         q_cal = torch.where(masks, torch.maximum(q_out, q_lb), q_out)
+>                         cql_loss = q_cal.logsumexp(-1).mean() - q.mean()
+>                     else:
+>                         cql_loss = q_out.logsumexp(-1).mean() - q.mean()

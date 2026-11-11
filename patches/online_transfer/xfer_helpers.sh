@@ -1,6 +1,7 @@
 #!/bin/bash
 # Online transfer test: the per-run helpers of the M1 run (runs/m1_calanchor), with the run directory as a parameter.
 #   bash xfer_helpers.sh archiver SP PREFIX     # copy state.pth every EVERY (8,000) steps into SP/archive, steps checked
+#                                               (and at step ALSO, if set: a stop off the EVERY grid)
 #   bash xfer_helpers.sh guard SP CFG           # restart the trainer if it disappears (after the buffer gate)
 #   bash xfer_helpers.sh stop SP                # stop server / trainer / workers by PID and process group only
 # Never pattern-kill train.py: other runs on this machine use it too.
@@ -13,9 +14,12 @@ archiver)
   echo "$(date +%m-%d_%H:%M:%S) STEP ARCHIVER START every=$EVERY after=$last prefix=$PREFIX" >> $LOG
   while true; do
     sleep 30
-    n=$(tr -d '\r' < $SP/logs/trainer.log | grep -a -oE "total steps: [0-9,]+" | tail -1 | grep -oE "[0-9,]+$" | tr -d ,)
+    # the latest logged multiple of EVERY beyond the last archive: with num_epochs = 1 the trainer logs a new
+    # "total steps" line every few hundred batches, so the multiple is often no longer the last line
+    n=$(tr -d '\r' < $SP/logs/trainer.log | grep -a -oE "total steps: [0-9,]+" | grep -oE "[0-9,]+$" | tr -d , \
+        | awk -v e=$EVERY -v a=${ALSO:-0} -v l=$last '($1 % e == 0 || $1 == a) && $1 > l' | tail -1)
     [ -z "$n" ] && continue
-    if [ $((n % EVERY)) -eq 0 ] && [ "$n" -gt "$last" ]; then
+    if true; then
       f=$A/${PREFIX}_s${n}.pth
       for try in 1 2 3; do
         cp $SP/state.pth $f.tmp && got=$($PY -c "import torch,sys; s=torch.load(sys.argv[1],weights_only=True,map_location='cpu'); assert 'mortal' in s; print(s['steps'])" $f.tmp 2>/dev/null) && break
@@ -42,7 +46,9 @@ guard)
     echo "$(date +%m-%d_%H:%M:%S) ALERT trainer gone, buffer=$(ls $SP/buffer | wc -l), restarting" >> $LOG
     for i in $(seq 1 240); do [ "$(ls $SP/buffer | wc -l)" -ge "$MINBUF" ] && break; sleep 15; done
     cd $MM
-    setsid env MORTAL_CFG=$CFG $PY train.py >> $SP/logs/trainer.log 2>&1 < /dev/null &
+    # TRAINER (from the environment of xfer_arm.sh): train_pg.py for the policy-gradient arms; restarting one with
+    # train.py would silently continue its state with Q learning
+    setsid env MORTAL_CFG=$CFG $PY ${TRAINER:-train.py} >> $SP/logs/trainer.log 2>&1 < /dev/null &
     NEW=$!
     { sed -n 1p $SP/pids; echo $NEW; sed -n '3,$p' $SP/pids; } > $SP/pids.new && mv $SP/pids.new $SP/pids
     echo "$(date +%m-%d_%H:%M:%S) restarted trainer pid=$NEW buffer=$(ls $SP/buffer | wc -l)" >> $LOG

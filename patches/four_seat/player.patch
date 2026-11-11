@@ -1,0 +1,59 @@
+--- a/mortal/player.py
++++ b/mortal/player.py
+@@ -74,6 +74,11 @@
+ 
+ class TrainPlayer:
+     def __init__(self):
++        # FOUR_SEAT=1 (patches/four_seat): four-seat self-play. The other three seats are the trainee too: the same
++        # modules, the same sampling and the same name, so the trainer (player_names = ['trainee']) reads all four
++        # seats, and they follow every parameter update. Off by default; the 1v3 path below is unchanged.
++        self.four_seat = os.environ.get('FOUR_SEAT', '0') == '1'
++        logging.info(f'four-seat self-play: {self.four_seat}')
+         baseline_cfg = config['baseline']['train']
+         device = torch.device(baseline_cfg['device'])
+ 
+@@ -132,6 +137,21 @@
+             name = 'trainee',
+         )
+ 
++        champion = self.baseline_engine
++        if self.four_seat:
++            champion = MortalEngine(
++                mortal,
++                dqn,
++                is_oracle = False,
++                version = self.chal_version,
++                boltzmann_epsilon = self.boltzmann_epsilon,
++                boltzmann_temp = self.boltzmann_temp,
++                top_p = self.top_p,
++                device = device,
++                enable_amp = True,
++                name = 'trainee',
++            )
++
+         if path.isdir(self.log_dir):
+             shutil.rmtree(self.log_dir)
+ 
+@@ -141,7 +161,7 @@
+         )
+         rankings = env.py_vs_py(
+             challenger = engine_chal,
+-            champion = self.baseline_engine,
++            champion = champion,
+             seed_start = (self.train_seed, self.train_key),
+             seed_count = self.seed_count,
+         )
+@@ -151,6 +171,13 @@
+             self.repeat_counter = 0
+ 
+         rankings = np.array(rankings)
++        if self.four_seat:
++            # the arena plays each seed four times (rotations a-d). With the same near-deterministic policy in every
++            # seat, the rotations are mostly the same game (fs_check: 55 of 75 rotation pairs identical), so only
++            # rotation a is kept: one game per deal, all four seats trained
++            for p in os.listdir(self.log_dir):
++                if not p.endswith('_a.json.gz'):
++                    os.remove(path.join(self.log_dir, p))
+         file_list = list(map(lambda p: path.join(self.log_dir, p), os.listdir(self.log_dir)))
+ 
+         torch.backends.cudnn.benchmark = config['control']['enable_cudnn_benchmark']

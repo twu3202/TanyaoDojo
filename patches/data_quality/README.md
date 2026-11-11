@@ -726,3 +726,42 @@ After q25one the user chose to tighten the selection ("按A来做吧").
   +0.15–0.2. That difference is far inside the ±0.6 of a 100k pairing, so a pass against v11 is the readable
   outcome. A clearly negative q12one − q25one would mean data quantity binds at 314k games.
 - **Where.** 5060 Ti: about 12 hours of training at 9 steps/s, then about 7.5 hours of evaluation.
+
+## q12one result (2026-10-20): selecting twice as hard costs more than it buys
+
+q12one trained without a crash and stopped at 396,000 steps at 23:36 on 2026-10-19 (final infer md5 f452e87d). The
+loader skipped no game. The 100k chain finished at 07:06 on 10-20.
+
+| comparison | seeds | Δ pt / hanchan | z |
+| --- | --- | ---: | ---: |
+| q12one − v11 | 12k | +0.46 ± 1.75 | +0.51 |
+| q12one − v11 | **100k** | **−0.15 ± 0.60** | **−0.48** |
+| q12one − B1 | 100k | +0.03 ± 0.61 | +0.11 |
+| **q12one − q25one** (12.5% − 25%, one pass each) | 100k | **−0.60 ± 0.58** | **−2.02** |
+| q12one − q25 | 100k | −0.70 ± 0.59 | −2.31 |
+| q12one vs mortal_v4 | 100k | −2.65 ± 0.45 | |
+
+- **Verdict (≥ +0.5 and z ≥ 2 against v11): not passed.** q12one lands back at v11's level.
+- **This is the outcome stated in advance.** v10 said that a clearly negative q12one − q25one would mean data
+  quantity binds at 314k games, and that is what happened: −0.60 (z −2.0) against q25one, −0.70 (z −2.3) against q25.
+  The excess-regret gap of the selected games grew about 1.35×, but halving the games from 628k to 314k cost more than
+  that bought.
+- **The selection curve so far.** v11's full set → best 25% (628k games): about +0.5. Best 12.5% (314k games): about
+  0, below the 25% arms. The best fraction lies at 25% or above. The 25% arms stay the best offline bases, and q25 is
+  the base of the online transfer test ([`patches/online_transfer`](../online_transfer/README.md)).
+
+Mechanism readouts (s14000 8k vs v4):
+
+| | q12one | q25one | q25 |
+| --- | ---: | ---: | ---: |
+| call rate (v4 ≈ 30.6%) | 30.85% | 32.83% | 31.28% |
+| deal-in rate vs v4 | **+0.78 pp** | +0.40 pp | +0.38 pp |
+| win rate vs v4 | −0.23 pp | +0.10 pp | +0.03 pp |
+| riichi rate vs v4 | −0.01 pp | −0.49 pp | +0.50 pp |
+| net points per kyoku vs v4 (attack / defence) | −52 (−7 / −45) | −27 (+1 / −28) | −26 (+2 / −27) |
+| 4th place vs v4 | +1.70 pp | +1.25 pp | +1.32 pp |
+| busted | 6.99% (v4 6.20%) | 7.03% (v4 6.31%) | 6.80% (v4 6.44%) |
+
+The loss is almost all on defence: deal-in +0.78 pp against +0.40 for the 25% arms, and −45 points per kyoku on the
+dealt-in side. One reading, not tested here: with half the games, the base saw half as many push/fold positions to
+learn defence from.

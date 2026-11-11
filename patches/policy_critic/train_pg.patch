@@ -1,0 +1,728 @@
+--- a/mortal/train.py (deployed build 67bce509)
++++ b/mortal/train_pg.py
+@@ -1,3 +1,21 @@
++"""
++结构算子 (a):策略与评论家分离(patches/policy_critic/DESIGN.md)。train.py 在线分支的分叉,生产 train.py 不动。
++
++- 策略 = Mortal 网络(Brain + DQN 头)本身:π(a|s) = softmax(out(s, ·) / T),只在合法动作上。worker 用现成代码
++  精确按 π 采样([train_play.*] boltzmann_epsilon = 1、boltzmann_temp = T、top_p = 1,启动时检查);评测仍取 argmax,
++  检查点键名(mortal / current_dqn)不变,run_eval 与全部读数照常可用。
++- 评论家 = 策略特征 phi 上的小 V 头,phi 先 detach:评论家的梯度不回到策略(解耦),也不多占一份激活显存。
++  V 回归与 Q 损失同一个蒙特卡洛回报 q_target_mc(局内 γ,局末 GRP)。
++- 策略损失:PPO 截断(clip)加双截断(clip_c,对负优势),优势 = 回报 − V(s)、按批归一化;比率的分母是行为策略,
++  取最近一次提交给 worker 的参数的冻结副本(每次 submit 后刷新,多一次前向)。
++- 参考策略 softmax(Q_anchor / T),[anchor].state_file 即臂的冻结基座;精确 KL(π_θ ‖ π_ref)(46 个动作直接求和)
++  乘 kl_coef。[anchor].weight(Q 空间锚)在这里不用。
++- 评论家预热:steps < policy_start_step 时只训 V 头,策略与 worker 都停在基座。
++- 从 Q 学习的状态起步时(状态里没有 'pg')不读策略的 Adam 状态:Q 回归的一二阶矩不适用于策略梯度。
++- 检查模式(环境变量 PG_CHECK_FILES = 牌谱 glob,PG_CHECK_STEPS = 批数):不连服务器,读给定牌谱,跑完存档退出。
++"""
++
++
+ def train():
+     import prelude
+ 
+@@ -5,8 +23,6 @@
+     import sys
+     import os
+     import gc
+-    import gzip
+-    import json
+     import shutil
+     import random
+     import torch
+@@ -19,7 +35,7 @@
+     from torch.nn.utils import clip_grad_norm_
+     from torch.utils.data import DataLoader
+     from torch.utils.tensorboard import SummaryWriter
+-    from common import submit_param, parameter_count, drain, filtered_trimmed_lines, tqdm
++    from common import submit_param, parameter_count, drain, tqdm
+     from player import TestPlayer
+     from dataloader import FileDatasetsIter, worker_init_fn
+     from lr_scheduler import LinearWarmUpCosineAnnealingLR
+@@ -30,17 +46,43 @@
+     version = config['control']['version']
+ 
+     online = config['control']['online']
++    assert online, 'train_pg.py is the online trainer only'
+     batch_size = config['control']['batch_size']
+     opt_step_every = config['control']['opt_step_every']
+     save_every = config['control']['save_every']
+     test_every = config['control']['test_every']
+     submit_every = config['control']['submit_every']
+     test_games = config['test_play']['games']
+-    min_q_weight = config['cql']['min_q_weight']
+     next_rank_weight = config['aux']['next_rank_weight']
+     assert save_every % opt_step_every == 0
+     assert test_every % save_every == 0
+ 
++    check_files = os.environ.get('PG_CHECK_FILES', '')
++    check_steps = int(os.environ.get('PG_CHECK_STEPS', '0'))
++    checking = bool(check_files)
++
++    pg = config['pg']
++    temp = float(pg['temp'])
++    clip = float(pg.get('clip', 0.2))
++    clip_c = float(pg.get('clip_c', 3.0))
++    kl_coef = float(pg.get('kl_coef', 0.0))
++    # 自适应 KL(verl 的 AdaptiveKLController):每次存盘按 本段 KL / 目标 调 kl_coef,误差截在 ±20%、
++    # 乘 save_every / kl_horizon。kl_target = 0 时 kl_coef 固定。目标 KL 相当于原来的 λ:策略离基座多远
++    kl_target = float(pg.get('kl_target', 0.0))
++    kl_horizon = float(pg.get('kl_horizon', 2000))
++    ent_coef = float(pg.get('ent_coef', 0.0))
++    value_coef = float(pg.get('value_coef', 1.0))
++    value_hidden = int(pg.get('value_hidden', 256))
++    policy_start_step = int(pg['policy_start_step'])
++    assert policy_start_step % opt_step_every == 0, 'switch on whole accumulation windows'
++    # 策略学习率从 policy_start_step 起线性预热 lr_warmup 批:从 Q 学习状态起步时 Adam 是新的,头几步近似按符号走满
++    # 学习率,CPU 检查里 17 个优化步就翻了约 1.8% 的贪心决策(Q 学习线 1,000 步才翻这么多)
++    lr_warmup = int(pg.get('lr_warmup', 8000))
++    # worker 必须精确按 π 采样,否则比率的分母不是行为策略
++    for name, cfg in config['train_play'].items():
++        assert cfg['boltzmann_epsilon'] == 1.0 and cfg['top_p'] == 1.0 and float(cfg['boltzmann_temp']) == temp, \
++            f'[train_play.{name}] must sample pi exactly: boltzmann_epsilon = 1.0, top_p = 1.0, boltzmann_temp = {temp}'
++
+     device = torch.device(config['control']['device'])
+     torch.backends.cudnn.benchmark = config['control']['enable_cudnn_benchmark']
+     enable_amp = config['control']['enable_amp']
+@@ -62,6 +104,7 @@
+     mortal = Brain(version=version, **config['resnet']).to(device)
+     dqn = DQN(version=version).to(device)
+     aux_net = AuxNet((4,)).to(device)
++    value_head = nn.Sequential(nn.Linear(1024, value_hidden), nn.Mish(inplace=True), nn.Linear(value_hidden, 1)).to(device)
+     all_models = (mortal, dqn, aux_net)
+     if enable_compile:
+         for m in all_models:
+@@ -72,65 +115,48 @@
+     logging.info(f'mortal params: {parameter_count(mortal):,}')
+     logging.info(f'dqn params: {parameter_count(dqn):,}')
+     logging.info(f'aux params: {parameter_count(aux_net):,}')
++    logging.info(f'value head params: {parameter_count(value_head):,}')
++    logging.info(f'pg: temp={temp} clip={clip} clip_c={clip_c} kl_coef={kl_coef} ent_coef={ent_coef} '
++                 f'value_coef={value_coef} policy_start_step={policy_start_step:,}')
+ 
+     mortal.freeze_bn(config['freeze_bn']['mortal'])
+ 
+-    # 本地补丁(2026-07-21)锚定值微调:在线模式把全部合法动作的 Q 锚在冻结基座上,
+-    # 抑制"未采取动作 Q 无监督漂移→排序侵蚀"(A'/B1 实测的慢速 churn 病灶)。
+-    # [anchor] weight=0 或配置缺省时完全惰性,行为与上游一致。
+-    anchor_cfg = config.get('anchor', {})
+-    anchor_weight = anchor_cfg.get('weight', 0)
+-    anchor_mortal = None
+-    anchor_dqn = None
+-    if online and anchor_weight > 0:
+-        anchor_state = torch.load(anchor_cfg['state_file'], weights_only=True, map_location=device)
+-        anchor_mortal = Brain(version=version, **config['resnet']).to(device).eval()
+-        anchor_dqn = DQN(version=version).to(device).eval()
+-        anchor_mortal.load_state_dict(anchor_state['mortal'])
+-        anchor_dqn.load_state_dict(anchor_state['current_dqn'])
+-        for p in chain(anchor_mortal.parameters(), anchor_dqn.parameters()):
++    def frozen_copy(state_mortal, state_dqn):
++        b = Brain(version=version, **config['resnet']).to(device).eval()
++        d = DQN(version=version).to(device).eval()
++        b.load_state_dict(state_mortal)
++        d.load_state_dict(state_dqn)
++        for p in chain(b.parameters(), d.parameters()):
+             p.requires_grad_(False)
+-        del anchor_state
+-        logging.info(f'anchor enabled: weight={anchor_weight}, state_file={anchor_cfg["state_file"]}')
+-    # 本地补丁(2026-10-03,M1 校准锚):锚目标按锚模型自己的最优动作把各动作差值缩到 margin_scale 倍。
+-    # 推演实测(D2):Q 差值比真实差值放大 10–30 倍(CQL 遗留),锚把未采取动作钉在放大的距离上,
+-    # 采取动作的蒙特卡洛更新永远翻不过去。按最优值缩放不改 argmax 和排序,只把差值换成实测量级。
+-    # margin_scale 缺省 1.0 = 与原锚逐字一致。
+-    anchor_margin_scale = float(anchor_cfg.get('margin_scale', 1.0))
+-    assert 0 < anchor_margin_scale <= 1.0, 'anchor margin_scale must be in (0, 1]'
+-    # margin_level = 'anchor'(缺省):目标挂在锚模型自己的最优值上;'trainee':挂在 trainee 当前(不回传梯度)
+-    # 对锚最优动作的 Q 上 —— 锚只约束相对差值,绝对水平交给蒙特卡洛(10-04:cprime 与 tpt408 的水平差 SD 2.6 pt,
+-    # 压缩后与差值同量级)。
+-    anchor_margin_level = anchor_cfg.get('margin_level', 'anchor')
+-    assert anchor_margin_level in ('anchor', 'trainee'), 'anchor margin_level must be anchor or trainee'
+-    # margin_states = 'all'(缺省)| 'pushfold_riichi':只在押退局面(有对手立直已成立、自己未立直)与可立直局面压缩差值,
+-    # 普通打牌/副露保持原锚(10-04:全局 c=0.3 时普通打牌改选 4.8%、副露少 4pp,100k 前 4 万局 −1.09 vs 408k;
+-    # 收益只出现在押退/立直)。行号只对 v4 观测(1012 行)有效:857–859 = 三家对手 riichi_accepted,869 = 自家
+-    # riichi_accepted,按回放标签实测定位(18,506 个决策里与 exposed 只差 19 个 = 自家宣言立直那一打)。
+-    anchor_margin_states = anchor_cfg.get('margin_states', 'all')
+-    assert anchor_margin_states in ('all', 'pushfold_riichi'), 'anchor margin_states must be all or pushfold_riichi'
+-    assert anchor_margin_states == 'all' or version == 4, 'margin_states pushfold_riichi needs obs version 4'
+-    if anchor_mortal is not None and (anchor_margin_scale != 1.0 or anchor_margin_level != 'anchor'):
+-        logging.info(f'calibrated anchor: margin_scale={anchor_margin_scale}, margin_level={anchor_margin_level}, margin_states={anchor_margin_states}')
++        return b, d
+ 
+-    decay_params = []
+-    no_decay_params = []
+-    for model in all_models:
+-        params_dict = {}
+-        to_decay = set()
+-        for mod_name, mod in model.named_modules():
+-            for name, param in mod.named_parameters(prefix=mod_name, recurse=False):
+-                params_dict[name] = param
+-                if isinstance(mod, (nn.Linear, nn.Conv1d)) and name.endswith('weight'):
+-                    to_decay.add(name)
+-        decay_params.extend(params_dict[name] for name in sorted(to_decay))
+-        no_decay_params.extend(params_dict[name] for name in sorted(params_dict.keys() - to_decay))
+-    param_groups = [
+-        {'params': decay_params, 'weight_decay': weight_decay},
+-        {'params': no_decay_params},
+-    ]
+-    optimizer = optim.AdamW(param_groups, lr=1, weight_decay=0, betas=betas, eps=eps)
++    assert kl_target == 0 or kl_coef > 0, 'adaptive KL needs an initial kl_coef > 0'
++    ref_mortal = ref_dqn = None
++    if kl_coef > 0:
++        ref_state = torch.load(config['anchor']['state_file'], weights_only=True, map_location=device)
++        ref_mortal, ref_dqn = frozen_copy(ref_state['mortal'], ref_state['current_dqn'])
++        del ref_state
++        logging.info(f'reference policy: {config["anchor"]["state_file"]}')
++
++    def param_groups_of(models):
++        decay_params = []
++        no_decay_params = []
++        for model in models:
++            params_dict = {}
++            to_decay = set()
++            for mod_name, mod in model.named_modules():
++                for name, param in mod.named_parameters(prefix=mod_name, recurse=False):
++                    params_dict[name] = param
++                    if isinstance(mod, (nn.Linear, nn.Conv1d)) and name.endswith('weight'):
++                        to_decay.add(name)
++            decay_params.extend(params_dict[name] for name in sorted(to_decay))
++            no_decay_params.extend(params_dict[name] for name in sorted(params_dict.keys() - to_decay))
++        return [{'params': decay_params, 'weight_decay': weight_decay}, {'params': no_decay_params}]
++
++    optimizer = optim.AdamW(param_groups_of(all_models), lr=1, weight_decay=0, betas=betas, eps=eps)
+     scheduler = LinearWarmUpCosineAnnealingLR(optimizer, **config['optim']['scheduler'])
++    value_optimizer = optim.AdamW(param_groups_of((value_head,)), lr=1, weight_decay=0, betas=betas, eps=eps)
++    value_scheduler = LinearWarmUpCosineAnnealingLR(value_optimizer, **config['optim']['scheduler'])
+     scaler = GradScaler(device.type, enabled=enable_amp)
+     test_player = TestPlayer()
+     best_perf = {
+@@ -139,6 +165,7 @@
+     }
+ 
+     steps = 0
++    pg_meta = None
+     state_file = config['control']['state_file']
+     best_state_file = config['control']['best_state_file']
+     if path.exists(state_file):
+@@ -148,17 +175,37 @@
+         mortal.load_state_dict(state['mortal'])
+         dqn.load_state_dict(state['current_dqn'])
+         aux_net.load_state_dict(state['aux_net'])
+-        if not online or state['config']['control']['online']:
+-            optimizer.load_state_dict(state['optimizer'])
+-            scheduler.load_state_dict(state['scheduler'])
+-            # 本地补丁(2026-07-21):best_perf/steps 移入门内——在线热启动(从离线基座)时应重置,
+-            # 否则继承基座的历史 best 纪录(如 v11 的 +4.0 噪声尖峰)使 best.pth 永不更新,
+-            # 且步数计数器带着基座历史值(纯显示但误导)。离线续训/在线续在线不受影响。
+-            best_perf = state['best_perf']
+-            steps = state['steps']
++        assert state['config']['control']['online'], 'start a PG arm from an online state'
++        best_perf = state['best_perf']
++        steps = state['steps']
++        scheduler.load_state_dict(state['scheduler'])
+         scaler.load_state_dict(state['scaler'])
++        pg_meta = state.get('pg')
++        if pg_meta is not None:
++            optimizer.load_state_dict(state['optimizer'])
++            value_head.load_state_dict(state['value_head'])
++            value_optimizer.load_state_dict(state['value_optimizer'])
++            value_scheduler.load_state_dict(state['value_scheduler'])
++            assert pg_meta['temp'] == temp, f'temperature changed: {pg_meta["temp"]} -> {temp}'
++        else:
++            value_scheduler.load_state_dict(state['scheduler'])
++            logging.info('PG start from a Q-learning state: fresh Adam for the policy, fresh value head')
++    if pg_meta is None:
++        pg_meta = {'temp': temp, 'started_at': steps}
++    if kl_target > 0 and 'kl_coef' in pg_meta:
++        kl_coef = pg_meta['kl_coef']      # 自适应 KL 的当前值跨子进程重生保留
++        logging.info(f'adaptive kl_coef resumed at {kl_coef:.4g} (target {kl_target})')
+ 
++    def set_policy_lr():
++        # 调度器给的学习率乘预热系数;每次 scheduler.step() 之后都要重设
++        ramp = 1.0 if lr_warmup <= 0 else min(max((steps - policy_start_step) / lr_warmup, 0.0), 1.0)
++        for grp, lr in zip(optimizer.param_groups, scheduler.get_last_lr()):
++            grp['lr'] = lr * ramp
++
++    set_policy_lr()
++
+     optimizer.zero_grad(set_to_none=True)
++    value_optimizer.zero_grad(set_to_none=True)
+     mse = nn.MSELoss()
+     ce = nn.CrossEntropyLoss()
+ 
+@@ -167,57 +214,41 @@
+     else:
+         logging.info(f'device: {device}')
+ 
+-    if online:
+-        submit_param(mortal, dqn, is_idle=True)
+-        logging.info('param has been submitted')
++    beh_mortal, beh_dqn = frozen_copy(mortal.state_dict(), dqn.state_dict())
+ 
++    def submit(is_idle):
++        if not checking:
++            submit_param(mortal, dqn, is_idle=is_idle)
++            logging.info('param has been submitted')
++        beh_mortal.load_state_dict(mortal.state_dict())
++        beh_dqn.load_state_dict(dqn.state_dict())
++
++    submit(is_idle=True)
++
+     writer = SummaryWriter(config['control']['tensorboard_dir'])
+-    stats = {
+-        'dqn_loss': 0,
+-        'cql_loss': 0,
+-        'next_rank_loss': 0,
+-        'anchor_loss': 0,
+-    }
+-    all_q = torch.zeros((save_every, batch_size), device=device, dtype=torch.float32)
+-    all_q_target = torch.zeros((save_every, batch_size), device=device, dtype=torch.float32)
++    stat_keys = ('pg_loss', 'value_loss', 'next_rank_loss', 'kl_ref', 'kl_beh', 'entropy', 'ratio_mean', 'ratio_max',
++                 'clip_high', 'clip_low', 'dual_clip', 'agree_ref', 'adv_std')
++    stats = dict.fromkeys(stat_keys, 0.)
++    pg_batches = 0      # 策略梯度批数:预热批不累加 PG 读数,平均要除这个而不是全部批数
++    all_v = torch.zeros((save_every, batch_size), device=device, dtype=torch.float32)
++    all_g = torch.zeros((save_every, batch_size), device=device, dtype=torch.float32)
+     idx = 0
+ 
++    def log_probs(q_out, masks):
++        # DQN 把非法动作置 -inf;换成有限的极小值再除温度,免得 -inf - -inf 的 nan 混进 KL / 熵的梯度
++        logits = q_out.float().masked_fill(~masks, -1e9) / temp
++        return logits.log_softmax(-1)
++
+     def train_epoch():
+         nonlocal steps
+         nonlocal idx
+ 
+-        player_names = []
+-        if online:
+-            player_names = ['trainee']
++        player_names = ['trainee']
++        if checking:
++            file_list = sorted(glob(check_files))
++        else:
+             dirname = drain()
+             file_list = list(map(lambda p: path.join(dirname, p), os.listdir(dirname)))
+-        else:
+-            player_names_set = set()
+-            for filename in config['dataset']['player_names_files']:
+-                with open(filename) as f:
+-                    player_names_set.update(filtered_trimmed_lines(f))
+-            player_names = list(player_names_set)
+-            logging.info(f'loaded {len(player_names):,} players')
+-
+-            file_index = config['dataset']['file_index']
+-            if path.exists(file_index):
+-                index = torch.load(file_index, weights_only=True)
+-                file_list = index['file_list']
+-            else:
+-                logging.info('building file index...')
+-                file_list = []
+-                for pat in config['dataset']['globs']:
+-                    file_list.extend(glob(pat, recursive=True))
+-                if len(player_names_set) > 0:
+-                    filtered = []
+-                    for filename in tqdm(file_list, unit='file'):
+-                        with gzip.open(filename, 'rt') as f:
+-                            start = json.loads(next(f))
+-                            if not set(start['names']).isdisjoint(player_names_set):
+-                                filtered.append(filename)
+-                    file_list = filtered
+-                file_list.sort(reverse=True)
+-                torch.save({'file_list': file_list}, file_index)
+         logging.info(f'file list size: {len(file_list):,}')
+ 
+         before_next_test_play = (test_every - steps % test_every) % test_every
+@@ -241,16 +272,11 @@
+             batch_size = batch_size,
+             drop_last = False,
+             num_workers = num_workers,
+-            pin_memory = True,
++            pin_memory = device.type == 'cuda',
+             worker_init_fn = worker_init_fn,
+         ))
+ 
+-        remaining_obs = []
+-        remaining_actions = []
+-        remaining_masks = []
+-        remaining_steps_to_done = []
+-        remaining_kyoku_rewards = []
+-        remaining_player_ranks = []
++        remaining = [[] for _ in range(6)]
+         remaining_bs = 0
+         pb = tqdm(total=save_every, desc='TRAIN', initial=steps % save_every)
+ 
+@@ -258,6 +284,8 @@
+             nonlocal steps
+             nonlocal idx
+             nonlocal pb
++            nonlocal pg_batches
++            nonlocal kl_coef
+ 
+             obs = obs.to(dtype=torch.float32, device=device)
+             actions = actions.to(dtype=torch.int64, device=device)
+@@ -267,96 +295,124 @@
+             player_ranks = player_ranks.to(dtype=torch.int64, device=device)
+             assert masks[range(batch_size), actions].all()
+ 
+-            q_target_mc = gamma ** steps_to_done * kyoku_rewards
+-            q_target_mc = q_target_mc.to(torch.float32)
++            g = (gamma ** steps_to_done * kyoku_rewards).to(torch.float32)
++            warmup = steps < policy_start_step
+ 
+             with torch.autocast(device.type, enabled=enable_amp):
+-                phi = mortal(obs)
+-                q_out = dqn(phi, masks)
+-                q = q_out[range(batch_size), actions]
+-                dqn_loss = 0.5 * mse(q, q_target_mc)
+-                cql_loss = 0
+-                if not online:
+-                    cql_loss = q_out.logsumexp(-1).mean() - q.mean()
+-
+-                anchor_loss = 0
+-                if anchor_mortal is not None:
++                with torch.set_grad_enabled(not warmup):    # 预热期只训 V 头,策略主干不建计算图
++                    phi = mortal(obs)
++                v = value_head(phi.detach()).squeeze(-1).float()
++                value_loss = 0.5 * mse(v, g)
++                if warmup:
++                    loss = value_coef * value_loss
++                else:
++                    lp_all = log_probs(dqn(phi, masks), masks)
+                     with torch.no_grad():
+-                        anchor_q = anchor_dqn(anchor_mortal(obs), masks)
+-                        if anchor_margin_scale != 1.0 or anchor_margin_level != 'anchor':
+-                            # 非法动作是 -inf:最优值取合法动作最大,缩放后非法仍为 -inf(下面只取合法位)
+-                            a_star = anchor_q.argmax(-1, keepdim=True)
+-                            q_star = anchor_q.gather(-1, a_star)
+-                            level = q_star if anchor_margin_level == 'anchor' else q_out.detach().gather(-1, a_star).to(q_star.dtype)
+-                            comp = level - anchor_margin_scale * (q_star - anchor_q)
+-                            if anchor_margin_states == 'pushfold_riichi':
+-                                exposed = (obs[:, 857:860, 0] > 0.5).any(-1) & (obs[:, 869, 0] < 0.5)
+-                                sel = exposed | masks[:, 37]
+-                                anchor_q = torch.where(sel[:, None], comp, anchor_q)
+-                            else:
+-                                anchor_q = comp
+-                    # 只在合法动作上取差(布尔索引先选后归约,规避 mask 填充值参与运算)
+-                    anchor_loss = (q_out[masks] - anchor_q[masks]).pow(2).mean()
++                        lp_beh_all = log_probs(beh_dqn(beh_mortal(obs), masks), masks)
++                    lp = lp_all.gather(-1, actions[:, None]).squeeze(-1)
++                    lp_beh = lp_beh_all.gather(-1, actions[:, None]).squeeze(-1)
++                    adv = g - v.detach()
++                    adv_std = adv.std()
++                    adv = (adv - adv.mean()) / (adv_std + 1e-8)
++                    ratio = (lp - lp_beh).clamp(-20, 20).exp()
++                    # 双截断 PPO(verl core_algos.compute_policy_loss 的写法):负优势时再给损失封顶 clip_c·|A|
++                    l1 = -adv * ratio
++                    l2 = -adv * ratio.clamp(1 - clip, 1 + clip)
++                    clipped = torch.maximum(l1, l2)
++                    l3 = -adv * clip_c
++                    pg_losses = torch.where(adv < 0, torch.minimum(l3, clipped), clipped)
++                    pg_loss = pg_losses.mean()
+ 
+-                next_rank_logits, = aux_net(phi)
+-                next_rank_loss = ce(next_rank_logits, player_ranks)
++                    p_all = lp_all.exp()
++                    entropy = -(p_all * lp_all).masked_fill(~masks, 0).sum(-1).mean()
++                    kl_ref = torch.zeros((), device=device)
++                    if ref_mortal is not None:
++                        with torch.no_grad():
++                            lp_ref_all = log_probs(ref_dqn(ref_mortal(obs), masks), masks)
++                        kl_ref = (p_all * (lp_all - lp_ref_all)).masked_fill(~masks, 0).sum(-1).mean()
+ 
+-                loss = sum((
+-                    dqn_loss,
+-                    cql_loss * min_q_weight,
+-                    next_rank_loss * next_rank_weight,
+-                    anchor_loss * anchor_weight,
+-                ))
++                    next_rank_logits, = aux_net(phi)
++                    next_rank_loss = ce(next_rank_logits, player_ranks)
++                    loss = sum((
++                        pg_loss,
++                        kl_ref * kl_coef,
++                        -entropy * ent_coef,
++                        next_rank_loss * next_rank_weight,
++                        value_loss * value_coef,
++                    ))
+             scaler.scale(loss / opt_step_every).backward()
+ 
+             with torch.inference_mode():
+-                stats['dqn_loss'] += dqn_loss
+-                if not online:
+-                    stats['cql_loss'] += cql_loss
+-                if anchor_mortal is not None:
+-                    stats['anchor_loss'] += anchor_loss
+-                stats['next_rank_loss'] += next_rank_loss
+-                all_q[idx] = q
+-                all_q_target[idx] = q_target_mc
++                stats['value_loss'] += value_loss
++                if not warmup:
++                    pg_batches += 1
++                    stats['pg_loss'] += pg_loss
++                    stats['next_rank_loss'] += next_rank_loss
++                    stats['kl_ref'] += kl_ref
++                    p_beh = lp_beh_all.exp()
++                    stats['kl_beh'] += (p_beh * (lp_beh_all - lp_all)).masked_fill(~masks, 0).sum(-1).mean()
++                    stats['entropy'] += entropy
++                    stats['ratio_mean'] += ratio.mean()
++                    stats['ratio_max'] = max(stats['ratio_max'], float(ratio.max()))
++                    stats['clip_high'] += ((ratio > 1 + clip) & (adv > 0)).float().mean()
++                    stats['clip_low'] += ((ratio < 1 - clip) & (adv < 0)).float().mean()
++                    stats['dual_clip'] += ((adv < 0) & (l3 < clipped)).float().mean()
++                    stats['adv_std'] += adv_std
++                    if ref_mortal is not None:
++                        stats['agree_ref'] += (lp_all.argmax(-1) == lp_ref_all.argmax(-1)).float().mean()
++                all_v[idx] = v
++                all_g[idx] = g
+ 
+             steps += 1
+             idx += 1
+             if idx % opt_step_every == 0:
+-                if max_grad_norm > 0:
+-                    scaler.unscale_(optimizer)
+-                    params = chain.from_iterable(g['params'] for g in optimizer.param_groups)
+-                    clip_grad_norm_(params, max_grad_norm)
+-                scaler.step(optimizer)
++                if not warmup:
++                    if max_grad_norm > 0:
++                        scaler.unscale_(optimizer)
++                        clip_grad_norm_(chain.from_iterable(grp['params'] for grp in optimizer.param_groups), max_grad_norm)
++                    scaler.step(optimizer)
++                scaler.step(value_optimizer)
+                 scaler.update()
+                 optimizer.zero_grad(set_to_none=True)
++                value_optimizer.zero_grad(set_to_none=True)
+             scheduler.step()
++            set_policy_lr()
++            value_scheduler.step()
+             pb.update(1)
+ 
+-            if online and steps % submit_every == 0:
+-                submit_param(mortal, dqn, is_idle=False)
+-                logging.info('param has been submitted')
++            if steps % submit_every == 0:
++                submit(is_idle=False)
+ 
+-            if steps % save_every == 0:
++            if steps % save_every == 0 or (checking and steps - pg_meta['started_at'] >= check_steps):
+                 pb.close()
++                n = idx
++                ev = 1 - (all_g[:n] - all_v[:n]).var() / all_g[:n].var().clamp_min(1e-8)
+ 
+-                # downsample to reduce tensorboard event size
+-                all_q_1d = all_q.cpu().numpy().flatten()[::128]
+-                all_q_target_1d = all_q_target.cpu().numpy().flatten()[::128]
++                def mean_of(k):
++                    if k == 'ratio_max':
++                        return float(stats[k])
++                    return float(stats[k]) / max(n if k == 'value_loss' else pg_batches, 1)
+ 
+-                writer.add_scalar('loss/dqn_loss', stats['dqn_loss'] / save_every, steps)
+-                if not online:
+-                    writer.add_scalar('loss/cql_loss', stats['cql_loss'] / save_every, steps)
+-                writer.add_scalar('loss/next_rank_loss', stats['next_rank_loss'] / save_every, steps)
+-                if anchor_mortal is not None:
+-                    writer.add_scalar('loss/anchor_loss', stats['anchor_loss'] / save_every, steps)
++                for k in stat_keys:
++                    writer.add_scalar(f'pg/{k}', mean_of(k), steps)
++                writer.add_scalar('pg/explained_variance', float(ev), steps)
++                writer.add_scalar('pg/kl_coef', kl_coef, steps)
++                writer.add_scalar('pg/policy_lr', optimizer.param_groups[0]['lr'], steps)
++                if kl_target > 0 and pg_batches > 0:
++                    err = min(max(mean_of('kl_ref') / kl_target - 1, -0.2), 0.2)
++                    kl_coef *= 1 + err * pg_batches / kl_horizon
++                    pg_meta['kl_coef'] = kl_coef
+                 writer.add_scalar('hparam/lr', scheduler.get_last_lr()[0], steps)
+-                writer.add_histogram('q_predicted', all_q_1d, steps)
+-                writer.add_histogram('q_target', all_q_target_1d, steps)
+                 writer.flush()
++                summary = ' '.join(f'{k} {mean_of(k):.4g}' for k in stat_keys)
++                summary += f' kl_coef {kl_coef:.4g} policy_lr {optimizer.param_groups[0]["lr"]:.3g}'
++                logging.info(f'pg {"warmup " if warmup else ""}at {steps:,}: {summary} explained_var {float(ev):.4f} '
++                             f'(pg batches {pg_batches} of {n})')
+ 
+                 for k in stats:
+-                    stats[k] = 0
++                    stats[k] = 0.
+                 idx = 0
++                pg_batches = 0
+ 
+                 before_next_test_play = (test_every - steps % test_every) % test_every
+                 logging.info(f'total steps: {steps:,} (~{before_next_test_play:,})')
+@@ -368,6 +424,10 @@
+                     'optimizer': optimizer.state_dict(),
+                     'scheduler': scheduler.state_dict(),
+                     'scaler': scaler.state_dict(),
++                    'value_head': value_head.state_dict(),
++                    'value_optimizer': value_optimizer.state_dict(),
++                    'value_scheduler': value_scheduler.state_dict(),
++                    'pg': pg_meta,
+                     'steps': steps,
+                     'timestamp': datetime.now().timestamp(),
+                     'best_perf': best_perf,
+@@ -375,16 +435,19 @@
+                 }
+                 torch.save(state, state_file)
+ 
+-                if online and steps % submit_every != 0:
+-                    submit_param(mortal, dqn, is_idle=False)
+-                    logging.info('param has been submitted')
++                if checking:
++                    logging.info(f'PG check done at {steps:,}: saved {state_file}')
++                    sys.exit(0)
+ 
++                if steps % submit_every != 0:
++                    submit(is_idle=False)
++
+                 if steps % test_every == 0:
+                     stat = test_player.test_play(test_games // 4, mortal, dqn, device)
+                     mortal.train()
+                     dqn.train()
+ 
+-                    avg_pt = stat.avg_pt([90, 45, 0, -135]) # for display only, never used in training
++                    avg_pt = stat.avg_pt([90, 45, 0, -135])  # for display only, never used in training
+                     better = avg_pt >= best_perf['avg_pt'] and stat.avg_rank <= best_perf['avg_rank']
+                     if better:
+                         past_best = best_perf.copy()
+@@ -395,44 +458,12 @@
+                     logging.info(f'avg pt: {avg_pt:.6}')
+                     writer.add_scalar('test_play/avg_ranking', stat.avg_rank, steps)
+                     writer.add_scalar('test_play/avg_pt', avg_pt, steps)
+-                    writer.add_scalars('test_play/ranking', {
+-                        '1st': stat.rank_1_rate,
+-                        '2nd': stat.rank_2_rate,
+-                        '3rd': stat.rank_3_rate,
+-                        '4th': stat.rank_4_rate,
+-                    }, steps)
+                     writer.add_scalars('test_play/behavior', {
+                         'agari': stat.agari_rate,
+                         'houjuu': stat.houjuu_rate,
+                         'fuuro': stat.fuuro_rate,
+                         'riichi': stat.riichi_rate,
+                     }, steps)
+-                    writer.add_scalars('test_play/agari_point', {
+-                        'overall': stat.avg_point_per_agari,
+-                        'riichi': stat.avg_point_per_riichi_agari,
+-                        'fuuro': stat.avg_point_per_fuuro_agari,
+-                        'dama': stat.avg_point_per_dama_agari,
+-                    }, steps)
+-                    writer.add_scalar('test_play/houjuu_point', stat.avg_point_per_houjuu, steps)
+-                    writer.add_scalar('test_play/point_per_round', stat.avg_point_per_round, steps)
+-                    writer.add_scalars('test_play/key_step', {
+-                        'agari_jun': stat.avg_agari_jun,
+-                        'houjuu_jun': stat.avg_houjuu_jun,
+-                        'riichi_jun': stat.avg_riichi_jun,
+-                    }, steps)
+-                    writer.add_scalars('test_play/riichi', {
+-                        'agari_after_riichi': stat.agari_rate_after_riichi,
+-                        'houjuu_after_riichi': stat.houjuu_rate_after_riichi,
+-                        'chasing_riichi': stat.chasing_riichi_rate,
+-                        'riichi_chased': stat.riichi_chased_rate,
+-                    }, steps)
+-                    writer.add_scalar('test_play/riichi_point', stat.avg_riichi_point, steps)
+-                    writer.add_scalars('test_play/fuuro', {
+-                        'agari_after_fuuro': stat.agari_rate_after_fuuro,
+-                        'houjuu_after_fuuro': stat.houjuu_rate_after_fuuro,
+-                    }, steps)
+-                    writer.add_scalar('test_play/fuuro_num', stat.avg_fuuro_num, steps)
+-                    writer.add_scalar('test_play/fuuro_point', stat.avg_fuuro_point, steps)
+                     writer.flush()
+ 
+                     if better:
+@@ -444,74 +475,41 @@
+                             f'saving to {best_state_file}'
+                         )
+                         shutil.copy(state_file, best_state_file)
+-                    if online:
+-                        # BUG: This is a bug with unknown reason. When training
+-                        # in online mode, the process will get stuck here. This
+-                        # is the reason why `main` spawns a sub process to train
+-                        # in online mode instead of going for training directly.
+-                        sys.exit(0)
++                    # 同 train.py:在线模式在此处会卡住,所以由 main 起子进程、每次测试后退出重生
++                    sys.exit(0)
+                 pb = tqdm(total=save_every, desc='TRAIN')
+ 
+-        for obs, actions, masks, steps_to_done, kyoku_rewards, player_ranks in data_loader:
+-            bs = obs.shape[0]
++        for batch in data_loader:
++            bs = batch[0].shape[0]
+             if bs != batch_size:
+-                remaining_obs.append(obs)
+-                remaining_actions.append(actions)
+-                remaining_masks.append(masks)
+-                remaining_steps_to_done.append(steps_to_done)
+-                remaining_kyoku_rewards.append(kyoku_rewards)
+-                remaining_player_ranks.append(player_ranks)
++                for r, t in zip(remaining, batch):
++                    r.append(t)
+                 remaining_bs += bs
+                 continue
+-            train_batch(obs, actions, masks, steps_to_done, kyoku_rewards, player_ranks)
++            train_batch(*batch)
+ 
+-        remaining_batches = remaining_bs // batch_size
+-        if remaining_batches > 0:
+-            obs = torch.cat(remaining_obs, dim=0)
+-            actions = torch.cat(remaining_actions, dim=0)
+-            masks = torch.cat(remaining_masks, dim=0)
+-            steps_to_done = torch.cat(remaining_steps_to_done, dim=0)
+-            kyoku_rewards = torch.cat(remaining_kyoku_rewards, dim=0)
+-            player_ranks = torch.cat(remaining_player_ranks, dim=0)
+-            start = 0
+-            end = batch_size
+-            while end <= remaining_bs:
+-                train_batch(
+-                    obs[start:end],
+-                    actions[start:end],
+-                    masks[start:end],
+-                    steps_to_done[start:end],
+-                    kyoku_rewards[start:end],
+-                    player_ranks[start:end],
+-                )
+-                start = end
+-                end += batch_size
++        if remaining_bs >= batch_size:
++            cat = [torch.cat(r, dim=0) for r in remaining]
++            for start in range(0, remaining_bs - batch_size + 1, batch_size):
++                train_batch(*(t[start:start + batch_size] for t in cat))
+         pb.close()
+ 
+-        if online:
+-            submit_param(mortal, dqn, is_idle=True)
+-            logging.info('param has been submitted')
++        submit(is_idle=True)
+ 
+     while True:
+         train_epoch()
+         gc.collect()
+-        # torch.cuda.empty_cache()
+-        # torch.cuda.synchronize()
+-        if not online:
+-            # only run one epoch for offline for easier control
+-            break
+ 
++
+ def main():
+     import os
+     import sys
+     import time
+     from subprocess import Popen
+-    from config import config
+ 
+     # do not set this env manually
+     is_sub_proc_key = 'MORTAL_IS_SUB_PROC'
+-    online = config['control']['online']
+-    if not online or os.environ.get(is_sub_proc_key, '0') == '1':
++    if os.environ.get(is_sub_proc_key, '0') == '1' or os.environ.get('PG_CHECK_FILES'):
+         train()
+         return
+ 
+@@ -532,6 +530,7 @@
+             sys.exit(code)
+         time.sleep(3)
+ 
++
+ if __name__ == '__main__':
+     try:
+         main()

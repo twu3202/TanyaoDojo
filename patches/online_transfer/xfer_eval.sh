@@ -2,8 +2,12 @@
 # Online transfer test: sacred evaluation of one snapshot, segment by segment (duplicate 1v3 vs mortal_v4,
 # seed_key 20260711, GPU fp32 / AMP off, the engine of every 100k so far), each with diag_gap / diag_place / diag_bust.
 #   bash xfer_eval.sh ARM STEP 12k|rest
+#   bash xfer_eval.sh ARM STEP seg START ITERS      (one segment of ITERS x 100 seeds from START, for sequential looks)
 # 12k = s10000 (1,000 groups) + s14000 (2,000); rest = s11000 + s16000-34999, together 25,000 groups = 100k games.
 # group_ci runs --strict: a segment counts only with every seed's four rotations present and ended.
+# Each segment is split over NPROC (4) concurrent run_eval processes by whole 100-seed iterations, so every batch is
+# the one a single process would play: byte-identical games, 1.47x the throughput (patches/eval_throughput, round 0);
+# the per-process thread caps (round 1) make it about 1.55x.
 set -u
 ARM=$1; STEP=$2; WHICH=$3
 B=$HOME/Projects/better_mortal; R=$B/runs; SP=$R/xfer_$ARM; T=$R/xfer_tools; D=$R/evaldump
@@ -19,10 +23,12 @@ torch.save({k: st[k] for k in ("mortal", "current_dqn", "aux_net", "config", "st
 print("infer copy", sys.argv[2], "steps", st["steps"])
 PY
 fi
+[ -f $T/gpu_share.sh ] && bash $T/gpu_share.sh >> $LOG 2>&1   # a booked guest test gets the card at this boundary
 say "eval $tag $WHICH, md5 $(md5sum $ck | cut -c1-8)"
 case $WHICH in
   12k)  SEGS="14000 20|10000 10";;
   rest) SEGS="11000 30|16000 40|20000 50|25000 50|30000 50";;
+  seg)  SEGS="$4 $5";;
 esac
 fail=0
 IFS='|' read -ra SEG <<< "$SEGS"
@@ -31,8 +37,15 @@ for seg in "${SEG[@]}"; do
   set -- $seg; s=$1; it=$2; hi=$((s + it*100 - 1))
   [ -f $R/done_xfer/${tag}_s$s ] && continue
   L=$R/eval_${tag}_s${s}_gpufp32; rm -rf "$L"; mkdir -p "$L"
-  $PY run_eval.py "$ck" --challenger-type mortal --challenger-name "$tag" --device cuda:0 --amp off \
-      --games 400 --iters $it --seed-start $s --log-dir "$L" < /dev/null > "$L.out" 2>&1
+  NP=${NPROC:-4}; off=0; pids=()
+  for p in $(seq 0 $((NP - 1))); do
+    k=$(( it / NP + (p < it % NP ? 1 : 0) )); [ $k -eq 0 ] && continue
+    RAYON_NUM_THREADS=5 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 $PY run_eval.py "$ck" --challenger-type mortal --challenger-name "$tag" --device cuda:0 --amp off \
+        --games 400 --iters $k --seed-start $((s + off * 100)) --log-dir "$L" < /dev/null > "$L.out.$p" 2>&1 &
+    pids+=($!); off=$((off + k))
+  done
+  for pid in "${pids[@]}"; do wait $pid; done
+  cat "$L".out.* > "$L.out"; rm -f "$L".out.*
   $PY $T/group_ci.py --strict --log-dir "$L" --seed-lo $s --seed-hi $hi --dump "$D/${tag}_s${s}_gpufp32.npz" < /dev/null > "$L.ci" 2>&1
   rc=$?
   for t in gap place bust; do

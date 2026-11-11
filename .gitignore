@@ -52,3 +52,9 @@ docs/
 
 # Game-log data expansion survey: kept locally, not checked in
 /paipu_data_research_20261006/
+
+# Full copies of deployed Mortal files (AGPL upstream): kept locally, shipped as .patch diffs instead
+patches/calibrated_base/train.py
+patches/policy_critic/train_pg.py
+patches/four_seat/player.py
+patches/four_seat/orig/player.py

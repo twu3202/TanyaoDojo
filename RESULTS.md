@@ -557,6 +557,7 @@ one wall), so differences between rows can be paired on the same walls.
 | Model | What it is | 100k vs v4 |
 | --- | --- | --- |
 | tpt 408k | online RL from v11, eval-proportional reward (own best) | −0.637 ± 0.458 |
+| ST | uniform weight average of the four 448k continuations of 408k ([model_soup](patches/model_soup/README.md)) | −0.676 ± 0.459 |
 | Stage 1 448k | + targeted exploration ([stage1_explore](patches/stage1_explore/README.md)) | −0.765 ± 0.458 |
 | v4 pool 448k | + v4-heavy opponent pool | −0.863 ± 0.462 |
 | s368000 | λ 0.1 anchor, old reward | −0.886 ± 0.461 |
@@ -565,6 +566,7 @@ one wall), so differences between rows can be paired on the same walls.
 | M1 448k | calibrated anchor, global margin 0.3 | −1.038 ± 0.460 |
 | q25 | offline: the 25% of games with the best-scoring players, 1.5 passes ([data_quality](patches/data_quality/README.md)) | −1.947 ± 0.451 |
 | q25one | the same selection, one pass | −2.047 ± 0.443 |
+| q12one | offline: the 12.5% of games with the best-scoring players, one pass | −2.646 ± 0.447 |
 | symaug | offline: 18-way symmetry augmentation ([symmetry_augmentation](patches/symmetry_augmentation/README.md)) | −2.494 ± 0.459 |
 | v11 | the offline baseline | −2.498 ± 0.455 |
 | B1 | the v11 recipe at v4's size, 256 × 54 | −2.680 ± 0.464 |
@@ -578,12 +580,272 @@ one wall), so differences between rows can be paired on the same walls.
 | M1-sel 448k − 408k | −0.36 ± 0.50 | −1.41 |
 | M1 448k − 408k | −0.40 ± 0.55 | −1.44 |
 | v4 pool 448k − 408k | −0.23 ± 0.48 | −0.92 |
+| ST (soup) − 408k | −0.04 ± 0.45 | −0.17 |
 | q25 − v11 | +0.55 ± 0.60 | +1.80 |
 | q25one − v11 | +0.45 ± 0.60 | +1.47 |
+| q12one − v11 | −0.15 ± 0.60 | −0.48 |
+| q12one − q25one | −0.60 ± 0.58 | −2.02 |
+| v11 + 80k online − v11 (transfer test, recipe) | +0.68 ± 0.45 | +2.99 |
+| q25 + 80k online − v11 + 80k online (transfer test, primary) | −0.00 ± 0.60 | −0.01 |
 | symaug − v11 | +0.00 ± 0.60 | +0.01 |
 | B1 − v11 | −0.18 ± 0.62 | −0.58 |
 | v11long − v11 | −1.26 ± 0.62 | −3.98 |
 
-No online variant beat 408k. Among offline bases only the data-quality selection points upward, and it has not cleared
-the pre-registered bar (≥ +0.5 with z ≥ 2). Whether its offline gain survives online RL is the
-[online transfer test](patches/online_transfer/README.md).
+No online variant beat 408k. Among offline bases only the data-quality selection at 25% points upward, and it has not
+cleared the pre-registered bar (≥ +0.5 with z ≥ 2). Selecting harder (12.5%) fell back to v11's level. Its offline
+gain did not survive the first online stage: after 80k online batches each, q25 and v11 end level at −1.82 vs v4
+(interaction −0.55 ± 0.62, z −1.74; [online transfer test](patches/online_transfer/README.md)).
+
+## November 2026: the C′ jump re-checked on new walls (16,000 groups, 2026-11-06)
+
+C′ was the project's only large single-step gain. It had been measured only on 12k (09-12, above). Its three snapshots
+were played again under the current harness (GPU fp32, 4 processes). The verdict used the 13,000 groups that played no
+part in finding the jump. Rules were set in advance in [cprime_recheck](patches/cprime_recheck/README.md).
+
+| Pairing | 13,000 new groups | z |
+| --- | ---: | ---: |
+| C′ final − C392k (relaxing λ 0.5 → 0.2) | **+0.98 ± 0.63** | +3.09 |
+| C392k − rl1_best (λ 0.5 phase) | +0.24 ± 0.54 | +0.89 |
+| C′ final − rl1_best | +1.23 ± 0.63 | +3.82 |
+| C′ final − tpt 408k (16,000 groups) | −0.39 ± 0.59 | −1.29 |
+| rl1_best − A80k, the replay line's start (16,000 groups) | −0.19 ± 0.74 | −0.49 |
+
+- **The jump holds.** It is about two thirds of its 12k size (+1.52 there).
+- **Nothing after C′ is measurable.** C′ final is level with 408k.
+- **The two starts are equally strong but play differently.**
+  - rl1_best came from an unanchored first stage. It attacks (+26 points per kyoku against v4) and leaks: riichi
+    +1.93 pp, deal-in +0.87 pp.
+  - A80k was anchored from its first batch. It is passive (attack −8, riichi +0.10).
+- **The relaxation repaired rl1_best's leak and kept most of its attack.** That would explain why relaxing the anchor
+  on the replay line, which never had the leak, gave nothing. This is a hypothesis.
+- The same week, a second run of stage 2's control gained +0.38 against the first run's +0.28. The two runs differ by
+  +0.10 ± 0.55, so a training draw is an unlikely explanation for a jump of this size
+  ([online_control_rerun](patches/online_control_rerun/README.md)).
+
+### Can our pipeline grow rl1_best's profile? Not in 64,000 batches (P2 phase 1, 2026-11-06)
+
+From v11 with July's recipe (no anchor, LR 5e-6, temperature 0.05, reward [6, 4, 2, 0]), on the 5060 Ti. The gate was
+set in advance in [unanchored_first_stage](patches/unanchored_first_stage/README.md).
+
+| | vs v4 (16,000 groups) | attack / defence per kyoku | riichi, pp |
+| --- | ---: | ---: | ---: |
+| U64k (this run) | −1.65 ± 0.58 | +0 / −35 | +0.88 |
+| rl1_best (July, same start and recipe) | −2.24 ± 0.58 | +26 / −60 | +1.93 |
+| A80k (replay start, anchored) | −2.05 (by difference) | −8 / −21 | +0.10 |
+
+- **The gate failed** on attack (+0, needed +10) and riichi (+0.88, needed +1.0). So the phase that would have
+  tested C′'s repair on our own aggressive start never ran.
+- **The stage itself is not worse.** U64k is level with the anchored control after 160k batches (+0.07 ± 0.69) and
+  not significantly above either start (A80k +0.40 ± 0.75, rl1_best +0.59 ± 0.70).
+- **Follow-up (11-07): timing, not absence.** An evaluation-only trajectory over the snapshots found the profile forms
+  by 32k, peaks near 48k (attack +41, riichi +1.79 on 12k) and fades by 64k, while strength stays flat.
+  - U40k, the snapshot July's best.pth rule picks, meets both thresholds on 16,000 groups: attack +20, riichi +1.40,
+    −1.61 ± 0.57 vs v4.
+  - So an unanchored stage on our pipeline does grow a milder rl1_best, but only for a window.
+
+### The C′ jump does not repeat from its own start: +0.07 ± 0.54 (P1 short, 2026-11-07)
+
+The step that made C′ final was retrained from C392k's July state on the 5060 Ti:
+- λ 0.5 to 240,000, then λ 0.2 to 278,600;
+- anchored to rl1_best, LR 5e-6, reward [6, 4, 2, 0], temperature 0.1.
+
+The trainer config matched July's key for key. The 4 workers, reuse 1.8 and the pool mix were listed departures
+([cprime_replay](patches/cprime_replay/README.md)).
+
+| 16,000 groups | Mean ± 95% CI | Riichi, pp | Attack / defence per kyoku |
+| --- | ---: | ---: | ---: |
+| C392k (start) | | +1.98 | +25 / −57 |
+| CR278.6k − C392k (replay) | **+0.07 ± 0.54** | +2.23 | +32 / −61 |
+| C′ final − C392k (July) | +1.08 ± 0.56 | +0.58 | +12 / −30 |
+
+- **Not reproduced**, and CR278.6k − C′ final = −1.02 ± 0.59 (z −3.4). The replay's policy did not move at all, where
+  July's moved the whole profile.
+- What could account for the gap: July's data stream (7 workers, fresher samples, a different pool), the hardware, or a
+  training draw. The trainer side is ruled out.
+- The pre-registered successor from U40k was skipped. The route "grow rl1_best, then repair it" has no repair step that
+  runs on our pipeline.
+
+### Three replays of the C′ step, none reproduced: the July jump was most likely a draw (2026-11-09)
+
+Two more draws of the step, pre-registered on 11-07 ([cprime_replay](patches/cprime_replay/README.md)):
+- a second draw on the 5060 Ti;
+- one on trx with July's topology and card: 7 GPU workers, loader 0, test_play 2,000, reuse 1.37, the July pool mix,
+  and the λ switch at the trainer's own respawn.
+
+All snapshots were evaluated on the 5060 Ti.
+
+| 16,000 groups | − C392k | Riichi, pp | Attack / defence per kyoku |
+| --- | ---: | ---: | ---: |
+| C392k (start) | | +1.98 | +25 / −57 |
+| first replay, 5060 Ti | +0.07 ± 0.54 | +2.23 | +32 / −61 |
+| second draw, 5060 Ti | −0.12 ± 0.55 | +2.95 | +38 / −64 |
+| trx, July's topology | −0.15 ± 0.53 | +2.07 | +29 / −66 |
+| **July (C′ final)** | **+1.08 ± 0.56** | +0.58 | +12 / −30 |
+
+- **Neither new arm reproduced**, and the trx contrast against the two 5060 Ti draws is −0.12 ± 0.48. July's stream
+  and card add nothing measurable.
+- **No replay's policy moved** toward C′ final's: riichi stayed at C392k's level or above, and defence slipped.
+- **Reading set in advance:** with one hit in four draws, the July step was most likely a draw. The C′ line closes.
+- Only the July stream's own past cannot be rerun: its buffer at 215,800 and its ~203k snap seat.
+- So the record lineage, C′ final and then tpt 408k, rests on a step our pipeline does not repeat. The route "grow
+  rl1_best, then repair it with an anchor" has no repair step we can run.
+
+### A critic explains at most 11% of the return, even with hidden state: the PG direction closes (2026-11-09)
+
+The PG probe's critic explained about 10% of the return's variance. This diagnostic asked whether that was mahjong's
+noise or our critic ([critic_diag](patches/critic_diag/README.md)). Critics were fitted offline to the probe's own games
+(the kyoku's GRP reward, γ 1) and scored on 2,236 held-out games, 359,130 trainee decisions.
+
+| Critic | Input | Explained variance | − probe's head |
+| --- | --- | ---: | ---: |
+| the probe's head, as online | public | 0.098 [0.090, 0.106] | |
+| separate network (trunk copy) | public | 0.098 (never beat its start) | 0 |
+| privileged trunk | + opponents' hands / + wall too | 0.098 (never beat its start) | 0 |
+| privileged side critic | frozen public features + hands | 0.113 [0.105, 0.122] | +0.015 [+0.012, +0.018] |
+| privileged side critic | frozen public features + hands + wall | 0.114 [0.105, 0.123] | +0.016 [+0.012, +0.019] |
+
+- **Verdict set in advance:** every critic is under 0.20, so the PG direction closes. The best critic would cut the
+  advantage's noise variance by 2% (factor 1.02).
+- The wall adds nothing beyond the opponents' hands (+0.0002).
+- Full-trunk critics overfit: they read 0.13–0.16 on the training stream and stayed under the start on validation.
+  55,000 games give about 550,000 independent kyoku outcomes, which a 40-block trunk memorizes.
+- **The first run (same day) gave no verdict.** My trunk LR was about 80 times the probe's own per sample, and its
+  trunk critics ended below their start (0.01–0.06). The second run used the probe's LR, a real shuffle buffer and
+  step 0 as a validation look, and added the side critics.
+- **Limits:**
+  - There was no public-only side critic, so part of the +0.015 may be capacity rather than hidden state.
+  - A trunk trained on far more games could do better, but it would have to gain 0.10 to reach 0.20.
+
+### Four-seat self-play plays like the control: dropped at 3,000 groups (2026-11-10)
+
+The control's stage from A80k (80,000 batches) was rerun with three of its four workers switched to four-seat
+self-play: the current policy in every seat, every seat trained. One worker kept playing 1v3 against v4
+([four_seat](patches/four_seat/README.md)).
+
+- The arena plays each seed four times, and with one near-greedy policy in every seat those rotations are mostly the
+  same game (55 of 75 pairs identical). So only one rotation per seed was kept, and unique samples per game equal the
+  control's. The run tests the opponents and all-seat training at equal compute, not data efficiency.
+- Two config lines changed for memory only: buffer capacity 1,750 four-seat files (about the control's 1.13 M
+  samples per drain; reuse 1.81 against 1.83) and 4 trainer loader workers.
+
+| FS160k minus | Groups | Difference | z |
+| --- | ---: | ---: | ---: |
+| pooled control (A160k, C160k), SPRT segments | 3,000 | −0.05 ± 1.13 → H0 | |
+| pooled control, all played | 5,000 | −0.47 ± 0.88 | −1.04 |
+| A80k (its start) | 5,000 | −0.21 ± 0.96 | −0.43 |
+| tpt 408k | 5,000 | −1.21 ± 1.34 | −1.77 |
+| v4 | 5,000 | −1.93 ± 1.03 | −3.68 |
+
+- Mechanism readouts (20,000 games): deal-in +0.14 pp, riichi −0.18 pp, attack −16 / defence −10 per kyoku, 4th place
+  +1.25 pp. The control's two runs read +0.20 / +0.33, +0.09 / −0.19, −14 / −13 and −14 / −21, +1.20 / +1.15.
+- **Reading:** the opponents' identity and training every seat of a deal change neither strength nor profile. The
+  four-seat direction closes for the v11 line, and the one-game-per-seed arena is not built.
+
+### Model soups: averaging training draws does not beat the recipe (2026-11-10)
+
+Uniform weight averages of models trained from the same start, evaluated without further training
+([model_soup](patches/model_soup/README.md)). SV averages the five 160k arms from A80k (control A, control C,
+freshness, reward schedule, four-seat). ST averages the four 448k continuations of tpt 408k (historical, Stage 1,
+M1 c0.3, M1-sel).
+
+| Readout | Groups | Difference | z |
+| --- | ---: | ---: | ---: |
+| SV − pooled control (A160k, C160k), primary | 16,000 | −0.21 ± 0.40 | −1.05 |
+| SV − mean of its 5 ingredients | 5,000 | −0.31 ± 0.59 | −1.02 |
+| SV − A80k (its start) | 16,000 | +0.11 ± 0.44 | +0.51 |
+| SV vs v4 | 16,000 | −1.94 ± 0.57 | −6.68 |
+| ST − tpt 408k, primary | 25,000 (100k) | −0.04 ± 0.45 | −0.17 |
+| ST − mean of its 4 ingredients | 25,000 | +0.26 ± 0.34 | +1.47 |
+| mean of the 4 ingredients − 408k | 25,000 | −0.30 ± 0.39 | −1.50 |
+| ST vs v4 | 25,000 | −0.68 ± 0.46 | −2.88 |
+
+- **Verdicts set in advance:** SV is not above the pooled control (≤ 0), ST is not a record, and "averaging recovers
+  the draw noise" reads with opposite signs on the two lines. The soup lever closes.
+- **Mechanism readouts:** SV plays like its arms (deal-in +0.33 pp, riichi −0.05 pp, attack −11 / defence −21 per
+  kyoku, 4th +1.33 pp). ST sits between its ingredients: call rate 28.9% (they range 26.2–30.8%), riichi +0.22 pp,
+  attack −7 / defence −3, 4th +0.84 pp (408k +0.68).
+- **Reading:**
+  - From 408k, every continuation drifted down by about 0.3 in its own direction. The soup cancels the drift and lands
+    on 408k, so there was no shared improvement to keep.
+  - From A80k the stage does gain (+0.33), but the soup keeps only +0.11 of it. The gain is not "shared direction plus
+    removable noise".
+- **Limits:** three of SV's ingredients are variants that read below the control, and BatchNorm statistics were
+  averaged rather than recomputed.
+
+### Cal-QL: a calibrated offline base collapses in its first online stage (2026-11-10)
+
+v11 was fine-tuned offline for 40,000 steps with Cal-QL: the conservative term no longer pushes untaken actions below
+the logged return. It then went into the first online stage exactly as A80k did
+([calibrated_base](patches/calibrated_base/README.md)).
+
+- **Offline,** the large Q gaps halved (p90 0.45×, call-available median 0.43×). The overall median barely moved
+  (0.88×), so the pre-registered median gate failed. The large-gap gate, written into the README before the gate
+  result, passed.
+- **Online,** the collapse guard stopped the arm at 8,000 batches: test games against v4 −12.94, then −17.72 (A80k's
+  run: +0.51, −0.62).
+
+| 1,000 groups, seeds 10000-10999 | vs v4 | median top-2 gap | agrees with human | greedy differs from v11 | mean Q: greedy / second / rest |
+| --- | ---: | ---: | ---: | ---: | --- |
+| v11 | −6.51 ± 2.32 | 1.81 | 81.2% | | +0.17 / −2.47 / −5.93 |
+| Cal-QL base | −4.13 ± 2.31 | 1.59 | 81.1% | 5.7% | +1.94 / +0.34 / −1.01 |
+| A80k's run at 8k | −3.43 ± 2.31 | 1.61 | 81.1% | 1.6% | −0.01 / −2.57 / −5.98 |
+| Cal-QL + 8k online | **−13.05 ± 2.56** | **0.14** | **58.1%** | **44.0%** | +0.15 / −0.21 / −1.08 |
+
+- Paired: Cal-QL + 8k − A80k's run at 8k −9.62 ± 3.36. The collapsed arm: win −4.2 pp, riichi −4.9 pp, attack −293
+  per kyoku, 4th +6.9 pp.
+- **Mechanism.**
+  - Cal-QL lifted the untaken actions by about 5 units, as intended. It also lifted the greedy, data-like action 1.8
+    above the level its returns support: its `−Q(data)` term is no longer balanced once the untaken actions carry no
+    gradient.
+  - Online Monte Carlo training pulls taken actions to the return level, about 0, in both lines, and leaves the untaken
+    actions where they are. In v11 the greedy action then still sits 2.5 above the second-best. In the Cal-QL base it
+    lands on it, gaps vanish, choices flip, and the policy unravels.
+- **Reading.**
+  - The order of actions in our offline Q is held by the conservative term, either by pushing untaken actions down or
+    by lifting the data action. Monte Carlo returns alone cannot hold it: true gaps are about 1 pt against a 24 pt
+    return SD.
+  - Plain CQL's pessimism is what lets the first online stage keep the policy. This matches M1 c0.05's collapse.
+- **Exploratory:** offline, the Cal-QL base reads +0.63 ± 1.70 over v11 on 3,000 groups.
+- **Follow-up:** a pessimism dose, weight 1 instead of 5 with plain CQL and no lift
+  ([pessimism_dose](patches/pessimism_dose/README.md)).
+
+### Pessimism dose: a less pessimistic base is no better after its first online stage (2026-11-11)
+
+v11 was fine-tuned offline with plain CQL at a smaller conservative weight (`min_q_weight`; v11 used 5). The aim
+was to bring the untaken actions closer to the greedy one without lifting the data action. A base whose large Q gaps
+shrank (p90 ≤ 0.7×) then ran the first online stage exactly as A80k did, screened by SPRT against A80k
+([pessimism_dose](patches/pessimism_dose/README.md)).
+
+| Offline fine-tune | Median top-2 gap | p90 | Agrees with human | Greedy differs from v11 | Mean Q: greedy / second / rest | Test games vs v4 |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| v11 (weight 5) | 1.806 | 6.649 | 81.2% | | +0.17 / −2.47 / −5.93 | |
+| weight 1, 40,000 steps | 1.294 | 5.858 (0.88×: gate not met) | 81.1% | 5.9% | +0.11 / −2.04 / −5.23 | −2.66, −1.85 |
+| weight 0.2, 20,000 steps | 0.525 | 4.618 (0.695×: passed) | 80.5% | 7.2% | +0.07 / −1.34 / −3.84 | −4.77 |
+| weight 0, 20,000 steps | 0.030 | 0.241 | **66.4%** | **29.9%** | −0.01 / −0.10 / −0.33 | **−16.83** (fails) |
+
+- **Weight 0 lost the action order offline.** With no conservative term, every action's Q was pulled to the return
+  level through shared features within 10,000 steps. This is the Cal-QL collapse mechanism without any online stage.
+- **The weight-0.2 arm** trained 80,000 batches without tripping the collapse guard. The SPRT against A80k stopped at
+  H0 at 5,000 groups (LLR −1.88).
+
+| 6,000 groups, seeds 10000-15999 | Mean ± 95% | z |
+| --- | ---: | ---: |
+| A2_80k vs v4 | −2.42 ± 0.94 | −5.05 |
+| A2_80k − A80k | −0.58 ± 1.21 | −0.93 |
+| A2_80k − C160k | −0.71 ± 1.22 | −1.13 |
+| A2_80k − 408k | −1.54 ± 1.25 | −2.42 |
+
+- **Exploratory, base or stage** (12k seeds, 3,000 groups):
+  - the weight-0.2 base reads no weaker than v11 (+0.73 ± 1.75);
+  - the first stage gained less from it (+0.96 ± 1.56) than from v11 (+2.71 ± 1.27), a difference of −1.75 ± 1.99
+    (z −1.7).
+- **Mechanism** (suggestive under R5).
+  - The lower pessimism survived the online stage: median gap 0.455, untaken actions −3.86. Online Monte Carlo moves
+    only the taken actions.
+  - The fine-tune itself made riichi passive: riichi fell from +0.65 to −0.77 pp against v4 at 12k.
+  - Both stages improved defence by about 30 points per kyoku. Only the control's stage also improved attack (+21,
+    against −11). From v11, which over-riichis, the stage moved riichi toward v4's rate. From the passive base it
+    did not.
+- **Verdict: drop.** Lowering the base's pessimism does not let the first online stage fix more. With Cal-QL's
+  collapse, the offline conservative weight is set aside as a lever in both directions. Single-variable screens since
+  10-19: 0 of 25.

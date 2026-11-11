@@ -61,6 +61,37 @@ def load_champion(state_file: str, device: str, amp: str = "auto") -> MortalEngi
     )
 
 
+class EnsembleEngine:
+    """均值 Q 集成(patches/snapshot_ensemble):各成员给同一批局面打分,取平均 Q 的 argmax。
+    libriichi 只读 engine_type / name / is_oracle / version / enable_quick_eval / enable_rule_based_agari_guard
+    与 react_batch。另记与第一个成员选不同动作的决策数,看集成实际改了多少。"""
+
+    def __init__(self, members: list, name: str):
+        m = members[0]
+        assert m.version != 1 and all(x.version == m.version for x in members), "成员须同一观测版本(2-5)"
+        self.engine_type = "mortal"
+        self.members, self.name = members, name
+        self.device, self.version, self.is_oracle = m.device, m.version, m.is_oracle
+        self.enable_amp, self.enable_quick_eval = m.enable_amp, m.enable_quick_eval
+        self.enable_rule_based_agari_guard = m.enable_rule_based_agari_guard
+        self.decision_count = self.disagree_count = 0
+
+    def react_batch(self, obs, masks, invisible_obs):
+        try:
+            with torch.autocast(self.device.type, enabled=self.enable_amp), torch.inference_mode():
+                obs = torch.as_tensor(np.stack(obs, axis=0), device=self.device)
+                masks = torch.as_tensor(np.stack(masks, axis=0), device=self.device)
+                qs = torch.stack([m.dqn(m.brain(obs), masks) for m in self.members])
+                q = qs.mean(0)
+                actions = q.argmax(-1)
+                self.decision_count += len(actions)
+                self.disagree_count += int((actions != qs[0].argmax(-1)).sum())
+            return actions.tolist(), q.tolist(), masks.tolist(), [True] * len(actions)
+        except Exception as ex:
+            import traceback
+            raise Exception(f"{ex}\n{traceback.format_exc()}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("params")
@@ -77,8 +108,9 @@ def main():
     ap.add_argument("--channels", type=int, default=128)
     ap.add_argument("--blocks", type=int, default=6)
     ap.add_argument("--obs", default="lean", choices=("lean", "v2"))
-    ap.add_argument("--challenger-type", default="leanjax", choices=("leanjax", "mortal"),
-                    help="mortal = 价值线 Mortal 格式权重(v11/rl1_best 等),与冠军同引擎同动作空间")
+    ap.add_argument("--challenger-type", default="leanjax", choices=("leanjax", "mortal", "ensemble"),
+                    help="mortal = 价值线 Mortal 格式权重(v11/rl1_best 等),与冠军同引擎同动作空间;"
+                         "ensemble = params 为逗号分隔的多个 Mortal 格式权重,均值 Q 集成")
     ap.add_argument("--challenger-name", default=None,
                     help="写进牌谱 names 的名字;必须 != mortal-v4,否则 diag_gap 找不到挑战者座位")
     args = ap.parse_args()
@@ -88,6 +120,9 @@ def main():
     if args.challenger_type == "mortal":
         chal = load_champion(args.params, args.device, args.amp)
         chal.name = args.challenger_name or "challenger"
+    elif args.challenger_type == "ensemble":
+        chal = EnsembleEngine([load_champion(p, args.device, args.amp) for p in args.params.split(",")],
+                              name=args.challenger_name or "ensemble")
     else:
         from jax_engine import LeanJaxEngine
         chal = LeanJaxEngine(args.params, name=args.challenger_name or "leanjax",
@@ -114,6 +149,9 @@ def main():
               f"avg_pt={avg_pt:+.3f}±{ci:.3f} "
               f"fallback={getattr(chal, 'fallback_count', 0)}/{getattr(chal, 'decision_count', 0)} "
               f"({time.time()-t0:.0f}s)", flush=True)
+        if isinstance(chal, EnsembleEngine):
+            print(f"[iter {i}] ensemble differs from member 0 on {chal.disagree_count}/{chal.decision_count} "
+                  f"engine decisions", flush=True)
 
 
 if __name__ == "__main__":
