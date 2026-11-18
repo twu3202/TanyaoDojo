@@ -8,6 +8,7 @@ from types import ModuleType
 from common.suit_table import load_table
 
 from . import hongkong
+from .hangzhou import FLOAT, WHITE, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
 
@@ -29,18 +30,27 @@ def policy_view(game, actor, actions):
     visible = Counter(tile for river in game.discards for tile in river)
     for seat, player in enumerate(game.players):
         for meld in player.melds:
+            if (seat != actor and meld.kind == 'gang_an'
+                    and not getattr(game.rules, 'OPTIONS', DEFAULT_OPTIONS).concealed_kong_faces):
+                continue
             visible.update(meld.tiles)
         if seat != actor and player.open_ready_hand is not None:
             visible.update(dict(enumerate(player.open_ready_hand)))
-    if game.offer is not None and game.offer.kind != 'discard':
-        visible[game.offer.tile] += 1
+    offered = None
+    if game.offer is not None:
+        hidden_kong = (game.offer.kind == 'gang_an' and game.offer.actor != actor
+                       and not getattr(game.rules, 'OPTIONS', DEFAULT_OPTIONS).concealed_kong_faces)
+        if not hidden_kong:
+            offered = game.offer.tile
+            if game.offer.kind != 'discard':
+                visible[offered] += 1
     player = game.players[actor]
     setting_piao = game.phase == 'piao'
     hand = (0,) * TILE_COUNT if setting_piao else tuple(player.hand)
     seat_wind = 27 if setting_piao else 27 + (actor - game.dealer) % game.seat_count
     return PolicyView(hand, tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
                       tuple(actions), seat_wind, game.round_wind,
-                      None if game.offer is None else game.offer.tile, game.remaining, game.rules)
+                      offered, game.remaining, game.rules)
 
 
 @lru_cache(maxsize=1)
@@ -97,6 +107,15 @@ def _triplet_distance(hand, needed):
 
 
 def _distance(hand, melds, view):
+    if getattr(view.rules, 'WILDCARD', None) == WHITE:
+        natural, wild = split_wild(hand)
+        distance = standard_distance(natural, len(melds)) - wild
+        if not melds:
+            singles = sum(count % 2 for count in natural)
+            matched = min(wild, singles)
+            pairs = sum(count // 2 for count in natural) + matched + (wild - matched) // 2
+            distance = min(distance, 6 - pairs)
+        return max(-1 if sum(hand) % 3 == 2 else 0, distance)
     if not view.rules.MIN_FAAN:
         best = standard_distance(hand, len(melds))
         options = getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS)
@@ -201,12 +220,14 @@ def heuristic(view):
         return min(actions, key=rank_exchange)
     if RON in actions:
         return RON
+    if FLOAT in actions and view.remaining >= 45:
+        return FLOAT
     if ZIMO in actions:
         return ZIMO
     if actions == (PASS,):
         return PASS
     live = _live_tiles(view)
-    discards = [tile for kind, tile in actions if kind == 'discard']
+    discards = {tile: kind for kind, tile in actions if kind in ('discard', FLOAT[0])}
     if discards:
         ranked = _discard_options(view.hand, view.melds, view, live, discards)
         best = min(rank for rank, _, _ in ranked)
@@ -224,13 +245,15 @@ def heuristic(view):
             if _rank(tuple(hand), new_melds, view, live) <= best:
                 return kind, tile
         choices = [(tile, rest) for rank, tile, rest in ranked if rank == best]
+        wildcard = getattr(view.rules, 'WILDCARD', None)
         tile, _ = max(choices, key=lambda item: (_ukeire(best[0], item[1], view.melds, live, view),
+                                                item[0] != wildcard,
                                                 -view.hand[item[0]], item[0]))
         if best[0] == 0 and view.remaining > 0:
             for declaration in ('declare_dark', 'declare_ready'):
                 if (declaration, tile) in actions:
                     return declaration, tile
-        return 'discard', tile
+        return discards[tile], tile
 
     best = _rank(view.hand, view.melds, view, live)
     preferred = PASS

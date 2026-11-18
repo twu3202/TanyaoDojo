@@ -1,19 +1,21 @@
 # Playable Mahjong MVP
 
-Human vs two or three AI players, with a responsive browser table and a CPU-only server. The thirty-three playable rulesets are
+Human vs two or three AI players, with a responsive browser table and a CPU-only server. The thirty-five playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
 Shangsi, Hundred-Tile Mahjong, Hezhou, Liuzhou Exploding Fish, Guangzhou Three-Faan, Golden Island Guangdong,
 Guiliu Wake-Tile Mahjong, Sichuan Xuezhan Exchange Three, Yunnan Xuezhan Flower Pig, Kaxinwu Continuous Wins,
 Suizhou Ka Wu Xing, Xiangyang Ka Wu Xing, Shiyan Ka Wu Xing, JJ Three-Player Call Points,
-JJ Three-Player Multipliers and Xiaogan Ka Wu Xing.
+JJ Three-Player Multipliers, Xiaogan Ka Wu Xing, Hangzhou Three-Player and Hangzhou Four-Player.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
 
 - `registry.py`: the versioned playable catalog and profile choices. The lobby searches names in both languages
   and filters by stable family IDs.
+- `hangzhou.py` and `wildcard_shapes.py`: exact concealed wildcard shapes, Burst, floating and payer-specific
+  dealer and three-feed settlement over the honors engine. [Rules and sources](rules/Hangzhou.md).
 - `core.py`: bounded per-table worker, revisioned legal choices, cancellation and snapshot isolation.
 - `riichi_game.py`: one native `Rollout` per hand, reusing existing Mortal/libriichi legality and settlement.
   Inter-hand continuation uses the first-hand scores/pot, not the truncated game's artificial final payout.

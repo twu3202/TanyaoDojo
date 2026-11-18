@@ -1,0 +1,52 @@
+"""Standard Mahjong sets and pairs with a known number of wildcards."""
+
+from functools import lru_cache
+
+
+def without_tile(counts, tile, count=1):
+    return counts[:tile] + (counts[tile] - count,) + counts[tile + 1:]
+
+
+@lru_cache(maxsize=65536)
+def can_form_sets(counts, wild):
+    """Every natural tile must be used, and honors never form sequences."""
+    if (sum(counts) + wild) % 3:
+        return False
+    first = next((tile for tile, count in enumerate(counts) if count), None)
+    if first is None:
+        return True
+    triplet = min(3, counts[first])
+    if 3 - triplet <= wild and can_form_sets(without_tile(counts, first, triplet), wild - 3 + triplet):
+        return True
+    if first >= 27:
+        return False
+    suit = first // 9 * 9
+    for start in range(max(suit, first - min(2, wild)), min(first, suit + 6) + 1):
+        rest = list(counts)
+        missing = 0
+        for tile in range(start, start + 3):
+            if rest[tile]:
+                rest[tile] -= 1
+            else:
+                missing += 1
+        if missing <= wild and can_form_sets(tuple(rest), wild - missing):
+            return True
+    return False
+
+
+@lru_cache(maxsize=32768)
+def can_form_standard(counts, wild):
+    if (sum(counts) + wild) % 3 != 2:
+        return False
+    if wild >= 2 and can_form_sets(counts, wild - 2):
+        return True
+    for tile, count in enumerate(counts):
+        if count:
+            pair = min(2, count)
+            if 2 - pair <= wild and can_form_sets(without_tile(counts, tile, pair), wild - 2 + pair):
+                return True
+    return False
+
+
+def can_form_pairs(counts, wild):
+    return (sum(counts) + wild) % 2 == 0 and sum(count % 2 for count in counts) <= wild

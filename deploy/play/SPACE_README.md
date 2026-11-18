@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play 33 Mahjong rulesets vs AI. English / 中文.
+short_description: Play 35 Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
@@ -18,7 +18,7 @@ Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hong
 **Liuzhou Exploding Fish**, **Guangzhou Three-Faan**, **Golden Island Guangdong**, **Guiliu Wake-Tile Mahjong**,
 **Sichuan Xuezhan Exchange Three**, **Yunnan Xuezhan Flower Pig**, **Kaxinwu Continuous Wins**,
 **Suizhou Ka Wu Xing**, **Xiangyang Ka Wu Xing**, **Shiyan Ka Wu Xing**, **JJ Three-Player Call Points**,
-**JJ Three-Player Multipliers**, or **Xiaogan Ka Wu Xing**
+**JJ Three-Player Multipliers**, **Xiaogan Ka Wu Xing**, **Hangzhou Three-Player**, or **Hangzhou Four-Player**
 and play with two or three AI opponents. Search in either language or
 filter by family. Riichi plays a complete East-South match, and Macau plays a 16-hand match over four winds.
 
@@ -59,6 +59,10 @@ then settles wins at five points per payer.
 **JJ Three-Player Multipliers** includes dark ready and public-wait discard restrictions.
 **Xiaogan Ka Wu Xing** adds an opening piao choice and a rank horse on revealed self-draws.
 [JJ Multipliers rules](deploy/play/rules/JJMultipliers.md), [Xiaogan rules](deploy/play/rules/XiaoganKaWuXing.md).
+
+**Hangzhou Three-Player** uses White Dragon wildcards, Burst and floats, with a fixed ×8 dealer share.
+**Hangzhou Four-Player** adds chows, three-feed liability and a ×2/4/8 dealer progression.
+[Rules and sources](deploy/play/rules/Hangzhou.md).
 
 The **112-tile wildcard family** offers two GameTea bonus modes and the Fangchenggang room with seven pairs and
 a four-tile reserve. Source rules and the room choices for unspecified boundaries are listed in the

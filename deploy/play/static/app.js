@@ -94,6 +94,9 @@ $('dora').replaceChildren();if(table.dora.length){$('dora').append(text('span',t
 $('table').classList.toggle('three-player',table.players.length===3);
 $('seat-3').hidden=table.players.length===3;
 for(const p of table.players)renderSeat(p,table,s);
+for(const [caller, provider] of table.feed_liabilities || []){
+  $('dora').append(text('span',tr('feedLiability',{caller:playerName(caller),provider:playerName(provider)}),'tag'));
+}
 $('human-river').replaceChildren(river(table.players[0].river));
 $('events').replaceChildren(...s.messages.map(x=>text('li',messageText(x),x.kind)));$('events').scrollTop=$('events').scrollHeight;
 $('auto-button').textContent=s.automatic?tr('cancelAuto'):tr('autoplay');$('auto-button').disabled=['round_end','finished','error','closed'].includes(s.status);
@@ -132,6 +135,8 @@ function exchangeContains(option, tiles) {
   return true;
 }
 function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+4)%4]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',p.win_count?tr('winCount',{count:p.win_count}):tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.open_ready)title.append(text('span',tr(p.dark_ready?'darkReadyTag':'openReadyTag'),'tag reach'));if(p.piao!==undefined)title.append(text('span',tr('piaoTag',{value:p.piao}),'tag'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
+if(p.id===table.dealer&&table.dealer_multiplier) title.append(text('span',`×${table.dealer_multiplier}`,'tag'));
+if(p.wildcard_floats) title.append(text('span',tr('wildcardFloatTag',{count:p.wildcard_floats}),'tag reach'));
 if(p.id===0){const row=document.createElement('div');row.className='hand';const hand=p.hand.slice();if(table.drawn){const i=hand.lastIndexOf(table.drawn);if(i>=0)hand.push(...hand.splice(i,1));}hand.forEach((t,i)=>{if(table.phase==='exchange'){row.append(exchangeTile(t,i,s));return;}const options=s.choices.filter(x=>['discard','dahai'].includes(x.kind)&&x.tiles[0]===t);const b=document.createElement('button');b.className='hand-tile'+(options.length?' legal':'')+(table.drawn&&i===hand.length-1?' drawn':'')+(options.length&&options[0].id===selected?' selected':'');b.disabled=!options.length||s.automatic||requestBusy;const canDeclare=s.choices.some(o=>o.kind==='declare_ready'&&o.tiles[0]===t);b.classList.toggle('ready-discard',canDeclare);b.setAttribute('aria-label',tr(canDeclare?'selectReadyTile':'selectTile',{tile:tileText(t)}));b.append(img(t));if(options.length){b.dataset.option=options[0].id;b.onclick=()=>{selected=options[0].id;for(const x of document.querySelectorAll('.hand-tile'))x.classList.toggle('selected',x.dataset.option===selected);renderActions();};}row.append(b);});seat.append(row);
 }else if(p.revealed){const h=document.createElement('div');h.className='melds';for(const t of p.hand){const el=img(t);el.style.width='19px';h.append(el);}if(p.hidden_ready_tiles){const hidden=text('span','','ready-hidden');hidden.setAttribute('aria-label',tr('concealed',{count:p.hidden_ready_tiles}));for(let i=0;i<p.hidden_ready_tiles;i++)hidden.append(text('span','','tile-back'));h.append(hidden);}seat.append(h);}else{const h=document.createElement('div');h.className='backs';h.setAttribute('aria-label',tr('concealed',{count:p.hand_count}));for(let i=0;i<p.hand_count;i++)h.append(text('span','','tile-back'));seat.append(h);}
 if(p.melds.length){const ms=document.createElement('div');ms.className='melds';for(const m of p.melds){const meld=document.createElement('div');meld.className='meld';meld.title=actionText(m.kind);for(const t of m.tiles)meld.append(t===null?text('span','','tile-back'):img(t));ms.append(meld);}seat.append(ms);}if(p.win_tile){const claim=text('div','','melds');claim.title=tr('winningTile');claim.append(img(p.win_tile));seat.append(claim);}if(p.id!==0)seat.append(river(p.river));}
@@ -140,6 +145,7 @@ function turnPrompt(snapshot) {
   const player = table.players[0];
   if (table.phase === 'exchange') return table.exchange_same_suit ? 'promptSameSuitExchange' : 'promptExchange';
   if (table.phase === 'action') {
+    if (table.float_cycle_owner > 0) return 'promptFloatCycle';
     if (player.win_count) return 'promptLockedWin';
     if (player.dark_ready) return 'promptDarkReady';
     if (player.open_ready) return 'promptOpenReady';

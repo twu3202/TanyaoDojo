@@ -8,6 +8,7 @@ from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_t
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
+from .hangzhou import FLOAT, HANGZHOU_ROOMS, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
@@ -16,13 +17,14 @@ from .xiaogan import XIAOGAN, XiaoganGame
 
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
-    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN,
+    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS,
 )}
-THREE_SEAT_ENGINES = {
+GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
     jj_three.VARIANT: jj_three.JJThreeGame,
     jj_multiplier.VARIANT: jj_multiplier.JJMultiplierGame,
     XIAOGAN.VARIANT: XiaoganGame,
+    **{rules.VARIANT: HangzhouGame for rules in HANGZHOU_ROOMS},
 }
 
 
@@ -36,6 +38,7 @@ class HonorsSession(GameSession):
         self.totals = [0] * self.seat_count
         self.dealer = 0 if options.host_deals_first else random.Random(self.seed).randrange(self.seat_count)
         self.dealer_advances = 0
+        self.dealer_streak = 0
         self.game = None
 
     def begin(self):
@@ -47,9 +50,10 @@ class HonorsSession(GameSession):
             if self.status not in ('starting', 'round_end'):
                 raise ClientError('round_active')
             self.hand_number += 1
-            engine = THREE_SEAT_ENGINES.get(self.variant, HonorsGame)
+            engine = GAME_ENGINES.get(self.variant, HonorsGame)
+            dealer_rules = {'dealer_streak': self.dealer_streak} if engine is HangzhouGame else {}
             self.game = engine(self.seed + self.hand_number, self.dealer,
-                               27 + (self.dealer_advances // self.seat_count) % 4, rules=self.rules)
+                               27 + (self.dealer_advances // self.seat_count) % 4, rules=self.rules, **dealer_rules)
             self.result = None
             self.options = []
             self.automatic = False
@@ -75,7 +79,7 @@ class HonorsSession(GameSession):
                 'hand': [tile_name(tile) for tile, count in enumerate(reveal) for _ in range(count)]
                         if reveal is not None else [],
                 'river': [{'tile': tile_name(tile)} for tile in game.discards[actor]],
-                'melds': [self.view_meld(meld) for meld in player.melds],
+                'melds': [self.view_meld(meld, actor == 0) for meld in player.melds],
             })
             if ready:
                 players[-1]['open_ready'] = True
@@ -87,21 +91,28 @@ class HonorsSession(GameSession):
                     players[-1]['hidden_ready_tiles'] = game.hidden_ready_tiles(actor)
             if isinstance(game, XiaoganGame) and len(game.piao) == game.seat_count:
                 players[-1]['piao'] = game.piao[actor]
+            if isinstance(game, HangzhouGame) and game.float_streak[actor]:
+                players[-1]['wildcard_floats'] = game.float_streak[actor]
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
         drawn = tile_name(game.drawn_tile) if current == 0 and game.drawn_tile is not None else None
-        return {'players': players, 'hand_number': self.hand_number, 'dealer': None if game.phase == 'piao' else game.dealer,
+        table = {'players': players, 'hand_number': self.hand_number, 'dealer': None if game.phase == 'piao' else game.dealer,
                 'round_wind': tile_name(game.round_wind), 'show_winds': game.options.show_winds,
                 'match_hands': self.rules.MATCH_HANDS,
                 'current': current, 'remaining': game.remaining, 'dora': [], 'honba': 0,
                 'pot': 0, 'phase': game.phase, 'drawn': drawn}
+        if isinstance(game, HangzhouGame):
+            table.update(wildcard=tile_name(self.rules.WILDCARD), dealer_multiplier=game.dealer_multiplier,
+                         float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())
+        return table
 
-    def view_meld(self, meld):
+    def view_meld(self, meld, own):
         tiles = [tile_name(tile) for tile in meld.tiles]
         if meld.kind == 'gang_an':
             visible = self.game.options.concealed_kong_faces
-            tiles = tiles[:visible] + [None] * (len(tiles) - visible)
+            if visible or not own:
+                tiles = tiles[:visible] + [None] * (len(tiles) - visible)
         return {'kind': meld.kind, 'tiles': tiles, 'provider': meld.provider}
 
     def option(self, action):
@@ -138,6 +149,8 @@ class HonorsSession(GameSession):
             kind, tile = action
             if kind in ('discard', 'declare_ready', 'declare_dark'):
                 self.log_event('discard', {'actor': actor, 'tile': tile_name(tile)})
+            elif action == FLOAT:
+                self.log_event('wildcard_float', {'actor': actor, 'count': game.float_streak[actor]}, 'call')
             if kind == 'declare_ready':
                 code = 'paid_ready' if game.players[actor].closed_ready else 'open_ready'
                 self.log_event(code, {'actor': actor}, 'call')
@@ -152,6 +165,7 @@ class HonorsSession(GameSession):
         table = self.view()
         delta = game.scores()
         self.totals = [total + points for total, points in zip(self.totals, delta)]
+        self.dealer_streak = self.dealer_streak + 1 if game.next_dealer == self.dealer else 0
         self.dealer_advances += game.next_dealer != self.dealer
         self.dealer = game.next_dealer
         if not game.winners:
@@ -159,7 +173,7 @@ class HonorsSession(GameSession):
         for win in game.win_details:
             if win.tier:
                 self.log_event('win_tier', {'actor': win.actor, 'tier': win.tier, 'patterns': win.patterns}, 'win')
-            elif self.variant == jj_multiplier.VARIANT:
+            elif self.variant == jj_multiplier.VARIANT or isinstance(game, HangzhouGame):
                 self.log_event('win_total', {'actor': win.actor, 'points': sum(win.payments),
                                              'patterns': win.patterns}, 'win')
             elif win.fan is None:

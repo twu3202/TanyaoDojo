@@ -57,6 +57,27 @@ en:{
  fans:{},gen:'根 × {n}',ghost:'鬼 × {n}',
  errors:{stale_action:'牌局已推进，请等待画面更新后再操作。',illegal_action:'这一步不是合法动作。',table_failed:'本桌遇到了异常，请重新开桌。',table_missing:'牌桌已过期，请重新开桌。',unsupported_variant:'不支持的玩法。',unsupported_policy:'不支持的 AI 难度。',model_unavailable:'当前标准 AI 暂不可用，请选择入门。',engine_unavailable:'立直引擎尚未就绪。',table_full:'当前牌桌已满，请稍后再试。',round_starting:'正在开局，请稍候。',round_active:'请先完成当前一局。',invalid_request:'请求格式不正确。',unknown_action:'未知操作。',origin_mismatch:'请求来源不匹配。',not_found:'没有这个页面。',server_error:'服务暂时遇到异常，请稍后重试。',catalog_failed:'服务暂未就绪，请刷新后重试。'},
 }};
+Object.assign(I18N.en, {
+ wildcardFloatTag:'Float ×{count}', promptFloatCycle:'An opponent floated a wildcard. You can discard your draw, make a concealed kong or win.',
+ feedLiability:'{caller} ← {provider} · three feeds',
+});
+Object.assign(I18N['zh-CN'], {
+ wildcardFloatTag:'飘财 ×{count}', promptFloatCycle:'对手已飘财，你可摸切、暗杠或自摸。',
+ feedLiability:'{caller} ← {provider} · 三摊承包',
+});
+I18N.en.action.float_wildcard='Float wildcard';
+I18N['zh-CN'].action.float_wildcard='飘财';
+I18N.en.messages.wildcard_float='{actor} floated a wildcard · {count} in a row.';
+I18N['zh-CN'].messages.wildcard_float='{actor} 飘财，已连飘 {count} 次。';
+Object.assign(I18N.en.fans, {
+ '爆头':'Burst', '财飘':'Wildcard float', '双财飘':'Double float', '三财飘':'Triple float',
+ '杠开':'Kong draw', '二连杠开':'Two consecutive kong draws', '三连杠开':'Three consecutive kong draws', '四连杠开':'Four consecutive kong draws',
+ '杠暴':'Kong burst', '二连杠暴':'Two-kong burst', '三连杠暴':'Three-kong burst', '四连杠暴':'Four-kong burst',
+ '杠飘':'Kong then float', '飘杠':'Float then kong', '七对子':'Seven pairs', '七客':'Seven-pairs burst',
+ '豪华七对':'Luxury seven pairs', '双豪华七对':'Double luxury seven pairs', '三豪华七对':'Triple luxury seven pairs',
+ '清七对':'Natural seven pairs', '豪华清七对':'Natural luxury seven pairs',
+ '双豪华清七对':'Natural double luxury seven pairs', '三豪华清七对':'Natural triple luxury seven pairs',
+});
 let LANGUAGE='en';
 try{const saved=localStorage.getItem('tanyao_language');if(saved&&I18N[saved])LANGUAGE=saved;}catch{}
 const tr=(key,args={})=>{let s=I18N[LANGUAGE][key]??I18N.en[key]??key;return String(s).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');};

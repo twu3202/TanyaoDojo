@@ -333,7 +333,10 @@ class HonorsGame:
             ctx = WinContext(kind, offer.tile, seat_wind,
                              self.round_wind, offer.kong_chain, offer.opening,
                              last_live_draw=self.remaining == 0, winner_count=winner_count, ready=ready)
-        return self.rules.faan(hand, tuple(player.melds), ctx), hand, ctx.kind
+        return self._score(actor, hand, tuple(player.melds), ctx), hand, ctx.kind
+
+    def _score(self, actor, hand, melds, ctx):
+        return self.rules.faan(hand, melds, ctx)
 
     def legal_actions(self):
         if self.phase == 'over':

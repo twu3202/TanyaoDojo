@@ -3,6 +3,7 @@ from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
 from .guiliu import VARIANT as GUILIU
+from .hangzhou import FOUR_HANGZHOU, HANGZHOU_ROOMS, THREE_HANGZHOU
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
@@ -1218,6 +1219,77 @@ VARIANTS[XIAOGAN.VARIANT] = {
     }},
 }
 
+_HANGZHOU = {
+    'family_id': 'hangzhou-wildcard', 'family': 'Hangzhou wildcard family',
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+}
+_HANGZHOU_HAND = (
+    'Self-draw only. White Dragon is wild in concealed sets and pairs. Complete four sets and keep a wildcard '
+    'waiting for its partner to win on any draw for a Burst. Six pairs and a wildcard can wait this way too.'
+)
+_HANGZHOU_FLOAT = (
+    'Float an extra wildcard if the resulting hand can still Burst. Until your next draw, opponents can win or '
+    'make concealed kongs on their turns and must discard their drawn tile. Consecutive floats and kongs multiply a Burst.'
+)
+_HANGZHOU_HAND_ZH = '只自摸。白板作财神，可在暗手中代牌。凑齐四副加一张财神，摸任意牌作将就是爆头；六对加财神则可七客。'
+_HANGZHOU_FLOAT_ZH = '打掉一张多余的财神并保持爆头或七客，即可飘财。到下次摸牌前，别家只可自摸、暗杠或摸切。连飘和连杠可为爆头加倍。'
+
+VARIANTS[THREE_HANGZHOU.VARIANT] = {
+    **_HANGZHOU, 'id': THREE_HANGZHOU.VARIANT, 'seat_count': 3,
+    'name': 'Hangzhou Three-Player · Fixed Dealer ×8',
+    'aliases': ['三人杭麻', '三人杭州麻将', '笃三老庄', '白板财神'],
+    'rule_version': 'hangzhou-three-fixed-dealer-dojo-v1',
+    'subtitle': 'Three seats · White Dragon wild · No chow',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'White Dragon can complete any set or pair. Float one to raise the value of your next Burst.',
+    'rules': [
+        '136 tiles, no flowers. Pon and kong are allowed, with no chow. After you float, you may still make concealed kongs.',
+        _HANGZHOU_HAND, _HANGZHOU_FLOAT,
+        'Each losing seat pays its own share. Any share involving the dealer is multiplied by eight. '
+        'The winner takes the next deal; a draw keeps the dealer, with no payments.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall three-player room rules', 'url': 'https://www.hzbianqu.com/game/581.html'},
+                {'title': 'Three-player hand examples', 'url': 'https://www.hzbianqu.com/article/1548.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '三人杭麻（笃三老庄）', 'subtitle': '三人 · 白板财神 · 只碰杠',
+        'badge': '浙江 · 136 张', 'description': '白板作财神。保留爆头听口时可打出多余财神，让下一次爆头加倍。',
+        'rules': ['136 张，无花牌，只碰杠，不吃。飘财后本人只可暗杠，直到本局结束。',
+                  _HANGZHOU_HAND_ZH, _HANGZHOU_FLOAT_ZH,
+                  '自摸后按席付款，涉及庄家的每份乘八。赢家接庄，流局庄家连庄且无付款。'],
+    }},
+}
+
+VARIANTS[FOUR_HANGZHOU.VARIANT] = {
+    **_HANGZHOU, 'id': FOUR_HANGZHOU.VARIANT, 'seat_count': 4,
+    'name': 'Hangzhou Four-Player · Three-Feed Liability',
+    'aliases': ['杭州麻将', '四人杭麻', '平庄', '三摊承包', '白板财神'],
+    'rule_version': 'hangzhou-four-three-feeds-dojo-v1',
+    'subtitle': 'Four seats · Dealer ×2/4/8 · Three-feed liability',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'Call from an opponent three times to create liability across the dealer boundary.',
+    'rules': [
+        '136 tiles, no flowers. Chow from the previous seat; pon and kong from any seat. '
+        'Non-dealers can take at most two calls from one another.',
+        _HANGZHOU_HAND, _HANGZHOU_FLOAT,
+        'If a dealer and non-dealer form three feeds in one direction, the feeder covers all shares when the caller wins. '
+        'When the feeder wins, the caller covers all shares at double value. An added kong is still one feed; '
+        'a third feed taken by a floater during a forced-draw circuit does not establish liability.',
+        'Dealer shares begin at double, and increase to ×4 and then ×8 on repeats. The winner takes the next deal; '
+        'a draw keeps the dealer and increases the multiplier, with no payments.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall four-player room rules', 'url': 'https://www.hzbianqu.com/game/37.html'},
+                {'title': 'GameABC float circuit and liability examples', 'url': 'https://www.gameabc.com/news/201911/6191.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '四人杭麻（平庄三摊承包）', 'subtitle': '四人 · 庄闲 2／4／8 倍 · 三摊承包',
+        'badge': '浙江 · 136 张', 'description': '庄闲之间吃碰杠同一家满三摊，可形成承包与反承包。',
+        'rules': ['136 张，无花牌，可吃上家、碰杠任意一家，闲闲之间最多两摊。',
+                  _HANGZHOU_HAND_ZH, _HANGZHOU_FLOAT_ZH,
+                  '庄闲之间吃碰杠同一家满三摊，吃满者胡则供牌者包三份，供牌者胡则吃满者包三份再翻倍。'
+                  '补杠仍算原来一摊，飘财人抓打圈内取得第三摊不触发承包。',
+                  '涉及庄家每份起乘二，连庄升至四倍、八倍。赢家接庄，流局无付款并连庄。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1236,4 +1308,5 @@ SESSION_OPTIONS = {
     JJ_THREE: {'variant': JJ_THREE},
     JJ_MULTIPLIER: {'variant': JJ_MULTIPLIER},
     XIAOGAN.VARIANT: {'variant': XIAOGAN.VARIANT},
+    **{room.VARIANT: {'variant': room.VARIANT} for room in HANGZHOU_ROOMS},
 }
