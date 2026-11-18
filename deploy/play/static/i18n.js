@@ -104,6 +104,7 @@ Object.assign(I18N.en.fans, {
  '排胡':'All sequences', '门风刻杠':'Seat-wind set', '字牌刻杠':'Dragon set', '清牌':'No wildcards in hand',
  '无得':'No wildcards', '得还原':'All wildcards match their face',
  '四风聚齐':'Four Winds', '门风或字牌刻杠':'Seat-wind or dragon set',
+ '财神会':'Wild Gathering', '杠上开花':'Kong replacement win', '海底捞月':'Last draw win', '点杠杠开':'Win on a direct-kong replacement',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 Object.assign(I18N.en.tileHonors, {F1:'Spring', F2:'Summer', F3:'Autumn', F4:'Winter',
@@ -116,6 +117,8 @@ I18N['zh-CN'].baseHu='底 {n} 胡';
 I18N.en.taiCount='{n} tai';
 I18N['zh-CN'].taiCount='{n} 台';
 Object.assign(I18N.en, {
+  followTransfers:'Opening follow-tile points · {amounts}',
+  kongRefundTransfers:'Kong points returned · {amounts}',
   promptBuyBase:'Choose whether to buy the base before seeing your tiles.', buyBase:'Buy the base', skipBase:'Play without buying',
   boughtBase:'Base bought', buyBaseTransfers:'Buy-in points · {amounts}', chongTiles:'Chong tiles',
   linhaiChongSummary:'{name} · {hits} hits from {count} tiles · {points} per share',
@@ -125,6 +128,8 @@ Object.assign(I18N.en, {
   taizhou_fresh_dragon:'fresh dragon discard',
 });
 Object.assign(I18N['zh-CN'], {
+  followTransfers:'开局跟牌分 · {amounts}',
+  kongRefundTransfers:'退杠分 · {amounts}',
   promptBuyBase:'看牌前请先选择是否买底。', buyBase:'买底', skipBase:'不买底',
   boughtBase:'已买底', buyBaseTransfers:'买底分 · {amounts}', chongTiles:'抓冲牌',
   linhaiChongSummary:'{name} · {count} 张中 {hits} 冲 · 每份 {points} 分',

@@ -17,6 +17,7 @@ from .honors_bonus import HorseRoom
 from .tiantai import TiantaiWildcardRules
 from .taizhou import TaizhouRules
 from .linhai import LinhaiRules
+from .jinyun import JinyunClassicRules
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
 
@@ -158,6 +159,9 @@ def _distance(hand, melds, view):
         allow_pairs = view.rules.OPTIONS.seven_pairs
         distance = min(_wild_distance(choice, wild, len(melds), view.rules.require_burst, allow_pairs)
                        for choice in choices)
+        if isinstance(view.rules, JinyunClassicRules) and not melds:
+            missing = sum(not natural[tile] for tile in ORPHANS)
+            distance = min(distance, missing - any(natural[tile] >= 2 for tile in ORPHANS) - wild)
         return max(-1 if sum(hand) % 3 == 2 else 0, distance)
     if not view.rules.MIN_FAAN:
         best = standard_distance(hand, len(melds))
@@ -203,7 +207,7 @@ def _ready_waits(hand, melds, view, live):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
     elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules)):
         params['wildcard'] = view.wildcard
-    if isinstance(view.rules, (LinhaiRules, TaizhouRules, TiantaiWildcardRules)):
+    if isinstance(view.rules, (JinyunClassicRules, LinhaiRules, TaizhouRules, TiantaiWildcardRules)):
         can_win = view.rules.can_win
     else:
         def can_win(hand, melds, ctx):

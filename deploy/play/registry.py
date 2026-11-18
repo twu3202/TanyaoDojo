@@ -20,6 +20,7 @@ from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
 from .taizhou import TAIZHOU
 from .daxi import DAXI
 from .linhai import LINHAI
+from .jinyun import JINYUN, JINYUN_CANTONESE
 from .xiaogan import XIAOGAN
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
@@ -1784,6 +1785,52 @@ VARIANTS[LINHAI.VARIANT] = {
     }},
 }
 
+VARIANTS[JINYUN.VARIANT] = {
+    'id': JINYUN.VARIANT, 'family_id': 'hangzhou-wildcard', 'family': 'Hangzhou wildcard family', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Jinyun Mahjong · Classic', 'aliases': ['缙云麻将', '缙云经典', '缙云跟牌', '缙云财神会'],
+    'rule_version': 'jinyun-136-classic-dojo-v1', 'subtitle': 'Four seats · Flipped wildcard · Dealer doubles',
+    'badge': 'Zhejiang · Follow-tile payments',
+    'description': 'Play with a flipped wildcard, opening follow-tile payments, and dealer-weighted scoring.',
+    'rules': [
+        '136 tiles and a 33-tile reserve. White Dragons play as the flipped face. Three wildcards in a valid self-drawn hand score the Wild Gathering bonus.',
+        'Only the first player in turn order wins on a supplied tile. All opponents pay even on a discard or robbed added kong. '
+        'Double any winner-to-payer bill that includes the dealer.',
+        'If the dealer and next two players start with the same discard without a call, the fourth player’s discard triggers a follow-tile payment. '
+        'Kong and follow-tile transfers stay on a draw.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Jinyun scoring, kongs and follow-tile payments', 'url': 'https://www.hzbianqu.com/game/61.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭州财神系', 'name': '缙云麻将（经典）', 'subtitle': '四人 · 翻财神 · 庄闲翻倍',
+        'badge': '浙江 · 开局跟牌', 'description': '翻财神，开局有跟牌罚分，庄闲之间胡牌付双份。',
+        'rules': ['136 张，留尾 33 张，白板替翻出的牌面。三张财神组成合法自摸手牌时加财神会。',
+                  '接炮一炮一响。自摸、点炮或抢补杠都由其他三家付分，胡家或付款家是庄家时该笔翻倍。',
+                  '开局前三家无副露地打出同一张，按第四家的首张弃牌结算跟牌。流局保留杠分和跟牌分。'],
+    }},
+}
+
+VARIANTS[JINYUN_CANTONESE.VARIANT] = {
+    'id': JINYUN_CANTONESE.VARIANT, 'family_id': 'honors-and-chows', 'family': 'Honors and chows', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Jinyun Mahjong · Cantonese Style', 'aliases': ['缙云广式', '缙云广式麻将', '缙云自摸'],
+    'rule_version': 'jinyun-136-cantonese-dojo-v1', 'subtitle': 'Four seats · Self-draw · Kong refunds on draws',
+    'badge': 'Zhejiang · Natural tiles',
+    'description': 'Win by self-draw or rob an added kong. A direct-kong win charges the seat that supplied the kong.',
+    'rules': [
+        '136 tiles with a 9-tile reserve. Pon and kong are available. Wins use natural tiles.',
+        'Ordinary wins are self-draw. A player who supplies a successful added-kong robbery or the direct kong for a replacement win pays all three shares.',
+        'The ordinary point table awards up to 30 for Thirteen Orphans. Immediate kong bills are refunded if the hand ends in a draw.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Jinyun Cantonese-style rules', 'url': 'https://www.hzbianqu.com/game/61.html'}],
+    'translations': {'zh-CN': {
+        'family': '字牌麻将', 'name': '缙云麻将（广式）', 'subtitle': '四人 · 以自摸为主 · 流局退杠',
+        'badge': '浙江 · 无财神', 'description': '可碰可杠，自摸或抢补杠胡。点杠杠开由供杠家包付。',
+        'rules': ['136 张，留尾 9 张，可碰、可杠。手牌按天然牌面组合。',
+                  '普通胡牌只能自摸。抢补杠由补杠家付三份，点杠直接杠开则由供杠家付三份。',
+                  '按普通档计分，十三幺 30 分封顶。流局时退回当局所有已付杠分。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1818,4 +1865,6 @@ SESSION_OPTIONS = {
     TAIZHOU.VARIANT: {'variant': TAIZHOU.VARIANT},
     DAXI.VARIANT: {'variant': DAXI.VARIANT},
     LINHAI.VARIANT: {'variant': LINHAI.VARIANT},
+    JINYUN.VARIANT: {'variant': JINYUN.VARIANT},
+    JINYUN_CANTONESE.VARIANT: {'variant': JINYUN_CANTONESE.VARIANT},
 }

@@ -16,6 +16,7 @@ from .flower_wall import FLOWER_TILES, FlowerWall
 from .hangzhou import FLOAT, HANGZHOU_ROOMS, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
+from .jinyun import JINYUN, JINYUN_CANTONESE, JinyunCantoneseGame, JinyunClassicGame
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .linhai import LINHAI, LinhaiGame
 from .taizhou import TAIZHOU, TaizhouGame
@@ -28,7 +29,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
-    TAIZHOU, DAXI, LINHAI,
+    TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -51,6 +52,8 @@ GAME_ENGINES = {
     TAIZHOU.VARIANT: TaizhouGame,
     DAXI.VARIANT: DaxiGame,
     LINHAI.VARIANT: LinhaiGame,
+    JINYUN.VARIANT: JinyunClassicGame,
+    JINYUN_CANTONESE.VARIANT: JinyunCantoneseGame,
 }
 
 
@@ -251,6 +254,10 @@ class HonorsSession(GameSession):
                 self.result['taizhou_settlement'] = game.taizhou_settlement
             if isinstance(game, DaxiGame):
                 self.result['buy_base_deltas'] = game.buy_base_deltas.copy()
+            if isinstance(game, JinyunClassicGame):
+                self.result['follow_deltas'] = game.follow_deltas.copy()
+            if isinstance(game, JinyunCantoneseGame) and any(game.kong_refunds):
+                self.result['kong_refund_deltas'] = game.kong_refunds.copy()
             if game.options.kong_points:
                 self.result['kong_deltas'] = game.kong_deltas.copy()
             if any(game.echo_deltas):

@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 53 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 55 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -10,11 +10,14 @@ Suizhou Ka Wu Xing, Xiangyang Ka Wu Xing, Shiyan Ka Wu Xing, JJ Three-Player Cal
 JJ Three-Player Multipliers, Xiaogan Ka Wu Xing, Hangzhou Three-Player, Hangzhou Four-Player, Tonglu,
 Chun’an, Hangzhou Two-Player Flip Wildcard, Xiaoshan, Songyang, Suichang, Deqing Wukang, Deqing Xinshi,
 Anji Fifteen Flowers, Anji Tea House Self-Draw, Dongyang, Bianfeng Chongji Ten Ten Up, Bianfeng Chongji Seven Gaps and
-Tiantai Three-Player 300 Hu, Tiantai White Dragon Wild, Taizhou Four-Player Hu, Daxi Buy the Base and Linhai Six Chong Tiles.
+Tiantai Three-Player 300 Hu, Tiantai White Dragon Wild, Taizhou Four-Player Hu, Daxi Buy the Base, Linhai Six Chong Tiles,
+Jinyun Classic and Jinyun Cantonese Style.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
 
+- `jinyun.py`: opening follow-tile and dealer-weighted settlement in Classic, and self-draw, kong liability and draw refunds
+  in Cantonese Style. [Rules and room conventions](rules/Jinyun.md).
 - `daxi.py` and `linhai.py`: opening buy-ins and supplier-specific kongs in Daxi, and wildcards, reciprocal feed liability
   and six post-win chong tiles in Linhai. [Rules and room conventions](rules/DaxiLinhai.md).
 - `registry.py`: the versioned playable catalog and profile choices. The lobby searches names in both languages
