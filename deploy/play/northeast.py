@@ -104,6 +104,7 @@ HARBIN = HarbinRules('harbin-four-bao')
 
 class BaoGame(HonorsGame):
     ALLOW_READY_KONGS = False
+    SINGLE_WINNER = True
 
     def __init__(self, seed, dealer, round_wind, *, rules):
         self.declared_waits = [() for _ in range(rules.OPTIONS.seat_count)]
@@ -174,7 +175,7 @@ class BaoGame(HonorsGame):
 
     def _response_actions(self):
         actor = self.responses[0]
-        if self.winners:
+        if self.SINGLE_WINNER and self.winners:
             return actor, [PASS]
         actor, actions = super()._response_actions()
         if self.declared_waits[actor]:

@@ -100,10 +100,12 @@ class ShenyangGame(ChangchunGame):
             return actor, actions
         if self.split_draw:
             return actor, [PASS, ZIMO] if ZIMO in actions else [PASS]
-        p = self.players[actor]
-        actions = [a for a in actions if a[0] != 'extend_egg' or
-                   (self.egg_racks[actor] is not None and p.melds[a[1][0]].kind == 'egg_winds' and a[1][1] >= 27)]
-        return actor, actions
+        return actor, [a for a in actions if a[0] != 'extend_egg' or self._egg_extension_allowed(actor, a[1])]
+
+    def _egg_extension_allowed(self, actor, argument):
+        index, face = argument
+        return (self.egg_racks[actor] is not None
+                and self.players[actor].melds[index].kind == 'egg_winds' and face >= 27)
 
     def step(self, action):
         if self.split_draw and self.phase == 'action' and self.offer is None and action == PASS:

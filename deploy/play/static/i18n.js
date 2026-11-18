@@ -213,6 +213,19 @@ I18N.en.baoRoll='Bao roll · {n}';
 I18N['zh-CN'].baoRoll='掷宝 · {n} 点';
 I18N.en.foldedReadyDiscard='Face-down ready discard';
 I18N['zh-CN'].foldedReadyDiscard='报听扣牌';
+Object.assign(I18N.en, {changbaiPiao:'Piao {value}', skipPiao:'No piao', reverseEnd:'Opposite end · may owe all three bills',
+  promptRobFedKong:'You can win on the tile you just fed before the kong goes through.'});
+Object.assign(I18N['zh-CN'], {changbaiPiao:'飘 {value} 分', skipPiao:'不飘', reverseEnd:'倒落反端 · 供和或供杠时包赔',
+  promptRobFedKong:'刚打出的牌被点杠，你可以抢回这张牌和。'});
+I18N.en.reverseWinPayment='{name} paid all three bills for the opposite-end discard.';
+I18N['zh-CN'].reverseWinPayment='{name} 倒落供和，包赔三笔账。';
+I18N.en.messages.reverse_kong='{actor} covered all three kong bills for the opposite-end discard.';
+I18N['zh-CN'].messages.reverse_kong='{actor} 倒落供杠，包赔三笔账。';
+I18N.en.action.rob_fed_kong='Reclaim tile from kong';
+I18N['zh-CN'].action.rob_fed_kong='抢回杠牌';
+Object.assign(I18N.en.fans, {'蛋夹':'Missing egg tile', '丁胡':'Dragon pair with a pung wait', '单吊幺九':'Single terminal or honor wait',
+  '三副落':'Three open sets', '四副落':'Four open sets', '一般高（明）':'Two exposed identical chows',
+  '一般高（暗）':'Two identical chows', '两般高（明）':'Three exposed identical chows', '两般高（暗）':'Three identical chows'});
 Object.assign(I18N.en, {longmaoBonus:'Longmao bonus active', declareInsideReady:'Declare edge/middle ready · {tile}',
   promptDalianPeek:'The bao matches your wait. Win now or take your draw.'});
 Object.assign(I18N['zh-CN'], {longmaoBonus:'长毛已生效', declareInsideReady:'报夹听 · {tile}',

@@ -29,6 +29,8 @@ from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
 from .sixteen import SET_COUNT, SixteenRules
+from .changbai import CHANGBAI
+from .chaoyang_town import ROB_FED_KONG
 from .dalian_tieling import INSIDE_READY
 from .liaoning_joker import LiaoningJokerRules
 from .liaoning_split import LiaoyangRules
@@ -394,7 +396,9 @@ def heuristic(view):
     if actions[0][0] == 'buy_base':
         return 'buy_base', 1
     if actions[0][0] == 'piao':
-        return 'piao', 1
+        return 'piao', 2 if view.rules is CHANGBAI else 1
+    if actions[-1][0] == ROB_FED_KONG:
+        return actions[-1]
     if actions[0][0] == 'exchange':
         def rank_exchange(action):
             remaining = list(view.hand)

@@ -23,6 +23,8 @@ from .macau import VARIANT as MACAU
 from .northeast import HARBIN
 from .jilin_shuangliao import JILIN, SHUANGLIAO
 from .fuxin import FUXIN_DARK, FUXIN_ROOMS, FUXIN_ZAWU
+from .changbai import CHANGBAI
+from .chaoyang_town import CHAOYANG_TOWN
 from .dalian_tieling import DALIAN, TIELING, DALIAN_TIELING_ROOMS
 from .liaoning_joker import ANSHAN, PANJIN, LIAONING_JOKER_ROOMS
 from .liaoning_split import JIANCHANG, LIAOYANG, LIAONING_SPLIT_ROOMS
@@ -2638,6 +2640,49 @@ VARIANTS[TIELING.VARIANT] = {
     }},
 }
 
+VARIANTS[CHANGBAI.VARIANT] = {
+    **VARIANTS[TIELING.VARIANT], 'id': CHANGBAI.VARIANT,
+    'name': 'Changbai Mahjong · Piao and Single Wait', 'aliases': ['长白麻将', '长白飘分', '长白四归一'],
+    'rule_version': 'changbai-piao-ready-dojo-v1', 'subtitle': 'Four seats · Blind piao and visible scoring',
+    'badge': 'Jilin · Blind piao and multi-winner discards',
+    'description': 'Choose piao before the deal. Declare a single wait to win, and score exposed bonuses on both sides of each bill.',
+    'rules': ['Choose 0, 2, 4 or 6 piao before seeing the tiles. A win adds the winner’s and payer’s choices to that bill.',
+              'Only a single wait can be declared. You must declare to win. Preserve the wait to kong after declaring. '
+              'Multiple ready players can win on the same discard.',
+              'Four identical non-kong numbered tiles score on a win. Four publicly visible copies also affect a losing bill. '
+              'Without a kong keep 14 wall tiles. After a kong play to the end, with four final split draws in either case.'],
+    'sources': [{'title': 'Bianfeng Changbai piao, single ready and four-in-one rules', 'url': 'https://www.hzbianqu.com/game/321.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '长白麻将（飘分四归一）', 'subtitle': '四人 · 盲选飘分与独听',
+        'badge': '吉林 · 独听与一炮多响', 'description': '发牌前选飘分，独听才可报听。明四归一影响胜负，暗四归一只在和牌加番。',
+        'rules': ['先选不飘或飘 2、4、6，再看牌。赢家和付款者的飘分相加，计入该笔账。',
+                  '只听一张时方可报听，先报听才可和。报听后只可杠不改听口的牌。同一炮可多家和。',
+                  '同面四张数牌未经成杠可计四归一。全公开影响输赢，暗的只在和牌加番。无杠留尾 14 张，有杠摸尽，均分摸末四张。'],
+    }},
+}
+
+VARIANTS[CHAOYANG_TOWN.VARIANT] = {
+    **VARIANTS[TIELING.VARIANT], 'id': CHAOYANG_TOWN.VARIANT,
+    'name': 'Chaoyang Town Mahjong · Eggs and Opposite End', 'aliases': ['朝阳镇麻将', '朝阳镇蛋夹', '朝阳镇倒落'],
+    'rule_version': 'chaoyang-town-eggs-dojo-v1', 'subtitle': 'Four seats · Egg waits and opposite-end liability',
+    'badge': 'Northeast · Egg claims and supplier liability',
+    'description': 'Build opening eggs, rob an extension, or pay all three bills after feeding with a chow’s opposite end.',
+    'rules': ['Keep all three suits, a terminal or honor, and a pung, kong, egg or dragon pair. '
+              'Two tiles of a dragon, ones or nines egg can wait for the missing face.',
+              'Opening eggs pay immediately. A later drawn member can extend its egg. Opponents can rob the extension by winning or calling pon. '
+              'A supplier who could win on their own fed kong can reclaim the tile before that kong.',
+              'After a chow you cannot discard the taken face. Feeding a win or direct kong with the opposite extension covers all three bills. '
+              'Ordinary discard wins charge the supplier alone.'],
+    'sources': [{'title': 'Bianfeng Chaoyang Town eggs, kong recovery and reverse liability', 'url': 'https://www.hzbianqu.com/game/1045.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '朝阳镇麻将（蛋夹倒落）', 'subtitle': '四人 · 蛋夹、补蛋、倒落包赔',
+        'badge': '东北 · 补蛋与吃后倒落', 'description': '可以亮蛋、蛋夹或抢补蛋。吃后打反端，若供和或供杠，由出牌者包三笔账。',
+        'rules': ['三门齐、有幺九或字，并有刻、杠、蛋或中发白作将。两张箭蛋、幺蛋或九蛋可以等缺张，算蛋夹。',
+                  '起手亮蛋计杠分。摸到蛋内同类牌可直接补，别人可抢胡或抢碰。供出的牌被点杠时，若供牌人本可和，可以抢回。',
+                  '吃碰后不能立即打回同一面。吃后打另一端相邻牌若供和或供杠，承担三笔账。普通点炮由供牌者独付。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2687,5 +2732,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
-    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS, *DALIAN_TIELING_ROOMS)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS, *DALIAN_TIELING_ROOMS, CHANGBAI, CHAOYANG_TOWN)},
 }

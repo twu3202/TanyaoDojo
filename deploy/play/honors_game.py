@@ -32,6 +32,8 @@ from .longyan import LONGYAN, LONGYAN_HALF, TRAVEL, LongyanGame
 from .northeast import HARBIN, BaoGame, HarbinGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
+from .changbai import CHANGBAI, ChangbaiGame
+from .chaoyang_town import CHAOYANG_TOWN, ROB_FED_KONG, ChaoyangGame
 from .dalian_tieling import DALIAN, DALIAN_PEEK, INSIDE_READY, TIELING, DalianGame, TielingGame
 from .liaoning_joker import ANSHAN, PANJIN, LiaoningJokerGame, PanjinGame, open_gun
 from .liaoning_split import JIANCHANG, LIAOYANG, JianchangGame, LiaoyangGame, SplitDrawGame
@@ -53,7 +55,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
     NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS, CHANGCHUN, HARBIN,
-    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN, DALIAN, TIELING,
+    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN, DALIAN, TIELING, CHANGBAI, CHAOYANG_TOWN,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -104,6 +106,8 @@ GAME_ENGINES = {
     ANSHAN.VARIANT: LiaoningJokerGame,
     DALIAN.VARIANT: DalianGame,
     TIELING.VARIANT: TielingGame,
+    CHANGBAI.VARIANT: ChangbaiGame,
+    CHAOYANG_TOWN.VARIANT: ChaoyangGame,
     **{room.VARIANT: FuxinGame for room in FUXIN_ROOMS},
 }
 
@@ -185,7 +189,7 @@ class HonorsSession(GameSession):
                 players[-1]['dark_ready'] = True
                 if not won and actor != 0:
                     players[-1]['hidden_ready_tiles'] = game.hidden_ready_tiles(actor)
-            if isinstance(game, XiaoganGame) and len(game.piao) == game.seat_count:
+            if isinstance(game, (XiaoganGame, ChangbaiGame)) and len(game.piao) == game.seat_count:
                 players[-1]['piao'] = game.piao[actor]
             if isinstance(game, DaxiGame) and not before_play:
                 players[-1]['bought_base'] = game.buy_base[actor]
@@ -202,7 +206,7 @@ class HonorsSession(GameSession):
             if isinstance(game, FlowerWall):
                 players[-1]['flowers'] = [self.display_tile(tile) for tile in game.flowers[actor]]
         current = game.cur if game.phase != 'over' else None
-        special_turn = game.phase in ('gold_opening', 'flower_win', 'bao_peek')
+        special_turn = game.phase in ('gold_opening', 'flower_win', 'bao_peek', ROB_FED_KONG)
         if game.offer is not None and not special_turn:
             current = 0 if game.responses[0] == 0 else None
         if game.phase == 'liability_choice':
@@ -226,6 +230,8 @@ class HonorsSession(GameSession):
             table['bao_roll'] = game.bao_slot // 2 + 1
         if isinstance(game, TielingGame):
             table['longmao'] = game.long_hair
+        if isinstance(game, ChaoyangGame) and game.reverse_end is not None:
+            table['reverse_end'] = self.display_tile(game.reverse_end)
         if isinstance(game, (ShenyangGame, SplitDrawGame)):
             table['split_draw'] = game.split_draw
         if isinstance(game, (LiaoyangGame, LiaoningJokerGame)):
@@ -373,6 +379,9 @@ class HonorsSession(GameSession):
             if game.last_call:
                 caller, meld = game.last_call
                 self.log_event('action', {'actor': caller, 'action': meld.kind}, 'call')
+                if (isinstance(game, ChaoyangGame) and meld.kind == 'gang_ming'
+                        and game.reverse_provider == meld.provider):
+                    self.log_event('reverse_kong', {'actor': meld.provider}, 'call')
 
         table = self.view()
         delta = game.scores()
@@ -401,7 +410,10 @@ class HonorsSession(GameSession):
                            'win_details': [asdict(win) for win in game.win_details], 'next': not finished}
             if isinstance(game, TaizhouGame) and game.taizhou_settlement is not None:
                 self.result['taizhou_settlement'] = game.taizhou_settlement
-            if isinstance(game, JianchangGame) and any(game.draw_deltas):
+            if isinstance(game, ChaoyangGame) and game.reverse_provider is not None:
+                if any(w.provider == game.reverse_provider for w in game.win_details):
+                    self.result['reverse_payer'] = game.reverse_provider
+            if isinstance(game, (JianchangGame, ChangbaiGame)) and any(game.draw_deltas):
                 self.result['draw_deltas'] = game.draw_deltas.copy()
             if isinstance(game, LiaoyangGame) and game.treasure_tile is not None:
                 self.result['treasure'] = {'tile': self.display_tile(game.treasure_tile),
@@ -425,9 +437,10 @@ class HonorsSession(GameSession):
                 self.result['open_ready_deltas'] = game.ready_deltas.copy()
             elif self.variant == jj_three.VARIANT:
                 self.result.update({key: values.copy() for key, values in game.side_deltas.items()})
-            elif self.variant == XIAOGAN.VARIANT:
+            elif self.variant in (XIAOGAN.VARIANT, CHANGBAI.VARIANT):
                 self.result['piao_deltas'] = game.piao_deltas.copy()
-                self.result['horse_deltas'] = game.horse_deltas.copy()
+                if self.variant == XIAOGAN.VARIANT:
+                    self.result['horse_deltas'] = game.horse_deltas.copy()
             if game.horse_tiles:
                 self.result['bonus'] = [tile_name(tile) for tile in game.horse_tiles]
                 mode = getattr(self.rules, 'BONUS_MODE', None)

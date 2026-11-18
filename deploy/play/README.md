@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 92 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 94 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -19,10 +19,14 @@ Ningde White Gold, Xianyou White Dragon Substitution, Xianyou White Dragon Flowe
 Quanzhou Triplet and Kong Points, Ningde Random Gold and Flowers, Changchun Shared Bao, Harbin Four Bao Slots,
 Jilin City Dice Bao, Shuangliao Pung Multipliers, Shenyang Whirlwind Kongs, Fuxin Middle Five, Fuxin Hidden Ready,
 Jianchang Final Split, Liaoyang Joker and Treasure, Panjin Joker Kong, Anshan Open Guns,
-Dalian Qionghu Private Bao, and Tieling Closed Ready.
+Dalian Qionghu Private Bao, Tieling Closed Ready, Changbai Piao and Single Wait,
+and Chaoyang Town Eggs and Opposite End.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
+
+- `changbai.py` and `chaoyang_town.py`: blind piao, public four-in-one charges, egg waits, and opposite-end liability.
+  [Changbai and Chaoyang Town rules](rules/ChangbaiChaoyang.md).
 
 - `dalian_tieling.py`: Dalian's choice of ready locks and private bao, and Tieling's closed ready,
   final split and cross-hand longmao. [Dalian and Tieling rules](rules/DalianTieling.md).
