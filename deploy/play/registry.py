@@ -23,6 +23,7 @@ from .macau import VARIANT as MACAU
 from .northeast import HARBIN
 from .jilin_shuangliao import JILIN, SHUANGLIAO
 from .fuxin import FUXIN_DARK, FUXIN_ROOMS, FUXIN_ZAWU
+from .liaoning_split import JIANCHANG, LIAOYANG, LIAONING_SPLIT_ROOMS
 from .shenyang import SHENYANG
 from .suited import Profile
 from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
@@ -2511,6 +2512,48 @@ VARIANTS[FUXIN_DARK.VARIANT] = {
     }},
 }
 
+VARIANTS[JIANCHANG.VARIANT] = {
+    **VARIANTS[SHENYANG.VARIANT], 'id': JIANCHANG.VARIANT,
+    'name': 'Jianchang Mahjong · Final Split', 'aliases': ['建昌麻将', '建昌分张'],
+    'rule_version': 'jianchang-final-split-dojo-v1', 'subtitle': 'Four seats · Eye waits and dealer draw payments',
+    'badge': 'Liaoning · Open hands and final draws',
+    'description': 'Open the hand for a standard win. A dry wall after the final split costs the dealer one point per opponent.',
+    'rules': ['Use three suits and at least one terminal or honor. Expose a meld and make a pung, kong or dragon pair. '
+              'Seven pairs may stay concealed. A dragon pung requires an all-pung standard hand.',
+              'Eye, all-pung and seven-pairs wins pay more. On a discard win everyone pays, with a higher bill for the discarder. '
+              'A fed kong charges its supplier. Dragon kongs pay four times the ordinary bill.',
+              'At 20 tiles in the wall, draw once per seat without discarding, leaving 16. On a draw the dealer pays one to each opponent.'],
+    'sources': [{'title': 'Bianfeng Jianchang split draws and win scoring', 'url': 'https://www.hzbianqu.com/game/129.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '建昌麻将（分张荒庄）', 'subtitle': '四人 · 眼胡、分张与荒庄',
+        'badge': '辽宁 · 开门与末四张', 'description': '普通和需要开门。分张无人和时，庄家各付闲家一分。',
+        'rules': ['三门齐、有幺九或字牌。普通和先开门，并有刻、杠或中发白作将。七小对可闭门。',
+                  '中发白作刻只可飘胡。眼胡、飘胡和七对加分。点炮三家付，放铳家加倍。点杠者独付，箭牌彩杠按普通杠分四倍算。',
+                  '墙剩 20 张开始分张，最多各摸一张，只能摸和或过，留 16 张。荒庄各付闲家 1 分。'],
+    }},
+}
+
+VARIANTS[LIAOYANG.VARIANT] = {
+    **VARIANTS[SHENYANG.VARIANT], 'id': LIAOYANG.VARIANT,
+    'name': 'Liaoyang Mahjong · Joker and Treasure', 'aliases': ['辽阳麻将', '辽阳揭宝', '辽宁边锋麻将'],
+    'rule_version': 'liaoyang-treasure-split-dojo-v1', 'subtitle': 'Four seats · Restricted joker and post-win treasure',
+    'badge': 'Liaoning · Joker, split draws and treasure',
+    'description': 'Keep the revealed face as a joker. Win to reveal a second tile that scores matching physical copies outside the fan cap.',
+    'rules': ['The opening flip sets the joker face in this room. Jokers stay concealed and cannot fill a terminal or count toward a suit.',
+              'Standard wins need three natural suits plus a pung, kong or dragon pair. All pungs and seven pairs can use fewer suits. '
+              'Every winning hand needs a natural terminal or honor.',
+              'At 21 wall tiles, split up to four draws without discards. After a win, flip the next tile. Each match adds one per opponent. '
+              'Three matches, or two of the joker face, yield four per opponent outside the 64-point cap.'],
+    'sources': [{'title': 'Bianfeng Liaoyang joker limits, split draws and treasure', 'url': 'https://www.hzbianqu.com/game/964.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '辽阳麻将（混牌揭宝）', 'subtitle': '四人 · 限制混牌与和后揭宝',
+        'badge': '辽宁 · 混牌、分张、揭宝', 'description': '混牌保留在手。和后再翻宝，只数实体同面，宝分另加。',
+        'rules': ['本房翻同面作混牌。混牌不可打、不可亮作副露，不可补幺九或凑三门。',
+                  '普通和须自然三门，并有刻杠或中发白作将。飘胡和七对免三门，各型仍须真幺九或字牌。',
+                  '墙剩 21 张时分摸四张，可和或过。和后揭宝，同面一张每家加 1 分。中三张或中两张混底按 4 加，宝分不受 64 封顶。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2560,5 +2603,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
-    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS)},
 }

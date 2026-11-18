@@ -213,6 +213,14 @@ I18N.en.baoRoll='Bao roll · {n}';
 I18N['zh-CN'].baoRoll='掷宝 · {n} 点';
 I18N.en.foldedReadyDiscard='Face-down ready discard';
 I18N['zh-CN'].foldedReadyDiscard='报听扣牌';
+I18N.en.splitTreasure='Treasure · +{points} per opponent';
+I18N['zh-CN'].splitTreasure='揭宝 · 每家加 {points} 分';
+I18N.en.splitDrawTransfers='Dealer draw payments · {amounts}';
+I18N['zh-CN'].splitDrawTransfers='荒庄付分 · {amounts}';
+Object.assign(I18N.en.fans, {'眼胡':'Eye wait', '屁胡':'Ordinary win', '海捞':'Final split draw',
+  '杠次':'Discard after a kong', '二八将':'Pair of twos or eights', '三叉':'Three concealed pungs',
+  '四叉':'Four concealed pungs', '大哥大':'Concealed dragon pung', '闷胡':'Concealed self-draw',
+  '素胡':'Natural hand'});
 I18N.en.promptSplitDraw='Final split draw. Win on this tile or keep it aside and pass.';
 I18N['zh-CN'].promptSplitDraw='海底分张。可自摸，或收下这张牌并过。';
 Object.assign(I18N.en.fans, {'旋风杠':'Whirlwind kong', '旋风碰番':'Whirlwind pon bonus', '箭刻':'Dragon pung',
