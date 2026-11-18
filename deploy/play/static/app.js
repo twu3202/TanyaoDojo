@@ -145,6 +145,7 @@ function exchangeContains(option, tiles) {
 }
 function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+4)%4]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',p.win_count?tr('winCount',{count:p.win_count}):tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.open_ready)title.append(text('span',tr(p.dark_ready?'darkReadyTag':'openReadyTag'),'tag reach'));if(p.piao!==undefined)title.append(text('span',tr('piaoTag',{value:p.piao}),'tag'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
 if(p.id===table.dealer&&table.dealer_multiplier>1) title.append(text('span',`×${table.dealer_multiplier}`,'tag'));
+if(p.id===table.dealer&&table.dealer_stake) title.append(text('span',tr('dealerStake',{points:table.dealer_stake}),'tag'));
 if(p.wildcard_floats) title.append(text('span',tr('wildcardFloatTag',{count:p.wildcard_floats}),'tag reach'));
 if(p.ten_winds_run) title.append(text('span',tr('tenWindsRun',{count:p.ten_winds_run}),'tag reach'));
 if(p.flowers?.length){
@@ -228,7 +229,7 @@ function renderActions() {
   for (const option of game.choices) {
     if (isDiscard(option) || ['declare_ready','declare_dark'].includes(option.kind)) continue;
     const button = text('button', optionText(option), 'action' +
-      (['hora', 'ron', 'zimo', 'ten_winds'].includes(option.kind) ? ' primary-action' : ''));
+      (['hora', 'ron', 'zimo', 'ten_winds', 'eleven_winds'].includes(option.kind) ? ' primary-action' : ''));
     for (const tile of option.tiles.slice(0, 4)) button.append(img(tile));
     button.onclick = () => sendAction(option.id);
     box.append(button);

@@ -1,6 +1,7 @@
 # Hangzhou wildcard rooms
 
-The thirteen rooms play eight hands at base stake one. The Anji rooms use 144 tiles with flowers. The other rooms use 136 tiles.
+The fifteen rooms play eight hands. The two Chongji rooms have a dealer base. Other rooms start at base stake one.
+The Anji rooms use 144 tiles with flowers. The other rooms use 136 tiles.
 The human hosts and deals the first hand. A kong needs a live replacement tile.
 Kongs draw from the other end of the wall and have no immediate payment. The winner deals next and the dealer
 repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard wins and robbing an added kong.
@@ -21,6 +22,8 @@ Songyang keeps 20 tiles in reserve and allows robbing an added kong from any sea
 | Anji Fifteen Flowers | Chow, pon and kong, including after a call | Same as non-dealers | None |
 | Anji Tea House Self-Draw | Chow, pon and kong, with pon upgrades from the next draw | Same as non-dealers | None |
 | Dongyang | Chow, pon and kong by printed face | Same as non-dealers | Discard supplier pays one share and other opponents pay half each |
+| Chongji Ten Ten Up | Chow, pon and kong with same-tile discard restriction | Base 11, plus 10 for each consecutive dealer win | Robbed added-kong player pays three winning shares |
+| Chongji Seven Gaps | Ten Ten Up calls plus an independent kong ledger | Same dealer base | Same robbery bill, with immediate transfers for completed kongs |
 
 ## Wildcard and win multipliers
 
@@ -275,6 +278,37 @@ open kong made from a discard uses four. An ordinary float starts at two and add
 float begins at three with one float, with another share when three physical wildcards are held or floated.
 Choose the highest applicable independent value. Kongs and draws carry zero separate transfers.
 
+## Bianfeng Chongji
+
+Use 136 tiles with the tile following the indicator as the wildcard. The first dealer is random. A dealer win
+keeps the dealer and earns ten more base points next hand. A draw or a non-dealer win advances the dealer one
+seat and resets the base to eleven. A wildcard cannot join a meld. Chow and pon normally block discarding the
+claimed face until the next draw. When it is the only legal choice the player may discard that face.
+
+Add the hand bonuses to the current base for every winner. For a discard win, its supplier pays that full
+amount, and the other opponents pay half rounded up. Earth on the dealer's first discard uses three full
+shares. Rob an added kong to bill its owner all three full shares. The nearest accepting seat wins. Declining
+self-draw suspends that player's discard and robbery wins until they draw again. A single wait after four
+melds, pure one suit and natural seven pairs are self-draw shapes. They also qualify for Earth or a rob under
+the room's self-draw scoring convention.
+
+Ordinary standard shapes can win. Isolated tiles, full honors and the one-, two-, and three-kong partial
+pair patterns add other winning shapes. Four wildcards can declare without a shape on the holder's draw.
+Use the ordinary-room 100-point bonus for an all-honor hand. A declared run of eleven consecutive printed
+honors with no melds, or a declaration on a draw after completing at least three kongs, collects 100 per
+opponent in this points table. This uses a fixed points value for the source's full-payment declaration.
+After passing a self-draw and discarding into a wildcard-head wait, the next self-draw can collect the
+wildcard-head bonus. Opponents play their normal turns. A single wildcard after four melds already qualifies
+for both the single-wait and wildcard-head bonuses.
+
+### Seven Gaps
+
+This room adds the operator's closed seven-gap shape. All seven pairs have two suited faces of the same suit
+with exactly one rank between them. Gaps may repeat. A wildcard may complete a gap with a suited identity.
+Each completed direct kong charges 20 to its supplier and 10 to each other opponent. Concealed and added
+kongs charge 20 per opponent. These transfers are recorded separately from the win bill, retained on a draw,
+and applied only after a kong survives any robbery.
+
 ## Sources
 
 - [Zhejiang Game Hall three-player rules and multiplier table](https://www.hzbianqu.com/game/581.html)
@@ -292,4 +326,5 @@ Choose the highest applicable independent value. Kongs and draws carry zero sepa
 - [Zhejiang Game Hall Anji flowers, replacements and scoring](https://www.hzbianqu.com/game/886.html)
 - [Game Tea House Anji self-draw, calls and scoring](https://www.5158wan.com/news/201809/7408.html)
 - [Zhejiang Game Hall Dongyang hands and discard payments](https://www.hzbianqu.com/game/910.html)
+- [Bianfeng Chongji rules and Seven Gaps appendix](https://app.bianfeng.com/rule/34)
 - [Zhejiang Game Hall Seven Winds definition for the related Jinhua room](https://www.hzbianqu.com/game/74.html)

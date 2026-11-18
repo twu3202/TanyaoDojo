@@ -57,6 +57,7 @@ class TableOptions:
     exchange_count: int = 0
     closed_live_tail: int = 0
     seat_count: int = 4
+    allow_locked_chow_discard: bool = False
 
 
 DEFAULT_OPTIONS = TableOptions()
@@ -135,7 +136,7 @@ class WinningHand:
     kind: str
 
 
-def chow_choices(hand, tile, *, swap_lock=True, lock_extensions=True):
+def chow_choices(hand, tile, *, swap_lock=True, lock_extensions=True, allow_locked_discard=False):
     """Yield (sequence start, consumed tiles, forbidden next discards)."""
     if tile >= 27:
         return
@@ -151,6 +152,8 @@ def chow_choices(hand, tile, *, swap_lock=True, lock_extensions=True):
             forbidden.add(start - 1)
         if any(count > (other in consumed) for other, count in enumerate(hand) if other not in forbidden):
             yield start, consumed, frozenset(forbidden)
+        elif allow_locked_discard and sum(hand) > len(consumed):
+            yield start, consumed, frozenset()
 
 
 @lru_cache(maxsize=32768)
@@ -405,7 +408,8 @@ class HonorsGame:
 
     def _chows(self, player, tile, provider):
         return chow_choices(player.hand, tile, swap_lock=self.rules.SWAP_LOCK,
-                            lock_extensions=self.options.chow_lock_extensions)
+                            lock_extensions=self.options.chow_lock_extensions,
+                            allow_locked_discard=self.options.allow_locked_chow_discard)
 
     def step(self, action):
         actor, actions = self.legal_actions()

@@ -77,6 +77,12 @@ I18N.en.action.ten_winds='Discard and win · Ten Winds';
 I18N['zh-CN'].action.ten_winds='打出并胡 · 十风';
 I18N.en.reason.ten_winds_win='{names} wins with Ten Winds';
 I18N['zh-CN'].reason.ten_winds_win='{names} 十风胡牌';
+I18N.en.action.eleven_winds='Discard and win · Eleven Winds';
+I18N['zh-CN'].action.eleven_winds='打出并胡 · 十一风';
+I18N.en.reason.eleven_winds_win='{names} wins with Eleven Winds';
+I18N['zh-CN'].reason.eleven_winds_win='{names} 十一风胡牌';
+I18N.en.dealerStake='Base {points}';
+I18N['zh-CN'].dealerStake='庄底 {points}';
 I18N.en.messages.wildcard_float='{actor} floated a wildcard · {count} in a row.';
 I18N['zh-CN'].messages.wildcard_float='{actor} 飘财，已连飘 {count} 次。';
 Object.assign(I18N.en.fans, {
@@ -91,6 +97,9 @@ Object.assign(I18N.en.fans, {
  '大对子':'All pungs', '大碰胡':'All pungs', '大吊车':'Four sets and a pair', '全字':'All honors',
  '财神头':'Wildcard head', '三财神':'Three opening wildcards', '四财神':'Four wildcards', '无花无财神':'No flowers or wildcards', '正规十三幺':'Natural thirteen orphans',
  '十三不搭':'Isolated honors', '真十三不搭':'Strict isolated honors', '七风':'Seven distinct honors', '全求人':'Four exposed sets',
+ '十一风':'Eleven Winds', '三杠全缴':'Three-kong declaration', '无财神':'No wildcards', '七嵌':'Seven Gaps',
+ '一杠一达':'One kong and five pairs', '二杠二达':'Two kongs and three pairs', '三杠三达':'Three kongs and one pair',
+ '全风向':'All honors', '抛龙':'Wildcard-head declaration',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 Object.assign(I18N.en.tileHonors, {F1:'Spring', F2:'Summer', F3:'Autumn', F4:'Winter',

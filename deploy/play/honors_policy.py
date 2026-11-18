@@ -9,11 +9,12 @@ from common.suit_table import load_table
 
 from . import hongkong
 from .anji import AnjiRules
+from .chongji import ChongjiRules
 from .dongyang import DongyangRules, white_assignments
 from .hangzhou import FLOAT, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
-from .zhejiang_flipped import TEN_WINDS, DeqingRules, SongyangRules
+from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
 
 @dataclass(frozen=True)
@@ -195,7 +196,7 @@ def _ready_waits(hand, melds, view, live):
         params['indicator'] = view.wildcard_indicator
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
-    elif isinstance(view.rules, (DeqingRules, DongyangRules)):
+    elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules)):
         params['wildcard'] = view.wildcard
     for tile, count in enumerate(live):
         if not count:
@@ -264,9 +265,9 @@ def heuristic(view):
         return min(actions, key=rank_exchange)
     if RON in actions:
         return RON
-    ten_winds = next((action for action in actions if action[0] == TEN_WINDS), None)
-    if ten_winds is not None:
-        return ten_winds
+    winds = next((action for action in actions if action[0] in (TEN_WINDS, ELEVEN_WINDS)), None)
+    if winds is not None:
+        return winds
     float_action = FLOAT[0], view.wildcard
     if float_action in actions and view.remaining >= 45:
         return float_action
@@ -314,7 +315,8 @@ def heuristic(view):
             swap_rule = getattr(view.rules, 'chow_swap_lock', None)
             swap_lock = view.rules.SWAP_LOCK if swap_rule is None else swap_rule(view.melds, view.offered_by)
             choices = chow_choices(view.hand, offered, swap_lock=swap_lock,
-                                   lock_extensions=options.chow_lock_extensions)
+                                   lock_extensions=options.chow_lock_extensions,
+                                   allow_locked_discard=options.allow_locked_chow_discard)
             take, block = next((take, block) for start, take, block in choices
                                if start == argument)
             meld = Meld('chi', argument)
@@ -325,6 +327,9 @@ def heuristic(view):
         hand = list(view.hand)
         for tile in take:
             hand[tile] -= 1
+        if kind == 'peng' and getattr(view.rules, 'PON_SWAP_LOCK', False):
+            if any(count and tile != offered for tile, count in enumerate(hand)):
+                block = frozenset((offered,))
         melds = view.melds + (meld,)
         if kind == 'zhigang':
             rank = _rank(tuple(hand), melds, view, live)

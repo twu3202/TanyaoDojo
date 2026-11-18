@@ -13,6 +13,7 @@ from .wildcard_shapes import (can_form_all_pungs, can_form_pairs, can_form_pungs
 
 
 TEN_WINDS = 'ten_winds'
+ELEVEN_WINDS = 'eleven_winds'
 XIAOSHAN_CAP = 128
 
 
@@ -94,6 +95,9 @@ XIAOSHAN = XiaoshanRules('xiaoshan-mahjong', replace(FOUR_HANGZHOU.OPTIONS, pass
 
 class TenWindsGame(HangzhouGame):
     WIND_RESET = -1
+    WIND_TARGET = 10
+    WIND_ACTION = TEN_WINDS
+    WIND_REASON = 'ten_winds_win'
 
     def __init__(self, seed, dealer, round_wind, *, rules, dealer_streak=0):
         self.ten_winds = [0] * rules.OPTIONS.seat_count
@@ -121,13 +125,17 @@ class TenWindsGame(HangzhouGame):
 
     def legal_actions(self):
         actor, actions = super().legal_actions()
-        if self.phase == 'action' and self.ten_winds[actor] >= 9:
-            actions.extend((TEN_WINDS, tile) for kind, tile in list(actions)
+        if (self.phase == 'action' and self.ten_winds[actor] >= self.WIND_TARGET - 1
+                and self._can_declare_winds(actor)):
+            actions.extend((self.WIND_ACTION, tile) for kind, tile in list(actions)
                            if kind in ('discard', FLOAT[0]) and self._wind_tile(tile))
         return actor, actions
 
+    def _can_declare_winds(self, actor):
+        return True
+
     def step(self, action):
-        if action[0] != TEN_WINDS:
+        if action[0] != self.WIND_ACTION:
             return super().step(action)
         actor, legal = self.legal_actions()
         if action not in legal:
@@ -139,7 +147,7 @@ class TenWindsGame(HangzhouGame):
         self._record_wind(actor, tile)
         self.ten_winds_winner = actor
         self._settle([actor], None)
-        self.reason_code = 'ten_winds_win'
+        self.reason_code = self.WIND_REASON
 
     def _ten_winds_score(self, actor):
         return HangzhouScore(4 << (self.ten_winds[actor] - 10), ('十风',))

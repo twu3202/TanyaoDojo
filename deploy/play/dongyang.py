@@ -29,7 +29,7 @@ def burst_forms(hand, meld_count, wildcard):
             not meld_count and any(can_form_pairs(counts, wild - 1) for counts in choices))
 
 
-def _loose_honors(natural, wild, minimum_honors, exact):
+def isolated_shape(natural, wild, minimum_honors=5, exact=False):
     if max(natural) > 1:
         return False
     suits = [tuple(rank for rank in range(9) if natural[start + rank]) for start in (0, 9, 18)]
@@ -42,18 +42,18 @@ def _loose_honors(natural, wild, minimum_honors, exact):
 
 
 def _loose_scores(natural, wild, wildcard):
-    if _loose_honors(natural, wild, 5, False):
+    if isolated_shape(natural, wild):
         yield HangzhouScore(1, ('十三不搭',))
-    if _loose_honors(natural, wild, 5, True):
+    if isolated_shape(natural, wild, exact=True):
         yield HangzhouScore(2, ('真十三不搭',))
     seven_honors = natural
     if wildcard in WINDS:
         if natural[WHITE] != 2:
             return
         seven_honors = white_assignments(natural, wildcard)[1]
-    if _loose_honors(seven_honors, wild, 7, True):
+    if isolated_shape(seven_honors, wild, 7, exact=True):
         yield HangzhouScore(4, ('真十三不搭', '七风'))
-    elif _loose_honors(seven_honors, wild, 7, False):
+    elif isolated_shape(seven_honors, wild, 7):
         yield HangzhouScore(2, ('七风',))
 
 

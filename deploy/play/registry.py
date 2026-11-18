@@ -1,6 +1,7 @@
 """Versioned playable rules; English is the API default."""
 from .anji import ANJI, ANJI_TEA_HOUSE
 from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
+from .chongji import CHONGJI, CHONGJI_SEVEN
 from .dongyang import DONGYANG
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
@@ -1601,6 +1602,58 @@ VARIANTS[DONGYANG.VARIANT] = {
     }},
 }
 
+VARIANTS[CHONGJI.VARIANT] = {
+    **_HANGZHOU, 'id': CHONGJI.VARIANT,
+    'name': 'Bianfeng Chongji · Ten Ten Up',
+    'aliases': ['边锋冲击麻将', '十十上', '十一风', '三杠全缴'],
+    'rule_version': 'chongji-ten-ten-points-dojo-v1',
+    'subtitle': 'Four seats · Successor wildcard · Growing dealer base',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'The dealer’s base starts at 11 and rises by 10 for each consecutive dealer win.',
+    'rules': [
+        '136 tiles. The next face after the indicator is the wildcard. The first accepting seat wins on a discard. '
+        'Add the hand value to the dealer base. The discarder pays the full amount and other opponents pay half rounded up.',
+        'An added-kong robbery charges its owner all three shares. First-discard Earth is billed as self-draw. '
+        'Declining a self-draw blocks discard wins until your next draw.',
+        'Special hands include isolated tiles, paired hands after kongs, eleven consecutive honor discards and '
+        'a declaration after three kongs. The latter two collect 100 points from each opponent in this table.',
+    ],
+    'sources': [{'title': 'Bianfeng Chongji rules', 'url': 'https://app.bianfeng.com/rule/34'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '边锋冲击麻将（十十上）', 'subtitle': '四人 · 顺位财神 · 连庄加底',
+        'badge': '浙江 · 136 张', 'description': '庄底从 11 起，庄家连胡每次加 10。',
+        'rules': ['136 张，翻牌下一位为财神。同张接炮按座次优先。牌型加庄底，放铳者付全份，另两家付进位后的半份。',
+                  '抢补杠由开杠者独付三份，首弃地胡按自摸结算。放弃自摸后，自己下次摸牌前不能接炮。',
+                  '可和十三不搭、杠后对子、十一风和三杠全缴。后两项按房间约定由每位对手付 100 分。'],
+    }},
+}
+
+VARIANTS[CHONGJI_SEVEN.VARIANT] = {
+    **_HANGZHOU, 'id': CHONGJI_SEVEN.VARIANT,
+    'name': 'Bianfeng Chongji · Seven Gaps',
+    'aliases': ['边锋七嵌麻将', '七嵌', '外杠', '隔张成对'],
+    'rule_version': 'chongji-seven-gaps-points-dojo-v1',
+    'subtitle': 'Four seats · Seven gapped pairs · Separate kong points',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'Win with seven same-suit pairs separated by one rank. Completed kongs settle points immediately.',
+    'rules': [
+        'Use Ten Ten Up scoring and calls. Seven Gaps adds a closed winning shape of seven same-suit pairs, '
+        'each with exactly one intervening rank. Identical gaps can repeat. Wildcards may fill suited members.',
+        'On a direct kong, the supplier pays 20 and the other two opponents pay 10 each. '
+        'For a concealed or added kong, all opponents pay 20 each. The kong points are kept on a draw.',
+        'Rob an added kong to cancel the move and charge three winning shares to its owner. '
+        'The points for any earlier completed kongs stay on the ledger.',
+    ],
+    'sources': [{'title': 'Bianfeng Chongji rules and Seven Gaps appendix', 'url': 'https://app.bianfeng.com/rule/34'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '边锋冲击麻将（七嵌）', 'subtitle': '四人 · 隔张成对 · 独立外杠分',
+        'badge': '浙江 · 136 张', 'description': '同花色隔一张可组成一嵌，凑齐七嵌可胡。成杠即时结算。',
+        'rules': ['沿用十十上。门清七嵌由七组同花色隔一张的牌组成，可重复，财神可补数牌。',
+                  '直杠供牌者付 20，另两位输家各付 10。暗杠和补杠由三家各付 20，流局保留杠分。',
+                  '抢补杠时补杠取消，被抢者付三份胡牌账。此前已完成的杠分保留。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1628,4 +1681,6 @@ SESSION_OPTIONS = {
     ANJI.VARIANT: {'variant': ANJI.VARIANT},
     ANJI_TEA_HOUSE.VARIANT: {'variant': ANJI_TEA_HOUSE.VARIANT},
     DONGYANG.VARIANT: {'variant': DONGYANG.VARIANT},
+    CHONGJI.VARIANT: {'variant': CHONGJI.VARIANT},
+    CHONGJI_SEVEN.VARIANT: {'variant': CHONGJI_SEVEN.VARIANT},
 }

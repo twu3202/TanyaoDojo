@@ -6,6 +6,7 @@ import time
 
 from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau
 from .anji import ANJI, ANJI_TEA_HOUSE, FLOWER_TILES, AnjiGame, AnjiTeaHouseGame
+from .chongji import CHONGJI, CHONGJI_SEVEN, ChongjiGame
 from .dongyang import DONGYANG, DongyangGame
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
@@ -15,14 +16,14 @@ from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .xiaogan import XIAOGAN, XiaoganGame
-from .zhejiang_flipped import (DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
+from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
                                DeqingXinshiGame, SongyangGame, SuichangGame, XiaoshanGame)
 
 
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
-    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG,
+    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -38,6 +39,8 @@ GAME_ENGINES = {
     ANJI.VARIANT: AnjiGame,
     ANJI_TEA_HOUSE.VARIANT: AnjiTeaHouseGame,
     DONGYANG.VARIANT: DongyangGame,
+    CHONGJI.VARIANT: ChongjiGame,
+    CHONGJI_SEVEN.VARIANT: ChongjiGame,
 }
 
 
@@ -130,6 +133,8 @@ class HonorsSession(GameSession):
                     table['white_substitute'] = tile_name(game.wildcard_indicator)
                 if isinstance(game, DongyangGame) and game.wildcard_tile != DONGYANG.WILDCARD:
                     table['white_optional'] = self.display_tile(game.wildcard_tile)
+        if isinstance(game, ChongjiGame):
+            table['dealer_stake'] = game.dealer_stake
         return table
 
     def display_tile(self, tile):
@@ -182,7 +187,7 @@ class HonorsSession(GameSession):
                         time.sleep(self.pacing)
             game.step(action)
             kind, tile = action
-            if kind in ('discard', 'declare_ready', 'declare_dark', TEN_WINDS):
+            if kind in ('discard', 'declare_ready', 'declare_dark', TEN_WINDS, ELEVEN_WINDS):
                 self.log_event('discard', {'actor': actor, 'tile': self.display_tile(tile)})
             elif kind == FLOAT[0]:
                 self.log_event('wildcard_float', {'actor': actor, 'count': game.float_streak[actor]}, 'call')
