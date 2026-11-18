@@ -4,22 +4,25 @@ from dataclasses import asdict
 import random
 import time
 
-from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_three, macau
+from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
+from .xiaogan import XIAOGAN, XiaoganGame
 
 
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
-    SUIZHOU, XIANGYANG, SHIYAN, jj_three,
+    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN,
 )}
 THREE_SEAT_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
     jj_three.VARIANT: jj_three.JJThreeGame,
+    jj_multiplier.VARIANT: jj_multiplier.JJMultiplierGame,
+    XIAOGAN.VARIANT: XiaoganGame,
 }
 
 
@@ -63,9 +66,12 @@ class HonorsSession(GameSession):
             hand = game.revealed.get(actor, player.hand)
             ready = player.open_ready_hand is not None
             reveal = hand if actor == 0 or won else player.open_ready_hand
+            if game.phase == 'piao':
+                reveal = None
             players.append({
                 'id': actor, 'score': self.totals[actor] + player.score, 'delta': player.score,
-                'hand_count': sum(hand), 'revealed': reveal is not None, 'won': won, 'riichi': False,
+                'hand_count': 0 if game.phase == 'piao' else sum(hand),
+                'revealed': reveal is not None, 'won': won, 'riichi': False,
                 'hand': [tile_name(tile) for tile, count in enumerate(reveal) for _ in range(count)]
                         if reveal is not None else [],
                 'river': [{'tile': tile_name(tile)} for tile in game.discards[actor]],
@@ -75,11 +81,17 @@ class HonorsSession(GameSession):
                 players[-1]['open_ready'] = True
             if player.closed_ready:
                 players[-1]['ready'] = True
+            if isinstance(game, jj_multiplier.JJMultiplierGame) and actor in game.dark_seats:
+                players[-1]['dark_ready'] = True
+                if not won and actor != 0:
+                    players[-1]['hidden_ready_tiles'] = game.hidden_ready_tiles(actor)
+            if isinstance(game, XiaoganGame) and len(game.piao) == game.seat_count:
+                players[-1]['piao'] = game.piao[actor]
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
         drawn = tile_name(game.drawn_tile) if current == 0 and game.drawn_tile is not None else None
-        return {'players': players, 'hand_number': self.hand_number, 'dealer': game.dealer,
+        return {'players': players, 'hand_number': self.hand_number, 'dealer': None if game.phase == 'piao' else game.dealer,
                 'round_wind': tile_name(game.round_wind), 'show_winds': game.options.show_winds,
                 'match_hands': self.rules.MATCH_HANDS,
                 'current': current, 'remaining': game.remaining, 'dora': [], 'honba': 0,
@@ -96,6 +108,8 @@ class HonorsSession(GameSession):
         kind, tile = action
         if kind == 'exchange':
             tiles = [tile_name(index) for index in tile]
+        elif kind == 'piao':
+            return {'action': action, 'kind': kind, 'label': kind, 'tiles': [], 'value': tile}
         elif kind == 'chi':
             tiles = [tile_name(index) for index in range(tile, tile + 3)]
         elif kind in ('ron', 'peng', 'zhigang'):
@@ -122,11 +136,15 @@ class HonorsSession(GameSession):
                         time.sleep(self.pacing)
             game.step(action)
             kind, tile = action
-            if kind in ('discard', 'declare_ready'):
+            if kind in ('discard', 'declare_ready', 'declare_dark'):
                 self.log_event('discard', {'actor': actor, 'tile': tile_name(tile)})
             if kind == 'declare_ready':
                 code = 'paid_ready' if game.players[actor].closed_ready else 'open_ready'
                 self.log_event(code, {'actor': actor}, 'call')
+            elif kind == 'declare_dark':
+                self.log_event('dark_ready', {'actor': actor}, 'call')
+            elif kind == 'piao' and game.phase != 'piao':
+                self.log_event('piao_complete', kind='round')
             if game.last_call:
                 caller, meld = game.last_call
                 self.log_event('action', {'actor': caller, 'action': meld.kind}, 'call')
@@ -141,6 +159,9 @@ class HonorsSession(GameSession):
         for win in game.win_details:
             if win.tier:
                 self.log_event('win_tier', {'actor': win.actor, 'tier': win.tier, 'patterns': win.patterns}, 'win')
+            elif self.variant == jj_multiplier.VARIANT:
+                self.log_event('win_total', {'actor': win.actor, 'points': sum(win.payments),
+                                             'patterns': win.patterns}, 'win')
             elif win.fan is None:
                 self.log_event('win_points', {'actor': win.actor, 'points': win.points, 'patterns': win.patterns}, 'win')
             else:
@@ -155,10 +176,13 @@ class HonorsSession(GameSession):
                 self.result['kong_deltas'] = game.kong_deltas.copy()
             if any(game.echo_deltas):
                 self.result['echo_deltas'] = game.echo_deltas.copy()
-            if self.variant in (SUIZHOU.VARIANT, XIANGYANG.VARIANT):
+            if self.variant in (SUIZHOU.VARIANT, XIANGYANG.VARIANT, jj_multiplier.VARIANT):
                 self.result['open_ready_deltas'] = game.ready_deltas.copy()
             elif self.variant == jj_three.VARIANT:
                 self.result.update({key: values.copy() for key, values in game.side_deltas.items()})
+            elif self.variant == XIAOGAN.VARIANT:
+                self.result['piao_deltas'] = game.piao_deltas.copy()
+                self.result['horse_deltas'] = game.horse_deltas.copy()
             if game.horse_tiles:
                 self.result['bonus'] = [tile_name(tile) for tile in game.horse_tiles]
                 mode = getattr(self.rules, 'BONUS_MODE', None)

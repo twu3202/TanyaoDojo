@@ -7,7 +7,7 @@ let visibleLimit=CATALOG_PAGE_SIZE;
 const img=t=>{const i=document.createElement('img');i.src=`/tiles/${encodeURIComponent(t)}.svg`;i.alt=tileText(t);i.draggable=false;return i;};
 function text(tag,value,cls=''){const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;}
 function showError(id,e){const node=$(id);node.dataset.errorCode=e.code||'server_error';node.textContent=I18N[LANGUAGE].errors[node.dataset.errorCode]||e.message||I18N[LANGUAGE].errors.server_error;}
-function optionText(o){if(o.kind==='hora'&&o.win_type)return actionText(o.win_type);if(['discard','dahai'].includes(o.kind))return tr('discard',{tile:tileText(o.tiles[0])});if(o.kind==='void')return tr('voidAction',{suit:I18N[LANGUAGE].suits[o.suit]});return actionText(o.kind);}
+function optionText(o){if(o.kind==='piao')return tr('piaoChoice',{value:o.value});if(o.kind==='hora'&&o.win_type)return actionText(o.win_type);if(['discard','dahai'].includes(o.kind))return tr('discard',{tile:tileText(o.tiles[0])});if(o.kind==='void')return tr('voidAction',{suit:I18N[LANGUAGE].suits[o.suit]});return actionText(o.kind);}
 function applyLanguage(){document.documentElement.lang=LANGUAGE;document.title='TanyaoDojo · '+tr('brand');for(const e of document.querySelectorAll('[data-language]'))e.value=LANGUAGE;for(const e of document.querySelectorAll('[data-i18n]'))e.textContent=tr(e.dataset.i18n);for(const e of document.querySelectorAll('[data-i18n-aria]'))e.setAttribute('aria-label',tr(e.dataset.i18nAria));for(const e of document.querySelectorAll('[data-wind]'))e.textContent=LANGUAGE==='en'?e.dataset.wind:I18N[LANGUAGE].wind[e.dataset.wind];$('policy').setAttribute('aria-label',tr('policyLabel'));$('close-rules').setAttribute('aria-label',tr('closeRules'));if(catalog.length)renderLobby();if(game){const v=currentVariant();$('room-title').textContent=v.name;$('room-subtitle').textContent=v.subtitle;render(game,true);}if($('rules-dialog').open)fillRules();for(const e of document.querySelectorAll('[data-error-code]'))if(e.textContent)e.textContent=I18N[LANGUAGE].errors[e.dataset.errorCode]||e.textContent;}
 for(const picker of document.querySelectorAll('[data-language]'))picker.onchange=()=>{LANGUAGE=picker.value;try{localStorage.setItem('tanyao_language',LANGUAGE);}catch{}applyLanguage();};
 applyLanguage();
@@ -131,10 +131,22 @@ function exchangeContains(option, tiles) {
   }
   return true;
 }
-function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+4)%4]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',p.win_count?tr('winCount',{count:p.win_count}):tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.open_ready)title.append(text('span',tr('openReadyTag'),'tag reach'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
+function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+4)%4]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',p.win_count?tr('winCount',{count:p.win_count}):tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.open_ready)title.append(text('span',tr(p.dark_ready?'darkReadyTag':'openReadyTag'),'tag reach'));if(p.piao!==undefined)title.append(text('span',tr('piaoTag',{value:p.piao}),'tag'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
 if(p.id===0){const row=document.createElement('div');row.className='hand';const hand=p.hand.slice();if(table.drawn){const i=hand.lastIndexOf(table.drawn);if(i>=0)hand.push(...hand.splice(i,1));}hand.forEach((t,i)=>{if(table.phase==='exchange'){row.append(exchangeTile(t,i,s));return;}const options=s.choices.filter(x=>['discard','dahai'].includes(x.kind)&&x.tiles[0]===t);const b=document.createElement('button');b.className='hand-tile'+(options.length?' legal':'')+(table.drawn&&i===hand.length-1?' drawn':'')+(options.length&&options[0].id===selected?' selected':'');b.disabled=!options.length||s.automatic||requestBusy;const canDeclare=s.choices.some(o=>o.kind==='declare_ready'&&o.tiles[0]===t);b.classList.toggle('ready-discard',canDeclare);b.setAttribute('aria-label',tr(canDeclare?'selectReadyTile':'selectTile',{tile:tileText(t)}));b.append(img(t));if(options.length){b.dataset.option=options[0].id;b.onclick=()=>{selected=options[0].id;for(const x of document.querySelectorAll('.hand-tile'))x.classList.toggle('selected',x.dataset.option===selected);renderActions();};}row.append(b);});seat.append(row);
-}else if(p.revealed){const h=document.createElement('div');h.className='melds';for(const t of p.hand){const el=img(t);el.style.width='19px';h.append(el);}seat.append(h);}else{const h=document.createElement('div');h.className='backs';h.setAttribute('aria-label',tr('concealed',{count:p.hand_count}));for(let i=0;i<p.hand_count;i++)h.append(text('span','','tile-back'));seat.append(h);}
+}else if(p.revealed){const h=document.createElement('div');h.className='melds';for(const t of p.hand){const el=img(t);el.style.width='19px';h.append(el);}if(p.hidden_ready_tiles){const hidden=text('span','','ready-hidden');hidden.setAttribute('aria-label',tr('concealed',{count:p.hidden_ready_tiles}));for(let i=0;i<p.hidden_ready_tiles;i++)hidden.append(text('span','','tile-back'));h.append(hidden);}seat.append(h);}else{const h=document.createElement('div');h.className='backs';h.setAttribute('aria-label',tr('concealed',{count:p.hand_count}));for(let i=0;i<p.hand_count;i++)h.append(text('span','','tile-back'));seat.append(h);}
 if(p.melds.length){const ms=document.createElement('div');ms.className='melds';for(const m of p.melds){const meld=document.createElement('div');meld.className='meld';meld.title=actionText(m.kind);for(const t of m.tiles)meld.append(t===null?text('span','','tile-back'):img(t));ms.append(meld);}seat.append(ms);}if(p.win_tile){const claim=text('div','','melds');claim.title=tr('winningTile');claim.append(img(p.win_tile));seat.append(claim);}if(p.id!==0)seat.append(river(p.river));}
+function turnPrompt(snapshot) {
+  const table = snapshot.table;
+  const player = table.players[0];
+  if (table.phase === 'exchange') return table.exchange_same_suit ? 'promptSameSuitExchange' : 'promptExchange';
+  if (table.phase === 'action') {
+    if (player.win_count) return 'promptLockedWin';
+    if (player.dark_ready) return 'promptDarkReady';
+    if (player.open_ready) return 'promptOpenReady';
+    if (player.ready && snapshot.variant === 'jj-three-player') return 'promptPaidReady';
+  }
+  return {void:'promptVoid',rob_kong:'promptRob',piao:'promptPiao'}[table.phase] || 'promptTurn';
+}
 function renderActions() {
   const box = $('actions');
   box.replaceChildren();
@@ -142,8 +154,10 @@ function renderActions() {
   const playable = game.status === 'your_turn' && !game.automatic && !requestBusy;
   for (const button of document.querySelectorAll('#seat-0 .hand-tile.legal')) button.disabled = !playable;
   const openReady = currentVariant()?.family_id === 'ka-wu-xing';
-  const exchangePrompt = game.table.exchange_same_suit ? 'promptSameSuitExchange' : 'promptExchange';
-  $('prompt').textContent=playable?tr(game.table.phase==='exchange'?exchangePrompt:game.table.phase==='void'?'promptVoid':game.table.phase==='rob_kong'?'promptRob':game.table.phase==='action'&&game.table.players[0].win_count?'promptLockedWin':game.table.phase==='action'&&game.table.players[0].open_ready?'promptOpenReady':game.variant==='jj-three-player'&&game.table.phase==='action'&&game.table.players[0].ready?'promptPaidReady':'promptTurn'):game.status==='error'?tr('promptError'):game.status==='closed'?I18N[LANGUAGE].errors.table_missing:['round_end','finished'].includes(game.status)?tr('promptEnd'):game.automatic?tr('promptAuto'):tr('promptWait');
+  $('prompt').textContent = playable ? tr(turnPrompt(game)) : game.status === 'closed'
+    ? I18N[LANGUAGE].errors.table_missing
+    : tr({error:'promptError',round_end:'promptEnd',finished:'promptEnd'}[game.status] ||
+         (game.automatic ? 'promptAuto' : 'promptWait'));
   $('chosen-tile').textContent = '';
   if (!playable) return;
   if (game.table.phase === 'exchange') {
@@ -172,12 +186,17 @@ function renderActions() {
     button.onclick = () => sendAction(choice.id);
     box.append(button);
     $('chosen-tile').textContent = choice ? tr('selected', {tile: tileText(choice.tiles[0])}) : tr('clickTile');
-    const readyOptions = game.choices.filter(option => option.kind === 'declare_ready');
-    if (readyOptions.length) {
+    const declarations = [
+      ['declare_ready', openReady ? 'declareOpenReady' : 'declareReady',
+       openReady ? tr('openReadyTag') : actionText('declare_ready')],
+      ['declare_dark', 'declareDarkReady', tr('darkReadyTag')],
+    ];
+    for (const [kind, message, shortLabel] of declarations) {
+      const options = game.choices.filter(option => option.kind === kind);
+      if (!options.length) continue;
       if (!choice) $('chosen-tile').textContent = tr(openReady ? 'pickOpenReadyTile' : 'pickReadyTile');
-      const ready = choice && readyOptions.find(option => option.tiles[0] === choice.tiles[0]);
-      const label = ready ? tr(openReady ? 'declareOpenReady' : 'declareReady', {tile: tileText(ready.tiles[0])})
-                          : openReady ? tr('openReadyTag') : actionText('declare_ready');
+      const ready = choice && options.find(option => option.tiles[0] === choice.tiles[0]);
+      const label = ready ? tr(message, {tile:tileText(ready.tiles[0])}) : shortLabel;
       const readyButton = text('button', label, 'action');
       readyButton.disabled = !ready;
       readyButton.onclick = () => sendAction(ready.id);
@@ -185,7 +204,7 @@ function renderActions() {
     }
   }
   for (const option of game.choices) {
-    if (isDiscard(option) || option.kind === 'declare_ready') continue;
+    if (isDiscard(option) || ['declare_ready','declare_dark'].includes(option.kind)) continue;
     const button = text('button', optionText(option), 'action' +
       (['hora', 'ron', 'zimo'].includes(option.kind) ? ' primary-action' : ''));
     for (const tile of option.tiles.slice(0, 4)) button.append(img(tile));
@@ -230,13 +249,13 @@ function renderBonusTiles(result, container) {
     const hits = entry.hits.map((count, seat) => `${playerName(seat)} ${count}`).join(' · ');
     container.append(text('p', tr('bilateralHorses', {name: playerName(entry.actor), hits}), 'bonus-detail'));
   }
-  const label = {one_ma: 'oneMaSummary', exploding_fish: 'fishSummary'}[mode] || 'bonusSummary';
+  const label = {one_ma: 'oneMaSummary', exploding_fish: 'fishSummary', xiaogan_rank:'rankHorseSummary'}[mode] || 'bonusSummary';
   for (const item of result.bonus_details || []) {
     container.append(text('p', tr(label, {name: playerName(item.actor), count: item.count,
       hits: item.hits, extra: item.extra, points: item.per_loser}), 'bonus-detail'));
   }
 }
-function showResult(r){const finishedMatch=Boolean(r.match_hands);const leaders=r.match_winners||r.winners;const names=ids=>ids.map(playerName).join(LANGUAGE==='en'?' & ':'、');$('result-title').textContent=tr(r.next?'handResult':finishedMatch?'matchComplete':'matchEnd');$('result-reason').textContent=finishedMatch?tr('matchWinner',{names:names(leaders),total:r.match_hands}):tpl(I18N[LANGUAGE].reason[r.reason_code]||r.reason||'',{names:names(r.winners)});$('result-bonus').replaceChildren();renderBonusTiles(r, $('result-bonus'));renderWake(r, $('result-bonus'));renderTransfers(r.kong_deltas, 'kongTransfers', $('result-bonus'));renderTransfers(r.echo_deltas, 'dealerEcho', $('result-bonus'));renderTransfers(r.pig_deltas, 'flowerPigTransfers', $('result-bonus'));renderTransfers(r.ready_deltas, 'readyTransfers', $('result-bonus'));renderTransfers(r.refund_deltas, 'kongRefunds', $('result-bonus'));renderTransfers(r.open_ready_deltas,'openReadyTransfers',$('result-bonus'));renderTransfers(r.chow_deltas,'chowTransfers',$('result-bonus'));renderTransfers(r.pon_deltas,'ponTransfers',$('result-bonus'));renderTransfers(r.closed_ready_deltas,'paidReadyTransfers',$('result-bonus'));for(const win of r.win_details||[]){$('result-bonus').append(text('p',winDetail(win),'bonus-detail'));}const rows=r.scores.map((score,i)=>({i,score,delta:r.deltas[i]})).sort((a,b)=>b.score-a.score);$('result-scores').replaceChildren(...rows.map(x=>{const el=text('div','','result-row'+(x.i===0?' self':''));el.append(text('span',playerName(x.i)+(leaders.includes(x.i)?' · '+tr(finishedMatch?'firstPlace':'won'):'')),text('span',(x.delta>0?'+':'')+x.delta.toLocaleString(),'delta'+(x.delta>0?' plus':'')),text('span',x.score.toLocaleString(),'total'));return el;}));$('next-button').textContent=tr(r.next?'next':'newTable');if(!$('result-dialog').open)$('result-dialog').showModal();}
+function showResult(r){const finishedMatch=Boolean(r.match_hands);const leaders=r.match_winners||r.winners;const names=ids=>ids.map(playerName).join(LANGUAGE==='en'?' & ':'、');$('result-title').textContent=tr(r.next?'handResult':finishedMatch?'matchComplete':'matchEnd');$('result-reason').textContent=finishedMatch?tr('matchWinner',{names:names(leaders),total:r.match_hands}):tpl(I18N[LANGUAGE].reason[r.reason_code]||r.reason||'',{names:names(r.winners)});$('result-bonus').replaceChildren();renderBonusTiles(r, $('result-bonus'));renderWake(r, $('result-bonus'));renderTransfers(r.kong_deltas, 'kongTransfers', $('result-bonus'));renderTransfers(r.echo_deltas, 'dealerEcho', $('result-bonus'));renderTransfers(r.pig_deltas, 'flowerPigTransfers', $('result-bonus'));renderTransfers(r.ready_deltas, 'readyTransfers', $('result-bonus'));renderTransfers(r.refund_deltas, 'kongRefunds', $('result-bonus'));renderTransfers(r.open_ready_deltas,'openReadyTransfers',$('result-bonus'));renderTransfers(r.chow_deltas,'chowTransfers',$('result-bonus'));renderTransfers(r.pon_deltas,'ponTransfers',$('result-bonus'));renderTransfers(r.closed_ready_deltas,'paidReadyTransfers',$('result-bonus'));renderTransfers(r.piao_deltas,'piaoTransfers',$('result-bonus'));renderTransfers(r.horse_deltas,'horseTransfers',$('result-bonus'));for(const win of r.win_details||[]){$('result-bonus').append(text('p',winDetail(win),'bonus-detail'));}const rows=r.scores.map((score,i)=>({i,score,delta:r.deltas[i]})).sort((a,b)=>b.score-a.score);$('result-scores').replaceChildren(...rows.map(x=>{const el=text('div','','result-row'+(x.i===0?' self':''));el.append(text('span',playerName(x.i)+(leaders.includes(x.i)?' · '+tr(finishedMatch?'firstPlace':'won'):'')),text('span',(x.delta>0?'+':'')+x.delta.toLocaleString(),'delta'+(x.delta>0?' plus':'')),text('span',x.score.toLocaleString(),'total'));return el;}));$('next-button').textContent=tr(r.next?'next':'newTable');if(!$('result-dialog').open)$('result-dialog').showModal();}
 $('next-button').onclick=async()=>{if(!game)return;const next=game.result?.next;$('result-dialog').close();if(!next)return start();try{const s=await api(`/api/game/${game.id}/next`,{});render(s);}catch(e){showError('room-error',e);}};
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&selected&&game?.status==='your_turn'&&!$('rules-dialog').open&&!$('result-dialog').open)sendAction(selected);});
 (async()=>{try{const c=await api('/api/catalog');catalog=c.variants;renderLobby();const sid=sessionStorage.getItem('tanyao_session');if(sid){try{const s=await api(`/api/game/${sid}`);if(s.status!=='closed'){variant=s.variant;renderLobby();$('policy').value=s.policy;$('lobby').classList.add('hidden');$('room').classList.remove('hidden');$('footer').classList.add('hidden');$('room-title').textContent=currentVariant().name;$('room-subtitle').textContent=currentVariant().subtitle;render(s);schedulePoll();}}catch{sessionStorage.removeItem('tanyao_session');}}}catch(e){showError('lobby-error',{code:'catalog_failed'});$('start-button').disabled=true;}})();

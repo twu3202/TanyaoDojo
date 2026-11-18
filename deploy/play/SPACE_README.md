@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play 31 Mahjong rulesets vs AI. English / 中文.
+short_description: Play 33 Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
@@ -17,7 +17,8 @@ Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hong
 **Hong Kong Old Style**, **Macau Tournament Mahjong**, **Shangsi**, **Hundred-Tile Mahjong**, **Hezhou**,
 **Liuzhou Exploding Fish**, **Guangzhou Three-Faan**, **Golden Island Guangdong**, **Guiliu Wake-Tile Mahjong**,
 **Sichuan Xuezhan Exchange Three**, **Yunnan Xuezhan Flower Pig**, **Kaxinwu Continuous Wins**,
-**Suizhou Ka Wu Xing**, **Xiangyang Ka Wu Xing**, **Shiyan Ka Wu Xing**, or **JJ Three-Player Call Points**
+**Suizhou Ka Wu Xing**, **Xiangyang Ka Wu Xing**, **Shiyan Ka Wu Xing**, **JJ Three-Player Call Points**,
+**JJ Three-Player Multipliers**, or **Xiaogan Ka Wu Xing**
 and play with two or three AI opponents. Search in either language or
 filter by family. Riichi plays a complete East-South match, and Macau plays a 16-hand match over four winds.
 
@@ -54,6 +55,10 @@ They use different caps, discard liabilities and passed-win rules. [Rules](deplo
 **JJ Three-Player Call Points** pays for actual chows and pons and private ready declarations,
 then settles wins at five points per payer.
 [Shiyan rules](deploy/play/rules/ShiyanKaWuXing.md), [JJ Call Points rules](deploy/play/rules/JJThreePlayer.md).
+
+**JJ Three-Player Multipliers** includes dark ready and public-wait discard restrictions.
+**Xiaogan Ka Wu Xing** adds an opening piao choice and a rank horse on revealed self-draws.
+[JJ Multipliers rules](deploy/play/rules/JJMultipliers.md), [Xiaogan rules](deploy/play/rules/XiaoganKaWuXing.md).
 
 The **112-tile wildcard family** offers two GameTea bonus modes and the Fangchenggang room with seven pairs and
 a four-tile reserve. Source rules and the room choices for unspecified boundaries are listed in the

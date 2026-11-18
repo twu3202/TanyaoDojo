@@ -1,12 +1,13 @@
 # Playable Mahjong MVP
 
-Human vs two or three AI players, with a responsive browser table and a CPU-only server. The thirty-one playable rulesets are
+Human vs two or three AI players, with a responsive browser table and a CPU-only server. The thirty-three playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
 Shangsi, Hundred-Tile Mahjong, Hezhou, Liuzhou Exploding Fish, Guangzhou Three-Faan, Golden Island Guangdong,
 Guiliu Wake-Tile Mahjong, Sichuan Xuezhan Exchange Three, Yunnan Xuezhan Flower Pig, Kaxinwu Continuous Wins,
-Suizhou Ka Wu Xing, Xiangyang Ka Wu Xing, Shiyan Ka Wu Xing and JJ Three-Player Call Points.
+Suizhou Ka Wu Xing, Xiangyang Ka Wu Xing, Shiyan Ka Wu Xing, JJ Three-Player Call Points,
+JJ Three-Player Multipliers and Xiaogan Ka Wu Xing.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
@@ -35,6 +36,9 @@ The Macau room plays a complete 16-hand match.
   [Suizhou and Xiangyang rules](rules/KaWuXing.md), [Shiyan rules](rules/ShiyanKaWuXing.md).
 - `jj_three.py`: three-seat chows, pons, private ready and immediate rewards, with a fixed win share.
   [JJ Call Points rules](rules/JJThreePlayer.md).
+- `jj_multiplier.py` and `xiaogan.py`: partly revealed ready hands and public-wait discard restrictions,
+  or private opening piao choices and rank horses. [JJ Multipliers rules](rules/JJMultipliers.md),
+  [Xiaogan rules](rules/XiaoganKaWuXing.md).
 - `honors_bonus.py`: regional point schedules with reserved horse tiles, configurable tile sets, immediate kong
   transfers, and shared bonus reveals on multi-win hands.
   [Shangsi, Hundred-Tile, Hezhou and Liuzhou rules](rules/HonorsHorseTiles.md).

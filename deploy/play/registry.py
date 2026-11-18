@@ -6,11 +6,13 @@ from .guiliu import VARIANT as GUILIU
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
+from .jj_multiplier import VARIANT as JJ_MULTIPLIER
 from .jj_three import VARIANT as JJ_THREE
 from .kaxinwu import VARIANT as KAXINWU
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
+from .xiaogan import XIAOGAN
 
 VARIANTS = {'riichi': {'id': 'riichi',
             'family_id': 'riichi',
@@ -1152,6 +1154,70 @@ VARIANTS[JJ_THREE] = {
     }},
 }
 
+VARIANTS[JJ_MULTIPLIER] = {
+    'id': JJ_MULTIPLIER, 'family_id': 'ka-wu-xing', 'family': 'Three-player Ka Wu Xing', 'seat_count': 3,
+    'name': 'JJ Three-Player · Multipliers',
+    'aliases': ['JJ 倍率房', 'JJ 暗倒', '三人暗倒', 'JJ 2016'],
+    'rule_version': 'jj-2016-multiplier-dojo-v1',
+    'subtitle': 'Three seats · Open or dark ready · Win multipliers',
+    'badge': 'JJ multipliers · 84 tiles',
+    'description': 'Reveal your ready hand or keep its fixed triplets covered. Public waits restrict discards.',
+    'rules': [
+        '84 tiles: characters, dots and three dragons. No chow. You can declare open ready or dark ready until '
+        'three tiles remain. Dark ready keeps eligible concealed triplets covered.',
+        'After declaring, discard the drawn tile or take a win. A covered triplet can be konged if the waits stay the same. '
+        'Discards avoid publicly provable waits when the player has another legal discard.',
+        'Multiply the hand patterns, double once for a winning pair of seats with any reveal, then add two points. '
+        'After a passed win, another offer with the same patterns is locked until your next draw.',
+        'On a draw, the first revealed seat pays one to each seat that did not reveal. Kong payments stand. '
+        'Consecutive own kongs double their immediate kong payments from the second onwards.',
+    ],
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'sources': [{'title': 'JJ 2016 three-player multiplier rules', 'url': 'https://www.jj.cn/help/new_72708.shtml'}],
+    'translations': {'zh-CN': {
+        'name': 'JJ 三人麻将（倍率房）', 'family': '三人卡五星', 'subtitle': '三人 · 亮倒或暗倒 · 倍率结算',
+        'badge': 'JJ 倍率房 · 84 张', 'description': '听牌后可亮倒，也可暗倒保留固定暗刻。出牌受公开听口约束。',
+        'rules': [
+            '84 张，万筒加中发白，不吃。末三张前可亮倒或暗倒，暗倒保留符合条件的暗刻。',
+            '亮倒或暗倒后只可摸切或胡；暗倒保留的暗刻可在不改变听口时开杠。有安全牌时须避开对手公开可推知的听口。',
+            '牌型乘倍数，付款双方有人亮倒或暗倒时只翻一次，再加两分。同样牌型过胡后，到自己摸牌前不能再接。',
+            '荒庄首亮／暗倒者给未亮的每席一分，杠分保留。连杠第二次起即时杠分翻倍。',
+        ],
+    }},
+}
+
+VARIANTS[XIAOGAN.VARIANT] = {
+    **_KA_WU_XING,
+    'id': XIAOGAN.VARIANT,
+    'name': 'Xiaogan Ka Wu Xing · Piao & Horse',
+    'aliases': ['孝感卡五星', '压漂', '亮倒买马', 'Xiaogan'],
+    'rule_version': 'xiaogan-piao-horse-dojo-v1',
+    'subtitle': 'Three seats · Opening piao · Rank horse',
+    'badge': 'Hubei · 84 tiles',
+    'description': 'Choose piao before seeing your hand. A revealed self-draw flips a horse worth its rank.',
+    'rules': [
+        '84 tiles: dots, bamboo and three dragons. Choose zero to three piao privately before seeing your hand; reveal all '
+        'choices together. This room allows chow. The nearest accepting seat wins when two seats can win on one tile.',
+        'Declare open ready after a ready discard, reveal the remaining hand, and play only drawn-tile discards or wins. '
+        'Open ready doubles the hand. The supplier pays both shares on a revealed discard win even when both have revealed.',
+        'Each actual payer adds their own piao plus the winner’s piao once. A revealed self-draw with tiles left flips the '
+        'tail tile, adding its rank or ten for a dragon to each payer’s bill.',
+        'This room scores kong payments immediately and keeps them on a draw. No piao or horse points are paid on a draw.',
+    ],
+    'sources': [{'title': 'Xiaogan operator scoring', 'url': 'https://m.tcy365.com/news/d25805.html'},
+                {'title': 'Operator opening and piao choices', 'url': 'https://m.tcy365.com/news/d26962.html'}],
+    'translations': {'zh-CN': {
+        'name': '孝感卡五星（压漂买马）', 'family': '三人卡五星', 'subtitle': '三人 · 开局压漂 · 亮倒自摸买马',
+        'badge': '湖北 · 84 张', 'description': '看手牌前先压漂，亮倒自摸可翻一张马，按牌面加分。',
+        'rules': [
+            '84 张，筒条和中发白。看手牌前各选 0 至 3 漂，三家选完一起公布。本桌可吃，点炮按座次取最近的有效赢家。',
+            '听牌时可亮倒，公开手牌后只可摸切或胡。亮倒胡牌翻倍，接炮由供牌者包两份，双亮仍包。',
+            '每个实际付款人另付自己和赢家的漂数之和，只加一次。亮倒自摸且墙有余牌时翻尾牌，数牌按点数、箭牌按 10 分向各家收费。',
+            '杠分即时付，荒庄保留。荒庄没有压漂和买马付款。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1168,4 +1234,6 @@ SESSION_OPTIONS = {
     XIANGYANG.VARIANT: {'variant': XIANGYANG.VARIANT},
     SHIYAN.VARIANT: {'variant': SHIYAN.VARIANT},
     JJ_THREE: {'variant': JJ_THREE},
+    JJ_MULTIPLIER: {'variant': JJ_MULTIPLIER},
+    XIAOGAN.VARIANT: {'variant': XIAOGAN.VARIANT},
 }

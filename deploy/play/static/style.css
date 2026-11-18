@@ -31,3 +31,4 @@
 .table.three-player .opponent .tile-back{min-width:0;flex-shrink:1}
 .table.three-player .opponent .river{grid-template-columns:repeat(6,minmax(0,20px))}
 .table.three-player .opponent .river img{width:100%}
+.ready-hidden{display:inline-flex;gap:2px}

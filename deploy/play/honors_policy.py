@@ -35,8 +35,11 @@ def policy_view(game, actor, actions):
     if game.offer is not None and game.offer.kind != 'discard':
         visible[game.offer.tile] += 1
     player = game.players[actor]
-    return PolicyView(tuple(player.hand), tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
-                      tuple(actions), 27 + (actor - game.dealer) % game.seat_count, game.round_wind,
+    setting_piao = game.phase == 'piao'
+    hand = (0,) * TILE_COUNT if setting_piao else tuple(player.hand)
+    seat_wind = 27 if setting_piao else 27 + (actor - game.dealer) % game.seat_count
+    return PolicyView(hand, tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
+                      tuple(actions), seat_wind, game.round_wind,
                       None if game.offer is None else game.offer.tile, game.remaining, game.rules)
 
 
@@ -187,6 +190,8 @@ def _ukeire(distance, rest, melds, live, view):
 
 def heuristic(view):
     actions = view.actions
+    if actions[0][0] == 'piao':
+        return 'piao', 1
     if actions[0][0] == 'exchange':
         def rank_exchange(action):
             remaining = list(view.hand)
@@ -221,8 +226,10 @@ def heuristic(view):
         choices = [(tile, rest) for rank, tile, rest in ranked if rank == best]
         tile, _ = max(choices, key=lambda item: (_ukeire(best[0], item[1], view.melds, live, view),
                                                 -view.hand[item[0]], item[0]))
-        if best[0] == 0 and view.remaining > 0 and ('declare_ready', tile) in actions:
-            return 'declare_ready', tile
+        if best[0] == 0 and view.remaining > 0:
+            for declaration in ('declare_dark', 'declare_ready'):
+                if (declaration, tile) in actions:
+                    return declaration, tile
         return 'discard', tile
 
     best = _rank(view.hand, view.melds, view, live)

@@ -550,12 +550,16 @@ class HonorsGame:
         if points is None:
             return
         share = {'gang_ming': points.direct, 'gang_bu': points.added, 'gang_an': points.concealed}[meld.kind]
+        share *= self._kong_factor(meld)
         if (meld.kind == 'gang_ming' and points.single_direct_payer
                 or meld.kind == 'gang_bu' and points.added_payer_from_pong) and meld.provider is not None:
             payers = (meld.provider,)
         else:
             payers = tuple(seat for seat in range(self.seat_count) if seat != actor)
         self._transfer(actor, tuple(share if seat in payers else 0 for seat in range(self.seat_count)), self.kong_deltas)
+
+    def _kong_factor(self, meld):
+        return 1
 
     def _liabilities_for(self, actor):
         if not self.options.reciprocal_liability:
