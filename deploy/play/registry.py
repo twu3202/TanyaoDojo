@@ -1,4 +1,5 @@
 """Versioned playable rules; English is the API default."""
+from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
 from .guiliu import VARIANT as GUILIU
@@ -901,6 +902,82 @@ VARIANTS[GUILIU] = {
     }},
 }
 
+_BLOOD_ROOMS = {
+    'family_id': 'sichuan', 'family': 'Sichuan blood battle',
+    'default_policy': 'heuristic',
+    'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+}
+
+VARIANTS[SICHUAN_EXCHANGE] = {
+    **_BLOOD_ROOMS,
+    'id': SICHUAN_EXCHANGE,
+    'name': 'Sichuan Xuezhan · Exchange Three',
+    'aliases': ['Sichuan exchange', '四川换三张', '川麻换三张'],
+    'rule_version': 'sichuan-exchange-dojo-v1',
+    'subtitle': 'Same-suit exchange · Void suit · Four-fan cap',
+    'badge': 'Sichuan · 108 tiles',
+    'description': 'Exchange three tiles of one suit, then choose a void suit and play until three seats win or the wall runs out.',
+    'rules': [
+        'The dealer starts with 14 tiles. Everyone selects three of one suit in secret. The table reveals '
+        'one random direction and swaps simultaneously, then everyone declares a void suit.',
+        'No chow. Non-void pons and kongs are allowed even while holding void tiles. '
+        'Discard from the void suit first. The last draw allows pon but no kong.',
+        'A passed win locks equal and lower fan until a draw or successful call. '
+        'Robbing a kong and winning on a discard after kong can override this lock.',
+        'Room scoring uses one base point, four fan maximum, self-draw +1 fan and closed-hand/middle-tiles bonuses. '
+        'After choosing pon over a direct kong, a later added kong earns no kong points.',
+        'At wall exhaustion, unready seats pay ready seats their best hand value and refund kong earnings. '
+        'The dealer repeats after wall exhaustion. Otherwise the first winner deals, or the supplier of a first multi-win.',
+    ],
+    'sources': [{'title': 'Sichuan Xuezhan operator rules', 'url': 'https://www.hzbianqu.com/game/1100.html'}],
+    'translations': {'zh-CN': {
+        'name': '四川血战到底（换三张）', 'family': '四川血战', 'subtitle': '同门换三张 · 定缺 · 四番封顶',
+        'badge': '四川 · 108 张', 'description': '先换三张同门牌，再定缺。打到三家胡牌或牌墙耗尽为止。',
+        'rules': [
+            '庄家起手 14 张。各家暗选三张同门牌，四家确认后随机顺时针、逆时针或对家交换，然后定缺。',
+            '不可吃。定缺牌先打，未打完时仍可碰杠非缺门牌。牌墙空后可碰，不可杠。',
+            '过胡后到自己摸牌或成功碰杠前只接更高番；抢杠胡、杠上炮可例外。',
+            '本房间一分起、四番封顶，自摸加一番，计门清与中张。可直杠却选择碰的牌，之后可补杠但不计杠钱。',
+            '牌墙耗尽时查叫、退未听家杠分，原庄连庄。三家胡牌时首胡者坐下一庄，首胡为多响则点炮者坐庄。',
+        ],
+    }},
+}
+
+VARIANTS[YUNNAN] = {
+    **_BLOOD_ROOMS,
+    'id': YUNNAN,
+    'name': 'Yunnan Xuezhan · Flower Pig',
+    'aliases': ['Yunnan Mahjong', 'Flower Pig', '云南血战到底', '云南麻将', '查花猪'],
+    'rule_version': 'yunnan-xuezhan-dojo-v1',
+    'subtitle': 'Void suit · Passed-pon lock · Flower-pig payments',
+    'badge': 'Yunnan · 108 tiles',
+    'description': 'Play through three winners or settle a draw with both ready-hand and flower-pig payments.',
+    'rules': [
+        'Choose a void suit and discard it first. No chow. Non-void pons and kongs are allowed, including added-kong robbery.',
+        'Passed wins must increase in fan and a passed pon locks the same tile until the next draw or successful call. '
+        'A discard win shows the claimed tile only. A self-draw winner keeps their tiles concealed.',
+        'Room scoring uses one base point and a 16-point cap per share. No separate self-draw fan. Types include '
+        'seven pairs through triple-dragon pairs, golden hook, roots and four kongs.',
+        'At wall exhaustion with fewer than three winners, any seat still holding its void suit pays all '
+        'non-flower-pig seats 16 apiece, including seats that already won. Unready seats also pay each ready '
+        'seat its best hand value and refund earnings from kongs.',
+        'The dealer repeats after wall exhaustion. Otherwise the first winner deals, or the supplier of a first multi-win.',
+    ],
+    'sources': [{'title': 'Yunnan Xuezhan operator rules', 'url': 'https://www.hzbianqu.com/game/1108.html'}],
+    'translations': {'zh-CN': {
+        'name': '云南血战到底（查花猪）', 'family': '四川血战', 'subtitle': '定缺 · 过手碰 · 查花猪',
+        'badge': '云南 · 108 张', 'description': '三家胡牌即结束，牌墙耗尽时进行查大叫、查花猪和退税。',
+        'rules': [
+            '开局定缺，缺门牌先打。不可吃，非缺门牌可碰杠，允许抢补杠。',
+            '过胡后只接更高番；过碰后同张暂不能碰，摸牌或成功碰杠后解除。点炮只亮胡张，自摸不亮牌。',
+            '本房间一分起、每份 16 分封顶。自摸不单独加番。计七对至三龙七对、金钩钩、根和十八罗汉。',
+            '牌墙耗尽且不足三家胡牌时，手里还留缺门牌者各付非花猪玩家 16 分，已胡家也照收。'
+            '未听牌者另向听牌的未胡者支付最高牌型分，并退回杠收益。',
+            '牌墙耗尽原庄连庄。三家胡牌时首胡者坐下一庄，首胡为多响则点炮者坐庄。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -910,4 +987,6 @@ SESSION_OPTIONS = {
     GOLDEN_GUANGDONG: {'variant': GOLDEN_GUANGDONG},
     GUILIU: {'variant': GUILIU},
     MACAU: {'variant': MACAU},
+    SICHUAN_EXCHANGE: {'variant': SICHUAN_EXCHANGE},
+    YUNNAN: {'variant': YUNNAN},
 }

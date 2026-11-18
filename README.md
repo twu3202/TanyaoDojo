@@ -22,7 +22,8 @@ for **Sichuan mahjong**.
 > Sichuan Xuezhan, two Hongzhong bonus profiles, Fangchenggang Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan,
 > Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu,
 > no-flower Hong Kong Old Style, Macau Tournament Mahjong, Shangsi, Hundred-Tile Mahjong, Hezhou,
-> Liuzhou Exploding Fish, Guangzhou Three-Faan, Golden Island Guangdong and Guiliu Wake-Tile Mahjong
+> Liuzhou Exploding Fish, Guangzhou Three-Faan, Golden Island Guangdong, Guiliu Wake-Tile Mahjong,
+> Sichuan Xuezhan Exchange Three and Yunnan Xuezhan Flower Pig
 > against three AI opponents. The UI defaults to English,
 > with a persistent Simplified Chinese option; beginner heuristics and existing trained models are available.
 > Source and deployment notes: [`deploy/play/`](deploy/play/README.md).

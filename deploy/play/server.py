@@ -25,7 +25,7 @@ from .hongzhong_game import HongzhongSession
 from .suited_game import SuitedSession
 from .honors_game import HonorsSession
 
-VERSION='0.12.0'
+VERSION='0.13.0'
 FACTORIES={'riichi':RiichiSession,'sichuan':SichuanSession,'hongzhong':HongzhongSession,
            'suited-discard-win':SuitedSession,'honors-and-chows':HonorsSession,
            'honors-horse-tiles':HonorsSession}

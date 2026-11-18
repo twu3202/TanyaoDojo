@@ -1,11 +1,11 @@
 # Playable Mahjong MVP
 
-Human vs three AI players, with a responsive browser table and a CPU-only server. The twenty-four playable rulesets are
+Human vs three AI players, with a responsive browser table and a CPU-only server. The twenty-six playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
-Shangsi, Hundred-Tile Mahjong, Hezhou, Liuzhou Exploding Fish, Guangzhou Three-Faan, Golden Island Guangdong
-and Guiliu Wake-Tile Mahjong.
+Shangsi, Hundred-Tile Mahjong, Hezhou, Liuzhou Exploding Fish, Guangzhou Three-Faan, Golden Island Guangdong,
+Guiliu Wake-Tile Mahjong, Sichuan Xuezhan Exchange Three and Yunnan Xuezhan Flower Pig.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
@@ -17,6 +17,9 @@ The Macau room plays a complete 16-hand match.
   Inter-hand continuation uses the first-hand scores/pot, not the truncated game's artificial final payout.
 - `sichuan_game.py`: corrected Python reference rules, rule-aware shanten/ukeire baseline and interactive
   robbing-a-kong responses. The training reference auto-accepts those wins; web users can explicitly pass.
+- `blood_battle.py`: web rules for simultaneous same-suit exchange, passed calls, multi-win dealer succession
+  and Yunnan's flower-pig, ready-hand and kong-refund settlements.
+  [Sichuan and Yunnan rules](rules/BloodBattle.md).
 - `suited.py`, `suited_game.py`, `suited_regional.py`: shared 108-tile first-win engine, with per-room passed-win
   rules, ready declarations, payout schedules, kong refunds and Guilin wake indicators.
   [Rules and operator sources](rules/SuitedDiscardWin.md).

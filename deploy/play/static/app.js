@@ -119,22 +119,39 @@ function exchangeTile(tile, index, snapshot) {
   };
   return button;
 }
+function exchangeContains(option, tiles) {
+  const remaining = option.tiles.slice();
+  for (const tile of tiles) {
+    const index = remaining.indexOf(tile);
+    if (index < 0) return false;
+    remaining.splice(index, 1);
+  }
+  return true;
+}
 function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+4)%4]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
 if(p.id===0){const row=document.createElement('div');row.className='hand';const hand=p.hand.slice();if(table.drawn){const i=hand.lastIndexOf(table.drawn);if(i>=0)hand.push(...hand.splice(i,1));}hand.forEach((t,i)=>{if(table.phase==='exchange'){row.append(exchangeTile(t,i,s));return;}const options=s.choices.filter(x=>['discard','dahai'].includes(x.kind)&&x.tiles[0]===t);const b=document.createElement('button');b.className='hand-tile'+(options.length?' legal':'')+(table.drawn&&i===hand.length-1?' drawn':'')+(options.length&&options[0].id===selected?' selected':'');b.disabled=!options.length||s.automatic||requestBusy;const canDeclare=s.choices.some(o=>o.kind==='declare_ready'&&o.tiles[0]===t);b.classList.toggle('ready-discard',canDeclare);b.setAttribute('aria-label',tr(canDeclare?'selectReadyTile':'selectTile',{tile:tileText(t)}));b.append(img(t));if(options.length){b.dataset.option=options[0].id;b.onclick=()=>{selected=options[0].id;for(const x of document.querySelectorAll('.hand-tile'))x.classList.toggle('selected',x.dataset.option===selected);renderActions();};}row.append(b);});seat.append(row);
 }else if(p.revealed){const h=document.createElement('div');h.className='melds';for(const t of p.hand){const el=img(t);el.style.width='19px';h.append(el);}seat.append(h);}else{const h=document.createElement('div');h.className='backs';h.setAttribute('aria-label',tr('concealed',{count:p.hand_count}));for(let i=0;i<p.hand_count;i++)h.append(text('span','','tile-back'));seat.append(h);}
-if(p.melds.length){const ms=document.createElement('div');ms.className='melds';for(const m of p.melds){const meld=document.createElement('div');meld.className='meld';meld.title=actionText(m.kind);for(const t of m.tiles)meld.append(t===null?text('span','','tile-back'):img(t));ms.append(meld);}seat.append(ms);}if(p.id!==0)seat.append(river(p.river));}
+if(p.melds.length){const ms=document.createElement('div');ms.className='melds';for(const m of p.melds){const meld=document.createElement('div');meld.className='meld';meld.title=actionText(m.kind);for(const t of m.tiles)meld.append(t===null?text('span','','tile-back'):img(t));ms.append(meld);}seat.append(ms);}if(p.win_tile){const claim=text('div','','melds');claim.title=tr('winningTile');claim.append(img(p.win_tile));seat.append(claim);}if(p.id!==0)seat.append(river(p.river));}
 function renderActions() {
   const box = $('actions');
   box.replaceChildren();
   if (!game) return;
   const playable = game.status === 'your_turn' && !game.automatic && !requestBusy;
   for (const button of document.querySelectorAll('#seat-0 .hand-tile.legal')) button.disabled = !playable;
-  $('prompt').textContent=playable?tr(game.table.phase==='exchange'?'promptExchange':game.table.phase==='void'?'promptVoid':game.table.phase==='rob_kong'?'promptRob':'promptTurn'):game.status==='error'?tr('promptError'):game.status==='closed'?I18N[LANGUAGE].errors.table_missing:['round_end','finished'].includes(game.status)?tr('promptEnd'):game.automatic?tr('promptAuto'):tr('promptWait');
+  const exchangePrompt = game.table.exchange_same_suit ? 'promptSameSuitExchange' : 'promptExchange';
+  $('prompt').textContent=playable?tr(game.table.phase==='exchange'?exchangePrompt:game.table.phase==='void'?'promptVoid':game.table.phase==='rob_kong'?'promptRob':'promptTurn'):game.status==='error'?tr('promptError'):game.status==='closed'?I18N[LANGUAGE].errors.table_missing:['round_end','finished'].includes(game.status)?tr('promptEnd'):game.automatic?tr('promptAuto'):tr('promptWait');
   $('chosen-tile').textContent = '';
   if (!playable) return;
   if (game.table.phase === 'exchange') {
-    const tiles = [...exchangeSelection].map(index => game.table.players[0].hand[index]).sort().join(',');
-    const choice = game.choices.find(option => option.kind === 'exchange' && option.tiles.slice().sort().join(',') === tiles);
+    const hand = game.table.players[0].hand;
+    const tiles = [...exchangeSelection].map(index => hand[index]);
+    const candidates = game.choices.filter(option => option.kind === 'exchange' && exchangeContains(option, tiles));
+    const choice = tiles.length === 3 ? candidates[0] : undefined;
+    for (const tileButton of document.querySelectorAll('[data-exchange-index]')) {
+      const index = Number(tileButton.dataset.exchangeIndex);
+      tileButton.disabled = !exchangeSelection.has(index) &&
+        !candidates.some(option => exchangeContains(option, [...tiles, hand[index]]));
+    }
     const button = text('button', tr('confirmExchange'), 'action primary-action');
     button.disabled = !choice;
     button.onclick = () => sendAction(choice.id);
@@ -214,7 +231,7 @@ function renderBonusTiles(result, container) {
       hits: item.hits, extra: item.extra, points: item.per_loser}), 'bonus-detail'));
   }
 }
-function showResult(r){const finishedMatch=Boolean(r.match_hands);const leaders=r.match_winners||r.winners;const names=ids=>ids.map(playerName).join(LANGUAGE==='en'?' & ':'、');$('result-title').textContent=tr(r.next?'handResult':finishedMatch?'matchComplete':'matchEnd');$('result-reason').textContent=finishedMatch?tr('matchWinner',{names:names(leaders),total:r.match_hands}):tpl(I18N[LANGUAGE].reason[r.reason_code]||r.reason||'',{names:names(r.winners)});$('result-bonus').replaceChildren();renderBonusTiles(r, $('result-bonus'));renderWake(r, $('result-bonus'));renderTransfers(r.kong_deltas, 'kongTransfers', $('result-bonus'));renderTransfers(r.echo_deltas, 'dealerEcho', $('result-bonus'));for(const win of r.win_details||[]){$('result-bonus').append(text('p',winDetail(win),'bonus-detail'));}const rows=r.scores.map((score,i)=>({i,score,delta:r.deltas[i]})).sort((a,b)=>b.score-a.score);$('result-scores').replaceChildren(...rows.map(x=>{const el=text('div','','result-row'+(x.i===0?' self':''));el.append(text('span',playerName(x.i)+(leaders.includes(x.i)?' · '+tr(finishedMatch?'firstPlace':'won'):'')),text('span',(x.delta>0?'+':'')+x.delta.toLocaleString(),'delta'+(x.delta>0?' plus':'')),text('span',x.score.toLocaleString(),'total'));return el;}));$('next-button').textContent=tr(r.next?'next':'newTable');if(!$('result-dialog').open)$('result-dialog').showModal();}
+function showResult(r){const finishedMatch=Boolean(r.match_hands);const leaders=r.match_winners||r.winners;const names=ids=>ids.map(playerName).join(LANGUAGE==='en'?' & ':'、');$('result-title').textContent=tr(r.next?'handResult':finishedMatch?'matchComplete':'matchEnd');$('result-reason').textContent=finishedMatch?tr('matchWinner',{names:names(leaders),total:r.match_hands}):tpl(I18N[LANGUAGE].reason[r.reason_code]||r.reason||'',{names:names(r.winners)});$('result-bonus').replaceChildren();renderBonusTiles(r, $('result-bonus'));renderWake(r, $('result-bonus'));renderTransfers(r.kong_deltas, 'kongTransfers', $('result-bonus'));renderTransfers(r.echo_deltas, 'dealerEcho', $('result-bonus'));renderTransfers(r.pig_deltas, 'flowerPigTransfers', $('result-bonus'));renderTransfers(r.ready_deltas, 'readyTransfers', $('result-bonus'));renderTransfers(r.refund_deltas, 'kongRefunds', $('result-bonus'));for(const win of r.win_details||[]){$('result-bonus').append(text('p',winDetail(win),'bonus-detail'));}const rows=r.scores.map((score,i)=>({i,score,delta:r.deltas[i]})).sort((a,b)=>b.score-a.score);$('result-scores').replaceChildren(...rows.map(x=>{const el=text('div','','result-row'+(x.i===0?' self':''));el.append(text('span',playerName(x.i)+(leaders.includes(x.i)?' · '+tr(finishedMatch?'firstPlace':'won'):'')),text('span',(x.delta>0?'+':'')+x.delta.toLocaleString(),'delta'+(x.delta>0?' plus':'')),text('span',x.score.toLocaleString(),'total'));return el;}));$('next-button').textContent=tr(r.next?'next':'newTable');if(!$('result-dialog').open)$('result-dialog').showModal();}
 $('next-button').onclick=async()=>{if(!game)return;const next=game.result?.next;$('result-dialog').close();if(!next)return start();try{const s=await api(`/api/game/${game.id}/next`,{});render(s);}catch(e){showError('room-error',e);}};
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&selected&&game?.status==='your_turn'&&!$('rules-dialog').open&&!$('result-dialog').open)sendAction(selected);});
 (async()=>{try{const c=await api('/api/catalog');catalog=c.variants;renderLobby();const sid=sessionStorage.getItem('tanyao_session');if(sid){try{const s=await api(`/api/game/${sid}`);if(s.status!=='closed'){variant=s.variant;renderLobby();$('policy').value=s.policy;$('lobby').classList.add('hidden');$('room').classList.remove('hidden');$('footer').classList.add('hidden');$('room-title').textContent=currentVariant().name;$('room-subtitle').textContent=currentVariant().subtitle;render(s);schedulePoll();}}catch{sessionStorage.removeItem('tanyao_session');}}}catch(e){showError('lobby-error',{code:'catalog_failed'});$('start-button').disabled=true;}})();

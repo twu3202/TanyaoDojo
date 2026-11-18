@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play 24 Mahjong rulesets vs AI. English / 中文.
+short_description: Play 26 Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
@@ -15,7 +15,8 @@ Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hong
 **Fangchenggang Hongzhong**, **Wenzhou Fangpao**, **Changsha Zhuanzhuan**, **Taishun**, **Xuanhua**, **Shaanxi**,
 **Lishui Fangpao**, **Wenxi**, **Guilin Zhuanzhuan**, **Pook Dazhong**, **Shanxi Datang Tuidaohu**,
 **Hong Kong Old Style**, **Macau Tournament Mahjong**, **Shangsi**, **Hundred-Tile Mahjong**, **Hezhou**,
-**Liuzhou Exploding Fish**, **Guangzhou Three-Faan**, **Golden Island Guangdong**, or **Guiliu Wake-Tile Mahjong**
+**Liuzhou Exploding Fish**, **Guangzhou Three-Faan**, **Golden Island Guangdong**, **Guiliu Wake-Tile Mahjong**,
+**Sichuan Xuezhan Exchange Three**, or **Yunnan Xuezhan Flower Pig**
 and play with three AI opponents. Search in either language or
 filter by family. Riichi plays a complete East-South match, and Macau plays a 16-hand match over four winds.
 
@@ -36,9 +37,10 @@ You can switch during a hand without losing your table or pending choice.
 
 ## Rule scope
 
-The Sichuan rule version has mandatory dingque, no chi, multiple winners, wind/rain kong payments, a four-fan cap,
-ready-hand settlement and refunds. It **does not include** exchanging three tiles, call transfer, flower-pig
-penalties or every local room option. Those are separate future rule versions, not silently claimed as supported.
+The **Sichuan Xuezhan** table has mandatory dingque, no chi, multiple winners, a four-fan cap, kong,
+ready-hand and refund payments. **Sichuan Xuezhan Exchange Three** adds simultaneous same-suit exchange, and
+**Yunnan Xuezhan Flower Pig** adds passed-pon restrictions and flower-pig penalties paid to all unaffected seats.
+[Rules and sources](deploy/play/rules/BloodBattle.md).
 
 The **112-tile wildcard family** offers two GameTea bonus modes and the Fangchenggang room with seven pairs and
 a four-tile reserve. Source rules and the room choices for unspecified boundaries are listed in the
