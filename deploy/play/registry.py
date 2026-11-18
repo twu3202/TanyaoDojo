@@ -24,6 +24,7 @@ from .northeast import HARBIN
 from .jilin_shuangliao import JILIN, SHUANGLIAO
 from .fuxin import FUXIN_DARK, FUXIN_ROOMS, FUXIN_ZAWU
 from .jiangxi import NANCHANG, SHANGRAO
+from .jiangxi_natural import PINGXIANG, YICHUN
 from .changbai import CHANGBAI
 from .chaoyang_town import CHAOYANG_TOWN
 from .dalian_tieling import DALIAN, TIELING, DALIAN_TIELING_ROOMS
@@ -2726,6 +2727,52 @@ VARIANTS[SHANGRAO.VARIANT] = {
     }},
 }
 
+VARIANTS[YICHUN.VARIANT] = {
+    **VARIANTS[NANCHANG.VARIANT], 'id': YICHUN.VARIANT, 'family_id': 'jiangxi-natural', 'family': 'Jiangxi Natural Tiles',
+    'name': 'Yichun Mahjong · Honor Chows', 'aliases': ['宜春麻将', '宜春字顺', '宜春十三烂'],
+    'rule_version': 'yichun-honor-chows-dojo-v1', 'subtitle': 'Four seats · Natural honor chows and multiple winners',
+    'badge': 'Jiangxi · All honors and separated hands',
+    'description': 'Chow honor tiles and let several players win on the same discard. An all-honors rack can win without four sets and a pair.',
+    'rules': ['Any three distinct winds or the three dragons form a chow. This room uses all 136 printed tiles.',
+              'Win with four sets and a pair, seven pairs, fourteen separated tiles, or an all-honors rack. Seven-star separated requires all seven honors.',
+              'Several players can win on one discard. The discarder pays each winner. On a self-draw, all opponents pay. Passing blocks that face until your turn.',
+              'The last tile can be used for a win or discarded. A last-tile win doubles, and completed kongs are refunded on a draw.'],
+    'sources': [{'title': 'Tongcheng Yichun play and claims', 'url': 'https://m.tcy365.com/news/d26980.html'},
+                {'title': 'Tongcheng Yichun hand multipliers', 'url': 'https://m.tcy365.com/news/d32008.html'},
+                {'title': 'Tongcheng Yichun last tile and draw', 'url': 'https://m.tcy365.com/news/d11415.html'}],
+    'translations': {'zh-CN': {
+        'family': '江西实牌麻将', 'name': '宜春麻将（字顺多响）', 'subtitle': '四人 · 字牌可吃与一炮多响',
+        'badge': '江西 · 字一色与七星十三烂', 'description': '字牌可成顺，一炮可多响。全手都是字牌时可不成阙和牌。',
+        'rules': ['任意三张不同风牌或中发白可组成顺子，全桌使用 136 张实牌。',
+                  '可和四副一对、小七对、十三烂与字一色。七星须集齐七种字牌。',
+                  '放冲独付，可一炮多响，自摸三家付。过胡同面要等自己再行牌。',
+                  '末张可自摸，也可打出，海底和翻倍。黄庄退还本手杠分。'],
+    }},
+}
+
+VARIANTS[PINGXIANG.VARIANT] = {
+    **VARIANTS[YICHUN.VARIANT], 'id': PINGXIANG.VARIANT,
+    'name': 'Pingxiang Mahjong · True Pair', 'aliases': ['萍乡麻将', '萍乡真将', '萍乡258将'],
+    'rule_version': 'pingxiang-true-pair-dojo-v1', 'subtitle': 'Four seats · 2/5/8 eyes and same-suit feed liability',
+    'badge': 'Jiangxi · True pair and dealer-ready draw',
+    'description': 'A basic win needs a 2, 5 or 8 pair and a self-draw. Chowing commits your hand to one numbered suit.',
+    'rules': ['A basic hand needs 2, 5 or 8 as its pair and wins by self-draw. After a chow, only an all-one-suit hand can win.',
+              'Pure suit and seven pairs can win without 2/5/8. An all-pungs win in several suits needs 2/5/8. Bigger hands can claim a discard.',
+              'Giving the same neighbor three chows in one suit makes you responsible for their winning bill. A robbed added kong is billed to its owner.',
+              'If all four players start with the same discard, the dealer pays each opponent. If the wall runs out, refund all kongs and pay the dealer only if ready.'],
+    'sources': [{'title': 'Tongcheng Pingxiang play and true pair', 'url': 'https://m.tcy365.com/news/d26981.html'},
+                {'title': 'Tongcheng Pingxiang hand tiers', 'url': 'https://m.tcy365.com/news/d32108.html'},
+                {'title': 'Tongcheng Pingxiang draw and feed rules', 'url': 'https://m.tcy365.com/news/d36221.html'}],
+    'translations': {'zh-CN': {
+        'family': '江西实牌麻将', 'name': '萍乡麻将（258 真将）', 'subtitle': '四人 · 真将、臭庄查听与三吃包牌',
+        'badge': '江西 · 258 将与臭庄', 'description': '平胡须用 2、5、8 做将且自摸；一旦吃牌，就要做清一色。',
+        'rules': ['平胡用 2、5、8 作将且只能自摸，吃牌后必须做同一门数牌。',
+                  '清一色和七对可以无真将，非清一色碰碰胡要有真将，大胡可以接炮。',
+                  '上家供同色三副吃牌即承担和牌账；抢补杠由被抢者付。',
+                  '四家首打同牌时庄家付三家跟庄分。流局退杠，庄家听牌才收三家臭庄分。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2776,4 +2823,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS, *DALIAN_TIELING_ROOMS, CHANGBAI, CHAOYANG_TOWN, NANCHANG, SHANGRAO)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (YICHUN, PINGXIANG)},
 }

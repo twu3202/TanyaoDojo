@@ -29,7 +29,8 @@ from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
 from .sixteen import SET_COUNT, SixteenRules
-from .jiangxi import HonorChow, NanchangRules, ShangraoRules, jing_chows
+from .jiangxi import HonorChow, NanchangRules, ShangraoRules, honor_chows
+from .jiangxi_natural import TRUE_PAIRS, PingxiangRules, YichunRules
 from .jiangxi_shapes import HONOR_CHOW_ID, honor_chow_routes, spaced_distance, split_jing
 from .liaoning_joker import next_face
 from .changbai import CHANGBAI
@@ -189,6 +190,17 @@ def _sets_distance(hand, meld_count):
                if not pair and (needed := 4 - sets - meld_count) >= 0)
 
 
+@lru_cache(maxsize=32768)
+def _true_pair_distance(hand, meld_count):
+    best = 1 + _sets_distance(hand, meld_count)
+    for face in TRUE_PAIRS:
+        count = min(2, hand[face])
+        if count:
+            rest = hand[:face] + (hand[face] - count,) + hand[face + 1:]
+            best = min(best, _sets_distance(rest, meld_count) + 1 - count)
+    return best
+
+
 def _triplet_distance(hand, needed):
     groups = sorted(range(TILE_COUNT), key=lambda tile: hand[tile], reverse=True)
     base = sum(min(hand[tile], 3) for tile in groups[:needed])
@@ -215,20 +227,32 @@ def _wild_distance(natural, wild, meld_count, require_burst, allow_pairs):
 
 
 def _distance(hand, melds, view):
-    if isinstance(view.rules, (NanchangRules, ShangraoRules)):
-        nanchang = isinstance(view.rules, NanchangRules)
-        if nanchang:
+    if isinstance(view.rules, (NanchangRules, ShangraoRules, YichunRules)):
+        if isinstance(view.rules, NanchangRules):
             natural, wild = split_jing(hand, (view.wildcard, next_face(view.wildcard)))
-        else:
+        elif isinstance(view.rules, ShangraoRules):
             natural, wild = split_wild(hand, view.wildcard)
+        else:
+            natural, wild = hand, 0
         distance = _wild_distance(natural, wild, len(melds), False, True)
-        if nanchang:
+        if isinstance(view.rules, (NanchangRules, YichunRules)):
             for count, honors in honor_chow_routes(natural[27:]):
                 if count and count + len(melds) <= 4:
                     distance = min(distance, standard_distance(natural[:27] + honors, count + len(melds)) - wild)
+        if isinstance(view.rules, YichunRules) and all(min(m.tiles) >= 27 for m in melds):
+            distance = min(distance, 13 - 3 * len(melds) - sum(natural[27:]))
         if not melds:
             distance = min(distance, spaced_distance(natural, wild))
         return max(-1 if sum(hand) % 3 == 2 else 0, distance)
+    if isinstance(view.rules, PingxiangRules):
+        called_suits = {m.tile // 9 for m in melds}
+        routes = [standard_distance(tuple(n if tile // 9 == suit else 0 for tile, n in enumerate(hand)), len(melds))
+                  for suit in range(3) if called_suits <= {suit}]
+        if all(m.kind != 'chi' for m in melds):
+            routes.append(_true_pair_distance(hand, len(melds)))
+        if not melds:
+            routes.append(6 - sum(n // 2 for n in hand))
+        return min(routes, default=9)
     if isinstance(view.rules, LongyanRules):
         natural, wild = split_longyan(hand, view.wildcard)
         distance = _wild_distance(natural, wild, len(melds), False, True)
@@ -495,8 +519,8 @@ def heuristic(view):
     for kind, argument in actions:
         if kind == 'pass':
             continue
-        if kind == 'chi' and isinstance(view.rules, NanchangRules) and argument >= HONOR_CHOW_ID:
-            take, block = next((take, block) for start, take, block in jing_chows(view.hand, offered)
+        if kind == 'chi' and isinstance(view.rules, (NanchangRules, YichunRules)) and argument >= HONOR_CHOW_ID:
+            take, block = next((take, block) for start, take, block in honor_chows(view.hand, offered)
                                if start == argument)
             meld = HonorChow('chi', argument)
         elif kind == 'chi':

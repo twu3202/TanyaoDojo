@@ -310,3 +310,10 @@ function patternText(pattern){
 }
 function localVariant(v){return {...v,...(v.translations?.[LANGUAGE]||{})};}
 function messageText(m){if(!m.code)return m.text||'';const p={...m.params};for(const k of ['actor','target'])if(p[k]!==undefined)p[k]=playerName(p[k]);if(p.tile)p.tile=tileText(p.tile);if(p.direction)p.direction=I18N[LANGUAGE].directions[p.direction];if(p.suit!==undefined)p.suit=I18N[LANGUAGE].suits[p.suit];if(p.action)p.action=m.code==='flow_win'?I18N[LANGUAGE].flowKinds[p.action]:actionText(p.action);if(p.tiles)p.tiles=p.tiles.map(tileText).join(', ');if(p.patterns){p.patterns=p.patterns.map(patternText).join(' · ');p.patterns=p.patterns?' · '+p.patterns:'';}return tpl(I18N[LANGUAGE].messages[m.code]??I18N.en.messages[m.code]??m.code,p);}
+Object.assign(I18N.en, {suitFeedLiability:'{provider} covers {caller} · three same-suit feeds',
+  dealerReadyTransfers:'Ready dealer on a draw · {amounts}'});
+Object.assign(I18N['zh-CN'], {suitFeedLiability:'{provider} 包 {caller} · 同色三吃',
+  dealerReadyTransfers:'臭庄听牌 · {amounts}'});
+Object.assign(I18N.en.fans, {'字一色成阙':'All honors with four sets and a pair',
+  '海底炮':'Win on the final discard', '真将':'2/5/8 eyes', '包牌':'Feed liability',
+  '龙七':'Seven pairs with one quad', '双龙七':'Seven pairs with two quads', '三龙七':'Seven pairs with three quads'});

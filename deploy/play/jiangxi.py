@@ -33,7 +33,7 @@ class JingScore:
         return self.base + self.extra
 
 
-def jing_chows(hand, offered):
+def honor_chows(hand, offered):
     if offered < 27:
         return
     for i, group in enumerate(HONOR_CHOWS):
@@ -42,6 +42,15 @@ def jing_chows(hand, offered):
         take = tuple(face for face in group if face != offered)
         if all(hand[face] for face in take):
             yield HONOR_CHOW_ID + i, take, frozenset()
+
+
+class HonorChowGame(HonorsGame):
+    def _chow_meld(self, start, provider):
+        return HonorChow('chi', start, provider) if start >= HONOR_CHOW_ID else super()._chow_meld(start, provider)
+
+    def _chows(self, player, tile, provider):
+        yield from super()._chows(player, tile, provider)
+        yield from honor_chows(player.hand, tile)
 
 
 def hand_copies(hand, melds):
@@ -146,7 +155,7 @@ class NanchangRules(NortheastRules):
 NANCHANG = NanchangRules('nanchang-double-jing')
 
 
-class NanchangGame(HonorsGame):
+class NanchangGame(HonorChowGame):
     def __init__(self, seed, dealer, round_wind, *, rules=NANCHANG):
         self.flip_rng = Random(seed)
         self.lower_deltas = [0] * rules.OPTIONS.seat_count
@@ -172,13 +181,6 @@ class NanchangGame(HonorsGame):
     def jing_credit(hand, melds, face):
         counts = hand_copies(hand, melds)
         return 2 * counts[face] + counts[next_face(face)]
-
-    def _chow_meld(self, start, provider):
-        return HonorChow('chi', start, provider) if start >= HONOR_CHOW_ID else super()._chow_meld(start, provider)
-
-    def _chows(self, player, tile, provider):
-        yield from super()._chows(player, tile, provider)
-        yield from jing_chows(player.hand, tile)
 
     def _kong_factor(self, meld):
         return 5 if meld.tile == next_face(self.indicator_tile) else 1

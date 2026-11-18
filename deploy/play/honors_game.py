@@ -32,7 +32,8 @@ from .longyan import LONGYAN, LONGYAN_HALF, TRAVEL, LongyanGame
 from .northeast import HARBIN, BaoGame, HarbinGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
-from .jiangxi import NANCHANG, SHANGRAO, NanchangGame, ShangraoGame
+from .jiangxi import NANCHANG, SHANGRAO, HonorChowGame, NanchangGame, ShangraoGame
+from .jiangxi_natural import PINGXIANG, SAME_SUIT_FEED, YICHUN, PingxiangGame
 from .liaoning_joker import next_face
 from .changbai import CHANGBAI, ChangbaiGame
 from .chaoyang_town import CHAOYANG_TOWN, ROB_FED_KONG, ChaoyangGame
@@ -57,7 +58,8 @@ RULESETS = {rule.VARIANT: rule for rule in (
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
     NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS, CHANGCHUN, HARBIN,
-    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN, DALIAN, TIELING, CHANGBAI, CHAOYANG_TOWN, NANCHANG, SHANGRAO,
+    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN, DALIAN, TIELING, CHANGBAI, CHAOYANG_TOWN,
+    NANCHANG, SHANGRAO, YICHUN, PINGXIANG,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -112,6 +114,8 @@ GAME_ENGINES = {
     CHAOYANG_TOWN.VARIANT: ChaoyangGame,
     NANCHANG.VARIANT: NanchangGame,
     SHANGRAO.VARIANT: ShangraoGame,
+    YICHUN.VARIANT: HonorChowGame,
+    PINGXIANG.VARIANT: PingxiangGame,
     **{room.VARIANT: FuxinGame for room in FUXIN_ROOMS},
 }
 
@@ -255,6 +259,9 @@ class HonorsSession(GameSession):
             table['wildcard_indicator'] = self.display_tile(game.indicator_tile)
             table['wildcard_indicated'] = True
             table['flip_roll'] = game.flip_roll
+        if isinstance(game, PingxiangGame):
+            table['suit_feed_liabilities'] = [[seat, provider] for seat, player in enumerate(game.players)
+                                             for pattern, provider in player.liabilities if pattern == SAME_SUIT_FEED]
         if isinstance(game, HangzhouGame):
             table.update(wildcard=self.display_tile(game.wildcard_tile), dealer_multiplier=game.dealer_multiplier,
                          float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())
@@ -427,6 +434,8 @@ class HonorsSession(GameSession):
             if isinstance(game, NanchangGame):
                 self.result['upper_jing_deltas'] = game.jing_deltas.copy()
                 self.result['lower_jing_deltas'] = game.lower_deltas.copy()
+            if isinstance(game, PingxiangGame) and any(game.dealer_ready_deltas):
+                self.result['dealer_ready_deltas'] = game.dealer_ready_deltas.copy()
             if isinstance(game, TaizhouGame) and game.taizhou_settlement is not None:
                 self.result['taizhou_settlement'] = game.taizhou_settlement
             if isinstance(game, ChaoyangGame) and game.reverse_provider is not None:
