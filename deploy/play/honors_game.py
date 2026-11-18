@@ -32,6 +32,7 @@ from .longyan import LONGYAN, LONGYAN_HALF, TRAVEL, LongyanGame
 from .northeast import HARBIN, BaoGame, HarbinGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
+from .dalian_tieling import DALIAN, DALIAN_PEEK, INSIDE_READY, TIELING, DalianGame, TielingGame
 from .liaoning_joker import ANSHAN, PANJIN, LiaoningJokerGame, PanjinGame, open_gun
 from .liaoning_split import JIANCHANG, LIAOYANG, JianchangGame, LiaoyangGame, SplitDrawGame
 from .shenyang import SHENYANG, ShenyangGame
@@ -52,7 +53,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
     NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS, CHANGCHUN, HARBIN,
-    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN,
+    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN, DALIAN, TIELING,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -101,6 +102,8 @@ GAME_ENGINES = {
     LIAOYANG.VARIANT: LiaoyangGame,
     PANJIN.VARIANT: PanjinGame,
     ANSHAN.VARIANT: LiaoningJokerGame,
+    DALIAN.VARIANT: DalianGame,
+    TIELING.VARIANT: TielingGame,
     **{room.VARIANT: FuxinGame for room in FUXIN_ROOMS},
 }
 
@@ -133,6 +136,8 @@ class HonorsSession(GameSession):
             if self.rules is QUZHOU_BANKED:
                 dealer_rules['bank'] = self.totals
             previous = self.game
+            if self.rules is TIELING:
+                dealer_rules['previous_draw'] = previous is not None and previous.reason_code == 'draw'
             self.game = engine(self.seed + self.hand_number, self.dealer,
                                27 + (self.dealer_advances // self.seat_count) % 4, rules=self.rules, **dealer_rules)
             if isinstance(self.game, JiaxingGame):
@@ -217,6 +222,10 @@ class HonorsSession(GameSession):
             table['bao_tiles'] = [{'owner': owner, 'tile': self.display_tile(tile)} for owner, tile in game.bao_view(0)]
             if isinstance(game, JilinGame) and table['bao_tiles']:
                 table['bao_roll'] = game.bao_slot + 1
+        if isinstance(game, DalianGame) and table['bao_tiles']:
+            table['bao_roll'] = game.bao_slot // 2 + 1
+        if isinstance(game, TielingGame):
+            table['longmao'] = game.long_hair
         if isinstance(game, (ShenyangGame, SplitDrawGame)):
             table['split_draw'] = game.split_draw
         if isinstance(game, (LiaoyangGame, LiaoningJokerGame)):
@@ -315,6 +324,8 @@ class HonorsSession(GameSession):
         option = {'action': action, 'kind': kind, 'label': kind, 'tiles': tiles}
         if kind == 'win_bao' and isinstance(self.game, JilinGame) and self.game.bao_match_reason() == 'tong_bao_win':
             option['win_type'] = 'tong_bao'
+        if kind == 'win_bao' and isinstance(self.game, DalianGame):
+            option['win_type'] = DALIAN_PEEK
         if kind == 'ron' and isinstance(self.game, HangzhouGame):
             option['win_type'] = 'rob_kong' if self.game.offer.kind == 'gang_bu' else 'fangchong_win'
         return option
@@ -338,13 +349,15 @@ class HonorsSession(GameSession):
             game.step(action)
             kind, tile = action
             hidden_discard = kind == 'declare_ready' and isinstance(game, FuxinGame) and self.rules.DARK_READY
-            if not hidden_discard and kind in ('discard', 'declare_ready', 'declare_dark', TEN_WINDS, ELEVEN_WINDS):
+            if not hidden_discard and kind in ('discard', 'declare_ready', INSIDE_READY, 'declare_dark', TEN_WINDS, ELEVEN_WINDS):
                 self.log_event('discard', {'actor': actor, 'tile': self.display_tile(tile)})
             elif kind == FLOAT[0]:
                 self.log_event('wildcard_float', {'actor': actor, 'count': game.float_streak[actor]}, 'call')
             elif kind == TRAVEL:
                 self.log_event('travel_gold', {'actor': actor, 'level': game.travel_level,
                                               'tile': self.display_tile(tile)}, 'call')
+            if kind == INSIDE_READY:
+                self.log_event('inside_ready', {'actor': actor}, 'call')
             if kind == 'declare_ready':
                 if isinstance(game, BaoGame):
                     code = 'declared_ready'

@@ -104,6 +104,7 @@ if(table.wildcard){
   if(table.white_flower) $('dora').append(text('span',tr('whiteFlower'),'white-substitute'));
 }
 if(table.open_gun) $('dora').append(text('span',tr('openGun')),img(table.open_gun));
+if(table.longmao) $('dora').append(text('span',tr('longmaoBonus'),'tag'));
 if(table.fresh_stage) $('dora').append(text('span',tr('taizhouFreshStage'),'tag'));
 if(table.yellow_faan) $('dora').append(text('span',tr('yellowFaan',{n:table.yellow_faan}),'tag'));
 if(table.longest_suit!==undefined) $('dora').append(text('span',tr('longestSuit',{n:table.longest_suit}),'tag'));
@@ -185,7 +186,7 @@ function turnPrompt(snapshot) {
     if (player.ready && snapshot.variant === 'jj-three-player') return 'promptPaidReady';
   }
   return {void:'promptVoid',rob_kong:'promptRob',piao:'promptPiao',buy_base:'promptBuyBase',liability_choice:'liabilityPrompt',
-    gold_opening:'promptGold',flower_win:'promptFlowerWin',bao_peek:'promptBaoPeek'}[table.phase] || 'promptTurn';
+    gold_opening:'promptGold',flower_win:'promptFlowerWin',bao_peek:snapshot.variant==='dalian-private-bao'?'promptDalianPeek':'promptBaoPeek'}[table.phase] || 'promptTurn';
 }
 function renderActions() {
   const box = $('actions');
@@ -229,6 +230,7 @@ function renderActions() {
     const declarations = [
       ['declare_ready', openReady ? 'declareOpenReady' : 'declareReady',
        openReady ? tr('openReadyTag') : actionText('declare_ready')],
+      ['declare_inside_ready', 'declareInsideReady', actionText('declare_inside_ready')],
       ['declare_dark', 'declareDarkReady', tr('darkReadyTag')],
     ];
     for (const [kind, message, shortLabel] of declarations) {
@@ -244,7 +246,7 @@ function renderActions() {
     }
   }
   for (const option of game.choices) {
-    if (isDiscard(option) || (discards.length && ['declare_ready','declare_dark'].includes(option.kind))) continue;
+    if (isDiscard(option) || (discards.length && ['declare_ready','declare_dark','declare_inside_ready'].includes(option.kind))) continue;
     const button = text('button', optionText(option), 'action' +
       (['hora', 'ron', 'zimo', 'ten_winds', 'eleven_winds', 'claim_gold', 'three_gold', 'four_gold', 'flower_hu', 'opening_heaven', 'win_bao'].includes(option.kind) ? ' primary-action' : ''));
     for (const tile of option.tiles.slice(0, 4)) button.append(img(tile));

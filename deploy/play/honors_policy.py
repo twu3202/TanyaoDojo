@@ -29,6 +29,7 @@ from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
 from .sixteen import SET_COUNT, SixteenRules
+from .dalian_tieling import INSIDE_READY
 from .liaoning_joker import LiaoningJokerRules
 from .liaoning_split import LiaoyangRules
 from .wildcard_shapes import without_tile
@@ -408,11 +409,19 @@ def heuristic(view):
             return BAO_WIN
         if ZIMO in actions:
             return ZIMO
-        declarations = [a for a in actions if a[0] == 'declare_ready']
+        declarations = [a for a in actions if a[0] in ('declare_ready', INSIDE_READY)]
         if declarations:
             live = _live_tiles(view)
-            return max(declarations, key=lambda a: sum(live[tile] for tile in view.rules.waits(
-                without_tile(view.hand, a[1]), view.melds)))
+
+            def declaration_rank(action):
+                hand = without_tile(view.hand, action[1])
+                waits = view.rules.waits(hand, view.melds)
+                inside = action[0] == INSIDE_READY
+                if inside:
+                    waits = view.rules.inside_waits(hand, view.melds, waits)
+                return sum(live[tile] for tile in waits), inside
+
+            return max(declarations, key=declaration_rank)
         call = next((a for a in actions if a[0] in READY_CALLS or a[0] in EGG_GROUPS
                      or a[0] in ('extend_egg', 'rob_egg_pon')), None)
         if call is not None:

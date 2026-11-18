@@ -131,7 +131,10 @@ class BaoGame(HonorsGame):
         else:
             rest = without_tile(hand, tile)
             melds = tuple(Meld('gang_bu', tile, m.provider) if m.kind == 'peng' and m.tile == tile else m for m in p.melds)
-        return self.rules.waits(rest, melds) == self.declared_waits[actor]
+        return self._locked_waits(actor, rest, melds) == self.declared_waits[actor]
+
+    def _locked_waits(self, actor, hand, melds):
+        return self.rules.waits(hand, melds)
 
     def legal_actions(self):
         actor, actions = super().legal_actions()

@@ -23,6 +23,7 @@ from .macau import VARIANT as MACAU
 from .northeast import HARBIN
 from .jilin_shuangliao import JILIN, SHUANGLIAO
 from .fuxin import FUXIN_DARK, FUXIN_ROOMS, FUXIN_ZAWU
+from .dalian_tieling import DALIAN, TIELING, DALIAN_TIELING_ROOMS
 from .liaoning_joker import ANSHAN, PANJIN, LIAONING_JOKER_ROOMS
 from .liaoning_split import JIANCHANG, LIAOYANG, LIAONING_SPLIT_ROOMS
 from .shenyang import SHENYANG
@@ -2596,6 +2597,47 @@ VARIANTS[ANSHAN.VARIANT] = {
     }},
 }
 
+VARIANTS[DALIAN.VARIANT] = {
+    **VARIANTS[CHANGCHUN.VARIANT], 'id': DALIAN.VARIANT,
+    'name': 'Dalian Qionghu · Private Bao', 'aliases': ['大连穷胡', '大连冲宝'],
+    'rule_version': 'dalian-private-bao-dojo-v1', 'subtitle': 'Four seats · Declare ready or edge/middle ready',
+    'badge': 'Liaoning · Private bao and one-payer discard wins',
+    'description': 'Peek at the private bao before drawing. Win immediately when it matches your declared wait.',
+    'rules': ['Open the hand and keep all three suits, a terminal or honor, a chow, and a pung, kong or dragon eyes. '
+              'An ordinary win needs no declaration. Edge/middle ready locks only edge or middle waits and adds one fan when you win.',
+              'After declaring, peek at the bao before your own draw. Matching the flip wins immediately. '
+              'A later self-drawn copy can fill the locked wait. The third discard of its face expires that bao.',
+              'The supplier alone pays a discard win. All three opponents pay on a self-draw or bao win.'],
+    'sources': [{'title': 'Bianfeng Dalian Qionghu ready declarations, bao and payments', 'url': 'https://www.hzbianqu.com/game/850.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北宝牌麻将', 'name': '大连穷胡（夹听冲宝）', 'subtitle': '四人 · 平听、夹听与私看宝',
+        'badge': '辽宁 · 夹听冲宝与点炮独付', 'description': '报听后自己下一次摸牌前看宝。翻出所听牌可立即冲宝。',
+        'rules': ['开门且三门齐，有幺九或字、有顺子，并有刻杠或中发白作将。普通胡可不报听。夹听只锁边张或夹张，胡时多一番。',
+                  '报听后下次摸牌前私看宝，翻到听牌可直接冲宝。之后实际摸到同面宝可代听张。同面三次实际弃出后该宝失效。',
+                  '点炮只付点炮者一席账；自摸及冲宝由三家付。'],
+    }},
+}
+
+VARIANTS[TIELING.VARIANT] = {
+    **VARIANTS[SHENYANG.VARIANT], 'id': TIELING.VARIANT,
+    'name': 'Tieling Mahjong · Closed Ready', 'aliases': ['铁岭麻将', '铁岭闷听', '铁岭长毛'],
+    'rule_version': 'tieling-closed-ready-dojo-v1', 'subtitle': 'Four seats · Lock a closed hand and carry draw bonuses',
+    'badge': 'Liaoning · Closed ready and longmao bonus',
+    'description': 'A closed hand must declare ready before winning. A drawn previous hand or four matching first discards adds longmao.',
+    'rules': ['Open hands can win directly. Closed hands must declare ready. A kong may keep the hand closed if every wait stays the same.',
+              'Reveal four winds or all three dragons from the opening rack. Revealed eggs can add fan to another player’s '
+              'matching honor pungs. Draw the last four tiles without discarding.',
+              'The previous hand’s draw or four matching first discards adds one longmao fan. All opponents pay, with an extra factor for the supplier.'],
+    'sources': [{'title': 'Bianfeng Tieling closed ready, whirlwinds, split and longmao', 'url': 'https://www.hzbianqu.com/game/132.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '铁岭麻将（闷听长毛）', 'subtitle': '四人 · 闷听锁手与跨手长毛',
+        'badge': '辽宁 · 闷听、旋风、海底分张', 'description': '闭门须先报闷听。上手流局或本手四家首打相同，触发长毛。',
+        'rules': ['三门齐且有幺九或字。开门可直接胡，闭门须报闷听。合法暗杠须保持听口，并保留闷听番。',
+                  '起手亮四风或中发白。别人亮出的旋风或喜杠，可提高同类风刻或箭刻番。最后四张分摸，只能自摸或过。',
+                  '上一手流局或本手四家首打同面，赢家得一番长毛。三家出账，放铳者多一番。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2645,5 +2687,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
-    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS, *DALIAN_TIELING_ROOMS)},
 }

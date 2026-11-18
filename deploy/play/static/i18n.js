@@ -213,6 +213,20 @@ I18N.en.baoRoll='Bao roll · {n}';
 I18N['zh-CN'].baoRoll='掷宝 · {n} 点';
 I18N.en.foldedReadyDiscard='Face-down ready discard';
 I18N['zh-CN'].foldedReadyDiscard='报听扣牌';
+Object.assign(I18N.en, {longmaoBonus:'Longmao bonus active', declareInsideReady:'Declare edge/middle ready · {tile}',
+  promptDalianPeek:'The bao matches your wait. Win now or take your draw.'});
+Object.assign(I18N['zh-CN'], {longmaoBonus:'长毛已生效', declareInsideReady:'报夹听 · {tile}',
+  promptDalianPeek:'宝牌正好是听张。可冲宝，也可继续摸牌。'});
+I18N.en.action.declare_inside_ready='Declare edge/middle ready';
+I18N['zh-CN'].action.declare_inside_ready='报夹听';
+I18N.en.action.dalian_bao_peek_win='Win by matching bao';
+I18N['zh-CN'].action.dalian_bao_peek_win='冲宝';
+I18N.en.reason.dalian_bao_peek_win='{names} won by matching bao';
+I18N['zh-CN'].reason.dalian_bao_peek_win='{names} 冲宝胡牌';
+I18N.en.messages.inside_ready='{actor} declared edge/middle ready.';
+I18N['zh-CN'].messages.inside_ready='{actor} 报夹听。';
+Object.assign(I18N.en.fans, {'冲宝':'Matching bao', '长毛':'Longmao', '喜杠加番':'Dragon egg bonus',
+  '对倒飘胡':'All pungs with a pung wait', '单吊飘胡':'All pungs with a pair wait', '定向飘':'Third-suit pair wait'});
 I18N.en.openGun='Open gun';
 I18N['zh-CN'].openGun='明枪';
 I18N.en.jokerWinLock='Win locked';
