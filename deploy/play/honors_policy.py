@@ -12,6 +12,7 @@ from .anji import AnjiRules
 from .chongji import ChongjiRules
 from .dongyang import DongyangRules, white_assignments
 from .fujian_sixteen import FujianSixteenRules
+from .fujian_travel import QuanzhouRules
 from .fuzhou import FuzhouRules
 from .gold_opening import GOLD_CLAIMS, split_gold
 from .hangzhou import FLOAT, WHITE, split_wild
@@ -373,6 +374,10 @@ def heuristic(view):
         if travels and (ZIMO not in actions or view.travel_level or view.hand[view.wildcard] >= 2 or view.remaining >= 36):
             return next((action for action in travels if action[1] != view.wildcard), travels[0])
     if isinstance(view.rules, XianyouRules) and not view.melds and view.remaining >= 28:
+        travel = next((action for action in actions if action[0] == TRAVEL), None)
+        if travel is not None:
+            return travel
+    if isinstance(view.rules, QuanzhouRules) and (view.travel_level or not view.melds and view.remaining >= 32):
         travel = next((action for action in actions if action[0] == TRAVEL), None)
         if travel is not None:
             return travel

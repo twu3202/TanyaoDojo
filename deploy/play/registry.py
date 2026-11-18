@@ -6,6 +6,7 @@ from .chongji import CHONGJI, CHONGJI_SEVEN
 from .dongyang import DONGYANG
 from .fuzhou import FUZHOU
 from .fujian_sixteen import NANPING_HONORS, NANPING_RED, NANPING_SUITED, NINGDE
+from .fujian_travel import FUJIAN_TRAVEL_ROOMS, NINGDE_RANDOM_GOLD, QUANZHOU
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
 from .guiliu import VARIANT as GUILIU
@@ -2312,6 +2313,51 @@ VARIANTS[XIANYOU_SELF_DRAW.VARIANT] = {
     }},
 }
 
+VARIANTS[QUANZHOU.VARIANT] = {
+    'id': QUANZHOU.VARIANT, 'family_id': 'sixteen-tile', 'family': 'Sixteen-tile Mahjong', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Quanzhou Mahjong · Triplet and Kong Points', 'aliases': ['泉州麻将', '泉州刻分', '泉州三游'],
+    'rule_version': 'quanzhou-triplet-water-dojo-v1', 'subtitle': 'Four seats · 144 tiles · Three gold travel levels',
+    'badge': 'Fujian · Weighted triplets and kongs',
+    'description': 'Score triplets and kongs by face, then apply the winning multiplier. The third travel settles immediately.',
+    'rules': ['Deal 16/17 from 144 tiles. Replace flowers and flip a gold wildcard. Chows come from the preceding seat. '
+              'Five sets and a pair can win on a discard or draw. The dealer can win on the opening deal, and eight flowers can win by declaration.',
+              'Count numbered pungs as 1 and honor pungs as 2. Count open and concealed kongs as sets with their own weights, '
+              'then add the kong category, gold, flowers and base before multiplying.',
+              'Declare gold travel after discarding to a wait with a gold for the eyes. Re-discard a newly drawn gold to continue. '
+              'The third travel settles immediately. Repeat-dealer points apply to bills involving the dealer.'],
+    'sources': [{'title': 'Xinyue Quanzhou scoring and travel multipliers', 'url': 'https://www.xinyueyouxi.com/game/219-22?doc-innerlink-%E6%97%A0%E6%95%8C=&region='},
+                {'title': 'Tiandu Quanzhou wall and dealer progression', 'url': 'https://m.tdqp8.com/Home/Info/10652.html'}],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '泉州麻将（刻杠计分）', 'subtitle': '四人 · 144 张 · 单游双游三游',
+        'badge': '福建 · 刻杠分数按牌种', 'description': '按数牌和字牌分别计刻杠，再乘胡法倍数。三游当场结算。',
+        'rules': ['144 张，发 16／17 张，轮补后翻金。下家可吃，五副一对可接炮或自摸。可宣天胡或八花。',
+                  '数牌刻 1、字牌刻 2，杠作副牌按明暗计分，再加杠类别、金、花和底分，乘胡法倍数。',
+                  '打出后有金作将、任摸可胡时可游金。续摸金再打金进双游或三游，三游当场结算。连庄分只加在涉及庄家的账上。'],
+    }},
+}
+
+VARIANTS[NINGDE_RANDOM_GOLD.VARIANT] = {
+    **VARIANTS[QUANZHOU.VARIANT], 'id': NINGDE_RANDOM_GOLD.VARIANT,
+    'name': 'Ningde Mahjong · Random Gold and Flowers', 'aliases': ['宁德随机开金', '宁德有花', '宁德一水胡'],
+    'rule_version': 'ningde-random-gold-water-dojo-v1', 'subtitle': 'Four seats · 144 tiles · Flower and water scoring',
+    'badge': 'Fujian · Flipped gold and highest award',
+    'description': 'Replace flowers and flip gold. Combine flower, gold and kong points with the largest qualifying award.',
+    'rules': ['Deal 16/17 from 144 tiles. Replace flowers before flipping gold. White Dragons take the natural value of gold in concealed scoring.',
+              'Opening choices include dealer heaven, three golds or claiming the flipped tile. Later, any complete five-set hand can win or travel with gold.',
+              'Water counts flowers, gold and completed kongs. Add the largest qualifying award, including no water, one water, '
+              'mixed suit or pure suit. A self-draw doubles the water and repeat-dealer subtotal.'],
+    'sources': [{'title': 'Xinyue Ningde random-gold scoring schedule', 'url': 'https://www.xinyueyouxi.com/game/222-22?doc-innerlink-%E8%81%8C%E4%B8%9A=&region='},
+                {'title': '91.com Ningde launch rules and White Dragon substitution', 'url': 'https://news.17173.com/content/2005-7-29/n11_927315.html'}],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '宁德麻将（随机开金）', 'subtitle': '四人 · 144 张 · 花水与最高牌型分',
+        'badge': '福建 · 翻金与最高牌型', 'description': '轮补后开金，花、金、杠小计叠加最高的特殊牌型分。',
+        'rules': ['144 张，发 16／17 张，轮补后开金。白板作金的自然牌面。',
+                  '开局可天胡、三金倒或抢金。后续可五副一对胡，也可宣游金。',
+                  '水计花、金和已成的杠。无水、一水、混一色、清一色等只计最高特殊分。自摸时水与连庄小计翻倍。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2358,4 +2404,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (LONGYAN, LONGYAN_HALF)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in XIANYOU_ROOMS},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
 }

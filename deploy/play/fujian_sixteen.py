@@ -189,6 +189,8 @@ NINGDE = NingdeRules('ningde-white-gold')
 
 
 class FujianSixteenGame(GoldOpening, SixteenGame):
+    RECORD_FOLLOW = True
+
     def __init__(self, seed, dealer, round_wind, *, rules, dealer_streak=0):
         self.indicator_tile = None
         self.following = True
@@ -208,7 +210,7 @@ class FujianSixteenGame(GoldOpening, SixteenGame):
         seats = [(self.dealer + step) % self.seat_count for step in range(1, self.seat_count + 1)]
         self.wildcard_tile = self.rules.FIXED_GOLD
         if self.wildcard_tile is None:
-            self._start_gold_opening(self._replacement_index(), seats, heaven=True)
+            self._open_flipped_gold(seats)
             return
         for actor in seats:
             if self.players[actor].hand[self.wildcard_tile] == 4:
@@ -217,6 +219,9 @@ class FujianSixteenGame(GoldOpening, SixteenGame):
                     entries.insert(0, (self.dealer, 'opening_heaven'))
                 self._queue_gold_choices(entries)
                 break
+
+    def _open_flipped_gold(self, seats):
+        self._start_gold_opening(self._replacement_index(), seats, heaven=True)
 
     def _qualifies_for_gold(self, hand):
         return self.rules.can_form(hand, (), gold=self.wildcard_tile)
@@ -235,7 +240,7 @@ class FujianSixteenGame(GoldOpening, SixteenGame):
 
     def _discard(self, actor, tile):
         super()._discard(actor, tile)
-        if self.rules is not NINGDE:
+        if self.RECORD_FOLLOW and self.rules is not NINGDE:
             record_opening_follow(self, actor, tile)
 
     def _chows(self, player, tile, provider):

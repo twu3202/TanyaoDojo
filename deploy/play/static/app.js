@@ -106,6 +106,7 @@ if(table.yellow_faan) $('dora').append(text('span',tr('yellowFaan',{n:table.yell
 if(table.longest_suit!==undefined) $('dora').append(text('span',tr('longestSuit',{n:table.longest_suit}),'tag'));
 if(table.win_blocked) $('dora').append(text('span',tr('passedWinBlock'),'tag'));
 if(table.travel_level) $('dora').append(text('span',tr('travelStatus',{name:playerName(table.travel_owner),n:table.travel_level}),'tag'));
+if(table.dealer_streak) $('dora').append(text('span',tr('dealerStreak',{n:table.dealer_streak}),'tag'));
 if(table.gold_owner!=null) $('dora').append(text('span',tr('goldDiscardStatus',{name:playerName(table.gold_owner)}),'tag'));
 $('table').classList.toggle('two-player',table.players.length===2);
 $('table').classList.toggle('three-player',table.players.length===3);

@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 77 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 79 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -15,11 +15,14 @@ Jinyun Classic, Jinyun Cantonese Style, Jiaxing Raise the Head, Pinghu Flowers a
 Quzhou Lata, Quzhou Lata Banked Match, Bengbu Classic, Bengbu East Wind Flowers, Lipu Feed Liability, Wuhu Eight Suit Tiles,
 Wuhu Red Dragon 515, Anhui Red Dragon, Fuzhou 36 Flowers, Taiwanese Sixteen Tiles, Longyan New Chapter,
 Longyan Half Self-Draw, Nanping Honors and Flowers, Nanping Suits and Flowers, Nanping Red Dragon Gold,
-Ningde White Gold, Xianyou White Dragon Substitution, Xianyou White Dragon Flowers, and Xianyou Self-Draw.
+Ningde White Gold, Xianyou White Dragon Substitution, Xianyou White Dragon Flowers, Xianyou Self-Draw,
+Quanzhou Triplet and Kong Points, and Ningde Random Gold and Flowers.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
 
+- `fujian_travel.py` supports exact triplet and kong weights, immediate third gold travel, and flower-water scoring.
+  [Quanzhou and Ningde rules](rules/QuanzhouNingdeGold.md).
 - `xianyou.py` shares five-set gold travel between two White Dragon treatments and the 112-tile self-draw game.
   [Xianyou rules and room conventions](rules/Xianyou.md).
 - `fujian_sixteen.py`: three Nanping tile sets and payment schedules, plus Ningde's fixed White Dragon

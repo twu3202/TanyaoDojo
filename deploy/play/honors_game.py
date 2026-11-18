@@ -16,6 +16,7 @@ from .errors import ClientError
 from .flower_wall import FLOWER_TILES, FlowerWall
 from .fuzhou import FUZHOU, FuzhouGame
 from .fujian_sixteen import NANPING_HONORS, NANPING_RED, NANPING_SUITED, NINGDE, FujianSixteenGame
+from .fujian_travel import FUJIAN_TRAVEL_ROOMS, FujianTravelGame
 from .hangzhou import FLOAT, HANGZHOU_ROOMS, WHITE, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
@@ -43,7 +44,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
-    NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS,
+    NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -82,6 +83,7 @@ GAME_ENGINES = {
     LONGYAN_HALF.VARIANT: LongyanGame,
     **{room.VARIANT: FujianSixteenGame for room in (NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE)},
     **{room.VARIANT: XianyouGame for room in XIANYOU_ROOMS},
+    **{room.VARIANT: FujianTravelGame for room in FUJIAN_TRAVEL_ROOMS},
 }
 
 
@@ -217,6 +219,8 @@ class HonorsSession(GameSession):
                 table['wildcard_indicator'] = self.display_tile(game.indicator_tile)
             if self.rules.WHITE_FLOWER:
                 table['white_flower'] = True
+        if isinstance(game, FujianTravelGame):
+            table.update(travel_owner=game.travel_owner, travel_level=game.travel_level, dealer_streak=game.dealer_streak)
         if isinstance(game, LongyanGame):
             table.update(travel_owner=game.travel_owner, travel_level=game.travel_level, gold_owner=game.gold_owner)
             if game.wildcard_tile != WHITE:
