@@ -393,7 +393,7 @@ class HonorsGame:
         actions = [PASS]
         if offer.tile not in player.declined_wins and not (self.options.pass_win_all and player.declined_wins):
             score, _, _ = self._win(actor, offer)
-            if score is not None and score.share > max(player.declined_win_share,
+            if score is not None and self._pass_win_value(actor, offer, score) > max(player.declined_win_share,
                                                         player.declined_win_values.get(offer.tile, -1)):
                 actions.append(RON)
         if (offer.kind == 'discard' and self.remaining > self.options.closed_live_tail
@@ -408,6 +408,12 @@ class HonorsGame:
             if self.options.chow and actor == (offer.actor + 1) % self.seat_count:
                 actions.extend(('chi', start) for start, _, _ in self._chows(player, offer.tile, offer.actor))
         return actor, actions
+
+    def _pass_win_value(self, actor, offer, score):
+        return score.share
+
+    def _chow_meld(self, start, provider):
+        return Meld('chi', start, provider)
 
     def _chows(self, player, tile, provider):
         return chow_choices(player.hand, tile, swap_lock=self.rules.SWAP_LOCK,
@@ -487,7 +493,7 @@ class HonorsGame:
                 player.declined_win_values[offer.tile] = score.share
             elif self.options.pass_win_higher_all:
                 score, _, _ = self._win(actor, offer)
-                player.declined_win_share = score.share
+                player.declined_win_share = self._pass_win_value(actor, offer, score)
         if kind in CALL_PRIORITY:
             if self.claim is None or CALL_PRIORITY[kind] > CALL_PRIORITY[self.claim[1]]:
                 self.claim = actor, kind, argument
@@ -518,7 +524,7 @@ class HonorsGame:
         if kind == 'chi':
             consumed, forbidden = next((take, block) for start, take, block in self._chows(player, offer.tile, offer.actor)
                                        if start == argument)
-            meld = Meld('chi', argument, offer.actor)
+            meld = self._chow_meld(argument, offer.actor)
         else:
             consumed = (offer.tile,) * (2 if kind == 'peng' else 3)
             forbidden = frozenset()

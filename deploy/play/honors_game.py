@@ -32,6 +32,8 @@ from .longyan import LONGYAN, LONGYAN_HALF, TRAVEL, LongyanGame
 from .northeast import HARBIN, BaoGame, HarbinGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
+from .jiangxi import NANCHANG, SHANGRAO, NanchangGame, ShangraoGame
+from .liaoning_joker import next_face
 from .changbai import CHANGBAI, ChangbaiGame
 from .chaoyang_town import CHAOYANG_TOWN, ROB_FED_KONG, ChaoyangGame
 from .dalian_tieling import DALIAN, DALIAN_PEEK, INSIDE_READY, TIELING, DalianGame, TielingGame
@@ -55,7 +57,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
     NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS, CHANGCHUN, HARBIN,
-    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN, DALIAN, TIELING, CHANGBAI, CHAOYANG_TOWN,
+    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN, DALIAN, TIELING, CHANGBAI, CHAOYANG_TOWN, NANCHANG, SHANGRAO,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -108,6 +110,8 @@ GAME_ENGINES = {
     TIELING.VARIANT: TielingGame,
     CHANGBAI.VARIANT: ChangbaiGame,
     CHAOYANG_TOWN.VARIANT: ChaoyangGame,
+    NANCHANG.VARIANT: NanchangGame,
+    SHANGRAO.VARIANT: ShangraoGame,
     **{room.VARIANT: FuxinGame for room in FUXIN_ROOMS},
 }
 
@@ -241,6 +245,16 @@ class HonorsSession(GameSession):
             table['wildcard_indicator'] = self.display_tile(game.indicator_tile)
             if self.rules is ANSHAN and (gun := open_gun(game.wildcard_tile)) is not None:
                 table['open_gun'] = self.display_tile(gun)
+        if isinstance(game, NanchangGame):
+            table['wildcard'] = self.display_tile(game.wildcard_tile)
+            table['upper_jing'] = [self.display_tile(t) for t in (game.indicator_tile, next_face(game.indicator_tile))]
+            table['lower_jing'] = [self.display_tile(t) for t in (game.lower_indicator_tile, next_face(game.lower_indicator_tile))]
+            table['flip_roll'] = game.flip_roll
+        if isinstance(game, ShangraoGame):
+            table['wildcard'] = self.display_tile(game.wildcard_tile)
+            table['wildcard_indicator'] = self.display_tile(game.indicator_tile)
+            table['wildcard_indicated'] = True
+            table['flip_roll'] = game.flip_roll
         if isinstance(game, HangzhouGame):
             table.update(wildcard=self.display_tile(game.wildcard_tile), dealer_multiplier=game.dealer_multiplier,
                          float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())
@@ -315,7 +329,9 @@ class HonorsSession(GameSession):
             tiles = [self.display_tile(index) for index in tile]
         elif kind in ('piao', 'buy_base', 'liability_choice'):
             return {'action': action, 'kind': kind, 'label': kind, 'tiles': [], 'value': tile}
-        elif kind in ('chi', 'ready_chi'):
+        elif kind == 'chi':
+            tiles = [self.display_tile(index) for index in self.game._chow_meld(tile, self.game.offer.actor).tiles]
+        elif kind == 'ready_chi':
             tiles = [self.display_tile(index) for index in range(tile, tile + 3)]
         elif kind in ('ron', 'peng', 'zhigang', 'ready_pon', 'rob_egg_pon'):
             tiles = [self.display_tile(self.game.offer.tile)]
@@ -408,6 +424,9 @@ class HonorsSession(GameSession):
             self.result = {'reason_code': game.reason_code, 'scores': self.totals.copy(),
                            'deltas': delta, 'winners': game.winners.copy(),
                            'win_details': [asdict(win) for win in game.win_details], 'next': not finished}
+            if isinstance(game, NanchangGame):
+                self.result['upper_jing_deltas'] = game.jing_deltas.copy()
+                self.result['lower_jing_deltas'] = game.lower_deltas.copy()
             if isinstance(game, TaizhouGame) and game.taizhou_settlement is not None:
                 self.result['taizhou_settlement'] = game.taizhou_settlement
             if isinstance(game, ChaoyangGame) and game.reverse_provider is not None:

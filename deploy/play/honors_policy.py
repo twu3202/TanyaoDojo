@@ -29,6 +29,9 @@ from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
 from .sixteen import SET_COUNT, SixteenRules
+from .jiangxi import HonorChow, NanchangRules, ShangraoRules, jing_chows
+from .jiangxi_shapes import HONOR_CHOW_ID, honor_chow_routes, spaced_distance, split_jing
+from .liaoning_joker import next_face
 from .changbai import CHANGBAI
 from .chaoyang_town import ROB_FED_KONG
 from .dalian_tieling import INSIDE_READY
@@ -67,6 +70,9 @@ def policy_view(game, actor, actions):
     indicator_tile = getattr(game, 'indicator_tile', None)
     if indicator_tile is not None:
         visible[indicator_tile] += 1
+    lower_indicator = getattr(game, 'lower_indicator_tile', None)
+    if lower_indicator is not None:
+        visible[lower_indicator] += 1
     for seat, player in enumerate(game.players):
         for meld in player.melds:
             if (seat != actor and meld.kind == 'gang_an'
@@ -209,6 +215,20 @@ def _wild_distance(natural, wild, meld_count, require_burst, allow_pairs):
 
 
 def _distance(hand, melds, view):
+    if isinstance(view.rules, (NanchangRules, ShangraoRules)):
+        nanchang = isinstance(view.rules, NanchangRules)
+        if nanchang:
+            natural, wild = split_jing(hand, (view.wildcard, next_face(view.wildcard)))
+        else:
+            natural, wild = split_wild(hand, view.wildcard)
+        distance = _wild_distance(natural, wild, len(melds), False, True)
+        if nanchang:
+            for count, honors in honor_chow_routes(natural[27:]):
+                if count and count + len(melds) <= 4:
+                    distance = min(distance, standard_distance(natural[:27] + honors, count + len(melds)) - wild)
+        if not melds:
+            distance = min(distance, spaced_distance(natural, wild))
+        return max(-1 if sum(hand) % 3 == 2 else 0, distance)
     if isinstance(view.rules, LongyanRules):
         natural, wild = split_longyan(hand, view.wildcard)
         distance = _wild_distance(natural, wild, len(melds), False, True)
@@ -309,7 +329,7 @@ def _ready_waits(hand, melds, view, live):
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
     elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, LiaoningJokerRules,
-                                  LiaoyangRules, PinghuRules, QuzhouRules)):
+                                  LiaoyangRules, NanchangRules, PinghuRules, QuzhouRules, ShangraoRules)):
         params['wildcard'] = view.wildcard
     if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules,
                               TiantaiWildcardRules, WuhuRules, SixteenRules, LongyanRules)):
@@ -475,7 +495,11 @@ def heuristic(view):
     for kind, argument in actions:
         if kind == 'pass':
             continue
-        if kind == 'chi':
+        if kind == 'chi' and isinstance(view.rules, NanchangRules) and argument >= HONOR_CHOW_ID:
+            take, block = next((take, block) for start, take, block in jing_chows(view.hand, offered)
+                               if start == argument)
+            meld = HonorChow('chi', argument)
+        elif kind == 'chi':
             options = getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS)
             swap_rule = getattr(view.rules, 'chow_swap_lock', None)
             swap_lock = view.rules.SWAP_LOCK if swap_rule is None else swap_rule(view.melds, view.offered_by)

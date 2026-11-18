@@ -213,6 +213,15 @@ I18N.en.baoRoll='Bao roll · {n}';
 I18N['zh-CN'].baoRoll='掷宝 · {n} 点';
 I18N.en.foldedReadyDiscard='Face-down ready discard';
 I18N['zh-CN'].foldedReadyDiscard='报听扣牌';
+Object.assign(I18N.en, {primaryJing:'Primary jing', secondaryJing:'Secondary jing', lowerJing:'Lower jing',
+  flipRoll:'Flip roll · {n}', upperJingTransfers:'Upper jing points · {amounts}', lowerJingTransfers:'Lower jing points · {amounts}'});
+Object.assign(I18N['zh-CN'], {primaryJing:'正精', secondaryJing:'副精', lowerJing:'下精',
+  flipRoll:'翻牌 · {n} 点', upperJingTransfers:'上精奖分 · {amounts}', lowerJingTransfers:'下精奖分 · {amounts}'});
+Object.assign(I18N.en.fans, {'小七对':'Seven pairs', '大七对':'Seven pairs with four of a kind',
+  '十三烂':'Fourteen separated tiles', '七星十三烂':'Seven-star separated', '德国':'German',
+  '德中德':'Double German', '精吊':'Jing eyes', '精吊地胡':'First-draw jing eyes', '十三浪':'Fourteen scattered tiles',
+  '九幺':'Terminals and honors', '长九幺':'Concealed terminals and honors',
+  '豪华长九幺':'Concealed terminals and honors with a kong', '宝吊头':'Bao eyes'});
 Object.assign(I18N.en, {changbaiPiao:'Piao {value}', skipPiao:'No piao', reverseEnd:'Opposite end · may owe all three bills',
   promptRobFedKong:'You can win on the tile you just fed before the kong goes through.'});
 Object.assign(I18N['zh-CN'], {changbaiPiao:'飘 {value} 分', skipPiao:'不飘', reverseEnd:'倒落反端 · 供和或供杠时包赔',

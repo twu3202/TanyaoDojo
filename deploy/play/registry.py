@@ -23,6 +23,7 @@ from .macau import VARIANT as MACAU
 from .northeast import HARBIN
 from .jilin_shuangliao import JILIN, SHUANGLIAO
 from .fuxin import FUXIN_DARK, FUXIN_ROOMS, FUXIN_ZAWU
+from .jiangxi import NANCHANG, SHANGRAO
 from .changbai import CHANGBAI
 from .chaoyang_town import CHAOYANG_TOWN
 from .dalian_tieling import DALIAN, TIELING, DALIAN_TIELING_ROOMS
@@ -2683,6 +2684,48 @@ VARIANTS[CHAOYANG_TOWN.VARIANT] = {
     }},
 }
 
+VARIANTS[NANCHANG.VARIANT] = {
+    **VARIANTS[CHANGBAI.VARIANT], 'id': NANCHANG.VARIANT, 'family_id': 'jiangxi-jing', 'family': 'Jiangxi Jing and Bao',
+    'name': 'Nanchang Mahjong · Double Jing', 'aliases': ['南昌麻将', '南昌上下精', '南昌十三烂'],
+    'rule_version': 'nanchang-double-jing-dojo-v1', 'subtitle': 'Four seats · Honor sequences and two jing ledgers',
+    'badge': 'Jiangxi · Honor chows and separated hands',
+    'description': 'Chow honor tiles. Play with two upper jokers and a separate bonus from the lower flip.',
+    'rules': ['Any three distinct winds or the three dragons can form a chow. Keep 17 stacks in reserve.',
+              'The upper flip and its successor are jokers. The lower flip and its successor are scored separately at the deal.',
+              'Win with four sets and a pair, seven pairs, or fourteen separated tiles. Seven-star separated requires all seven printed honors.',
+              'A natural win can earn German even when printed jing act as themselves. Jing, kong and winning bills are independent.'],
+    'sources': [{'title': 'Golden Island Nanchang rules and award tables', 'url': 'https://www.80166.com/guide/rule/ncmj.html'},
+                {'title': 'Tongcheng explanation of lower jing settlement', 'url': 'https://m.tcy365.com/news/d26024.html'}],
+    'translations': {'zh-CN': {
+        'family': '江西精宝麻将', 'name': '南昌麻将（上下精）', 'subtitle': '四人 · 字顺、十三烂与上下翻精',
+        'badge': '江西 · 字牌吃牌和七星十三烂', 'description': '三张不同风牌或三元牌能组成顺子，上精作万能，下精另计账。',
+        'rules': ['任意三张不同风牌或中发白可组成顺子。留 17 墩海底。',
+                  '上翻同面和下一面为正精和副精，可作万能。下翻同面和下一面按初始牌单独计奖。',
+                  '可和普通型、七对、十三烂。七星十三烂须实际持有七种字牌。',
+                  '精按原面使用仍可得德国，精分、杠分和和牌账分别累计。'],
+    }},
+}
+
+VARIANTS[SHANGRAO.VARIANT] = {
+    **VARIANTS[NANCHANG.VARIANT], 'id': SHANGRAO.VARIANT,
+    'name': 'Shangrao Mahjong · Bao Self-Draw', 'aliases': ['上饶麻将', '上饶宝吊头'],
+    'rule_version': 'shangrao-bao-self-draw-dojo-v1', 'subtitle': 'Four seats · Successor bao and self-draw only',
+    'badge': 'Jiangxi · Bao eyes and scattered hands',
+    'description': 'Win by self-draw with a successor bao. A sole bao standing in the eyes can accept any drawn face.',
+    'rules': ['The public indicator’s successor is the bao. Jokers complete the concealed shape. Chows are numbered only.',
+              'Win on your own draw, including a kong replacement. Discard wins and robbing a kong are unavailable.',
+              'Win with a standard hand, seven pairs or fourteen separated tiles. All pungs, terminal and honor hands, and bao eyes can score extra.'],
+    'sources': [{'title': 'Tongcheng Shangrao successor bao and self-draw profile', 'url': 'https://m.tcy365.com/news/d8362.html'},
+                {'title': 'Tongcheng Shangrao special hands', 'url': 'https://m.tcy365.com/news/d22296.html'}],
+    'translations': {'zh-CN': {
+        'family': '江西精宝麻将', 'name': '上饶麻将（开宝自摸）', 'subtitle': '四人 · 顺推开宝与宝吊头',
+        'badge': '江西 · 自摸、十三浪与宝作将', 'description': '翻牌的下一面是宝。只留一宝作将时，下一摸可任意成对。',
+        'rules': ['查牌顺推一面作宝。宝可在手中替牌，字牌不能吃或成顺。',
+                  '只可自摸或杠开，弃牌和补杠不能接炮。',
+                  '可和普通型、七对、十三浪。碰碰胡、九幺、长九幺和宝吊头按本房表加分。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2732,5 +2775,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
-    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS, *DALIAN_TIELING_ROOMS, CHANGBAI, CHAOYANG_TOWN)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS, *DALIAN_TIELING_ROOMS, CHANGBAI, CHAOYANG_TOWN, NANCHANG, SHANGRAO)},
 }
