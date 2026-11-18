@@ -6,6 +6,7 @@ from .guiliu import VARIANT as GUILIU
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
+from .kaxinwu import VARIANT as KAXINWU
 from .macau import VARIANT as MACAU
 from .suited import Profile
 
@@ -978,6 +979,43 @@ VARIANTS[YUNNAN] = {
     }},
 }
 
+VARIANTS[KAXINWU] = {
+    'id': KAXINWU,
+    'family_id': 'continuous-win', 'family': 'Continuous-win family',
+    'name': 'Kaxinwu · Continuous Wins',
+    'aliases': ['Blood Battle Kaxinwu', 'Kaxinwu', '血战卡心五', '卡心五', '两门血流'],
+    'rule_version': 'kaxinwu-72-dojo-v1',
+    'subtitle': '72 tiles · Repeated wins · Locked hand after the first win',
+    'badge': 'Continuous wins · 72 tiles',
+    'description': 'All four seats keep playing after a win. Win repeatedly and settle all charges once the wall is exhausted.',
+    'rules': [
+        'Dots and bamboo only. No chow and no void suit. Pon, kong, self-draw, discard wins, and added-kong robbery are allowed. '
+        'One offered tile can pay several winners.',
+        'After your first win, discard only the tile you draw and do not pon. A kong must leave every tile you already won on '
+        'as a legal wait. An eligible open kong is mandatory unless you or another seat wins on that tile.',
+        'The discarder or robbed kong maker pays each winner. Each other seat pays for self-draw. A single win advances normally. '
+        'After a multi-win, the supplier draws again. The last seat to draw deals next.',
+        'A basic hand has 1 fan, a middle-five wait or all triplets 2, and seven pairs 2–5 by concealed quads. '
+        'Pure suit adds 1. Each fan doubles the payment. Kong points are immediate and doubled for each subsequent kong in a chain.',
+        'On wall exhaustion, unready seats pay the maximum eligible hand value of each ready seat, or the best shape previously '
+        'won by each winning seat. Pure suit counts for this check; roots and kong-event bonuses do not.',
+    ],
+    'default_policy': 'heuristic',
+    'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'sources': [{'title': 'Kaxinwu operator rules', 'url': 'https://www.hzbianqu.com/game/1122.html'}],
+    'translations': {'zh-CN': {
+        'name': '血战卡心五（两门血流）', 'family': '血流多胡家族', 'subtitle': '72 张 · 一局多次胡 · 胡后摸切',
+        'badge': '血流 · 72 张', 'description': '哪怕已经胡牌，四家也都继续打，可以反复胡，直到牌墙耗尽统一结算。',
+        'rules': [
+            '只用筒、条两门。无吃、无定缺。可碰杠，自摸、接炮、抢补杠；同一张牌可以多响。',
+            '首次胡牌后只可摸切，不可碰。开杠后须保留所有已胡过的牌作听口；符合条件的直杠必须执行，胡牌优先。',
+            '点炮者或被抢杠者逐家付，自摸其他三家付。单响按顺序继续摸；多响由供牌者再摸，末摸者坐下一庄。',
+            '平胡一番；卡心五、对对胡两番；七对按四同张组数为二至五番。清一色加一番，每番翻倍。连杠自第二杠起每杠的杠分翻倍。',
+            '牌墙耗尽时查叫。未听者给听牌席付最高可能牌型分，给已胡席付已胡过的最高牌型分，均计清一色，不计鬼和杠后额外番。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -989,4 +1027,5 @@ SESSION_OPTIONS = {
     MACAU: {'variant': MACAU},
     SICHUAN_EXCHANGE: {'variant': SICHUAN_EXCHANGE},
     YUNNAN: {'variant': YUNNAN},
+    KAXINWU: {'profile': KAXINWU},
 }

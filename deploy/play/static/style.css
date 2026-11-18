@@ -21,3 +21,5 @@
 
 .meld .tile-back{width:18px;height:24px;flex-shrink:0}
 @media(max-width:760px){.opponent .meld .tile-back{width:13px;height:17px}.human-seat .meld .tile-back{width:21px;height:28px}}
+.dora:has(.winning-tile-label){flex-wrap:wrap;width:clamp(110px,18vw,160px);margin-inline:auto}
+.winning-tile-label{flex-basis:100%}

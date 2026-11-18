@@ -201,15 +201,17 @@ def xuanhua_points(melds, kind, *, heavenly=False):
 
 
 class SuitedGame:
-    def __init__(self, seed, dealer=None, *, profile):
+    copies = COPIES
+
+    def __init__(self, seed, dealer=None, *, profile, rules=None):
         self.profile = profile
-        self.rules = RULES[profile]
+        self.rules = RULES[profile] if rules is None else rules
         self.rng = random.Random(seed)
         if dealer is None:
             dealer = 0 if self.rules.host_deals_first else self.rng.randrange(4)
         self.dealer = dealer
         self.next_dealer = self.dealer
-        self.wall = list(COPIES.elements())
+        self.wall = list(self.copies.elements())
         self.rng.shuffle(self.wall)
         self.players = [Player() for _ in range(4)]
         self.discards = [[] for _ in self.players]
@@ -408,7 +410,8 @@ class SuitedGame:
         elif kind == 'ankan':
             self._kong(actor, tile, 'gang_an')
         elif kind == 'bugang':
-            self._offer(Offer(actor, tile, 'rob_kong', unpaid_kong=self.drawn_tile is None))
+            unpaid = self.profile is Profile.TAISHUN and self.drawn_tile is None
+            self._offer(Offer(actor, tile, 'rob_kong', unpaid_kong=unpaid))
 
     def _offer(self, offer):
         self.offer = offer
@@ -474,6 +477,9 @@ class SuitedGame:
         self.players[payer].score -= points
         self.players[winner].score += points
 
+    def _kong_factor(self, provider):
+        return 1
+
     def _kong(self, actor, tile, kind, provider=None, *, unpaid=False):
         player = self.players[actor]
         if kind == 'gang_bu':
@@ -490,6 +496,7 @@ class SuitedGame:
             )
             points = {'gang_ming': 1 if split_direct else self.rules.direct_kong_share,
                       'gang_an': 2, 'gang_bu': 1}[kind]
+            points *= self._kong_factor(provider)
             for payer in payers:
                 self._pay(payer, actor, points)
                 self.kong_deltas[payer] -= points
