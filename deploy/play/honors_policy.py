@@ -68,7 +68,10 @@ def policy_view(game, actor, actions):
                 visible[offered] += 1
     player = game.players[actor]
     before_play = game.phase in ('piao', 'buy_base')
-    hand = (0,) * TILE_COUNT if before_play else tuple(player.hand)
+    flower_kinds = getattr(game, 'flower_kinds', frozenset())
+    hand = (0,) * TILE_COUNT if before_play else tuple(
+        count if tile not in flower_kinds else 0 for tile, count in enumerate(player.hand)
+    )
     seat_wind = 27 if before_play else 27 + (actor - game.dealer) % game.seat_count
     return PolicyView(hand, tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
                       tuple(actions), seat_wind, game.round_wind,

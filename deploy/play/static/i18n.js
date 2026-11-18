@@ -58,12 +58,14 @@ en:{
  errors:{stale_action:'牌局已推进，请等待画面更新后再操作。',illegal_action:'这一步不是合法动作。',table_failed:'本桌遇到了异常，请重新开桌。',table_missing:'牌桌已过期，请重新开桌。',unsupported_variant:'不支持的玩法。',unsupported_policy:'不支持的 AI 难度。',model_unavailable:'当前标准 AI 暂不可用，请选择入门。',engine_unavailable:'立直引擎尚未就绪。',table_full:'当前牌桌已满，请稍后再试。',round_starting:'正在开局，请稍候。',round_active:'请先完成当前一局。',invalid_request:'请求格式不正确。',unknown_action:'未知操作。',origin_mismatch:'请求来源不匹配。',not_found:'没有这个页面。',server_error:'服务暂时遇到异常，请稍后重试。',catalog_failed:'服务暂未就绪，请刷新后重试。'},
 }};
 Object.assign(I18N.en, {
+  winSealed:'Win blocked',
  wildcardFloatTag:'Float ×{count}', promptFloatCycle:'An opponent floated a wildcard. You can discard your draw, make a concealed kong or win.',
  feedLiability:'{caller} ← {provider} · three feeds', setupNoteOne:'You and one AI opponent. You can autoplay the hand.',
  wildcardIndicator:'Wildcard indicator', wildcardIndicatorTile:'Indicator', whiteSubstitute:'White Dragon plays as {tile}', whiteOptional:'White Dragon or natural {tile}', selectWildcard:'Select {tile} (wildcard)', flowers:'Flowers',
  tenWindsRun:'Ten Winds · {count}',
 });
 Object.assign(I18N['zh-CN'], {
+  winSealed:'已封胡',
  wildcardFloatTag:'飘财 ×{count}', promptFloatCycle:'对手已飘财，你可摸切、暗杠或自摸。',
  feedLiability:'{caller} ← {provider} · 三摊承包', setupNoteOne:'你与一位 AI 单挑，可以随时托管本局。',
  wildcardIndicator:'翻出的财神', wildcardIndicatorTile:'财神指示牌', whiteSubstitute:'白板替 {tile}', whiteOptional:'白板也可作 {tile}', selectWildcard:'选择 {tile}（财神）', flowers:'补花',
@@ -153,6 +155,10 @@ Object.assign(I18N['zh-CN'], {
 });
 I18N.en.messages.buy_base_complete='Buy-in choices are set. Play begins.';
 I18N['zh-CN'].messages.buy_base_complete='买底已选定，开始打牌。';
+Object.assign(I18N.en.fans, {
+  '明杠':'Exposed kong', '暗杠':'Concealed kong', '碰碰胡':'All pons', '抢杠胡':'Robbed added kong',
+  '小吊车':'Pair wait with a chow', '超豪华七对':'Super luxury seven pairs',
+});
 let LANGUAGE='en';
 try{const saved=localStorage.getItem('tanyao_language');if(saved&&I18N[saved])LANGUAGE=saved;}catch{}
 const tr=(key,args={})=>{let s=I18N[LANGUAGE][key]??I18N.en[key]??key;return String(s).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');};

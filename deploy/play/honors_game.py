@@ -6,6 +6,7 @@ import time
 
 from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau, tiantai
 from .anji import ANJI, ANJI_TEA_HOUSE, AnjiGame, AnjiTeaHouseGame
+from .bengbu import BENGBU, BENGBU_FLOWER, BengbuFlowerGame, BengbuGame
 from .chongji import CHONGJI, CHONGJI_SEVEN, ChongjiGame
 from .daxi import DAXI, DaxiGame
 from .dongyang import DONGYANG, DongyangGame
@@ -20,6 +21,7 @@ from .jinyun import JINYUN, JINYUN_CANTONESE, JinyunCantoneseGame, JinyunClassic
 from .jiaxing import JIAXING, JiaxingGame
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .linhai import LINHAI, LinhaiGame
+from .lipu import LIPU, LipuGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
 from .taizhou import TAIZHOU, TaizhouGame
@@ -33,6 +35,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
+    BENGBU, BENGBU_FLOWER, LIPU,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -60,6 +63,9 @@ GAME_ENGINES = {
     JIAXING.VARIANT: JiaxingGame,
     PINGHU.VARIANT: PinghuGame,
     **{rules.VARIANT: QuzhouGame for rules in (QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA)},
+    BENGBU.VARIANT: BengbuGame,
+    BENGBU_FLOWER.VARIANT: BengbuFlowerGame,
+    LIPU.VARIANT: LipuGame,
 }
 
 
@@ -136,6 +142,8 @@ class HonorsSession(GameSession):
                 players[-1]['bought_base'] = game.buy_base[actor]
             if isinstance(game, JiaxingGame) and actor in game.folded:
                 players[-1]['folded'] = True
+            if isinstance(game, LipuGame) and actor in game.sealed:
+                players[-1]['win_sealed'] = True
             if isinstance(game, HangzhouGame) and game.float_streak[actor]:
                 players[-1]['wildcard_floats'] = game.float_streak[actor]
             if isinstance(game, XiaoshanGame) and actor == 0 and game.ten_winds[actor] >= 5:
@@ -178,6 +186,8 @@ class HonorsSession(GameSession):
             table['fresh_stage'] = game.fresh_stage
         if isinstance(game, JiaxingGame):
             table['yellow_faan'] = len(game.yellow)
+        if isinstance(game, LipuGame):
+            table['feed_liabilities'] = game.related_seats.copy()
         return table
 
     def display_tile(self, tile):
@@ -278,7 +288,7 @@ class HonorsSession(GameSession):
                 self.result['buy_base_deltas'] = game.buy_base_deltas.copy()
             if isinstance(game, JinyunClassicGame):
                 self.result['follow_deltas'] = game.follow_deltas.copy()
-            if isinstance(game, JinyunCantoneseGame) and any(game.kong_refunds):
+            if isinstance(game, (JinyunCantoneseGame, LipuGame)) and any(game.kong_refunds):
                 self.result['kong_refund_deltas'] = game.kong_refunds.copy()
             if game.options.kong_points:
                 self.result['kong_deltas'] = game.kong_deltas.copy()

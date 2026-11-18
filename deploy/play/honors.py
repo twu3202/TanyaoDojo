@@ -571,9 +571,12 @@ class HonorsGame:
             ledger[actor] += sum(payments)
 
     def _pay_kong(self, actor, meld):
-        points = self.options.kong_points
-        if points is None:
+        if self.options.kong_points is None:
             return
+        self._transfer(actor, self._kong_payments(actor, meld), self.kong_deltas)
+
+    def _kong_payments(self, actor, meld):
+        points = self.options.kong_points
         share = {'gang_ming': points.direct, 'gang_bu': points.added, 'gang_an': points.concealed}[meld.kind]
         share *= self._kong_factor(meld)
         if (meld.kind == 'gang_ming' and points.single_direct_payer
@@ -581,7 +584,7 @@ class HonorsGame:
             payers = (meld.provider,)
         else:
             payers = tuple(seat for seat in range(self.seat_count) if seat != actor)
-        self._transfer(actor, tuple(share if seat in payers else 0 for seat in range(self.seat_count)), self.kong_deltas)
+        return tuple(share if seat in payers else 0 for seat in range(self.seat_count))
 
     def _kong_factor(self, meld):
         return 1

@@ -1,5 +1,6 @@
 """Versioned playable rules; English is the API default."""
 from .anji import ANJI, ANJI_TEA_HOUSE
+from .bengbu import BENGBU, BENGBU_FLOWER
 from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .chongji import CHONGJI, CHONGJI_SEVEN
 from .dongyang import DONGYANG
@@ -20,6 +21,7 @@ from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
 from .taizhou import TAIZHOU
 from .daxi import DAXI
 from .linhai import LINHAI
+from .lipu import LIPU
 from .jinyun import JINYUN, JINYUN_CANTONESE
 from .jiaxing import JIAXING
 from .pinghu import PINGHU
@@ -1942,6 +1944,68 @@ VARIANTS[QUZHOU_BANKED.VARIANT] = {
     }},
 }
 
+VARIANTS[BENGBU.VARIANT] = {
+    'id': BENGBU.VARIANT, 'family_id': 'honors-and-chows', 'family': 'Regional honors and scoring', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Bengbu Mahjong · Classic', 'aliases': ['蚌埠麻将', '天天爱蚌埠麻将', '蚌埠无花'],
+    'rule_version': 'bengbu-136-classic-dojo-v1', 'subtitle': 'Four seats · No chow · 14-tile reserve',
+    'badge': 'Anhui · Dealer surcharge',
+    'description': 'Keep all the winds and dragons in play. Only winning hands collect kong points.',
+    'rules': ['136 tiles. Leave the last 14 tiles. Pon or kong, without chows or seven pairs. A concealed kong shows one face.',
+              'A discard pays 1 and a self-draw charges each opponent 2. An exposed kong adds 1 and a concealed kong adds 2 to the winning hand.',
+              'A self-draw off a kong doubles the hand value. When an added kong is robbed, its owner covers all three self-draw bills. Each bill involving the dealer adds 1.'],
+    'sources': [{'title': 'Zhejiang Game Hall Bengbu room rules', 'url': 'https://www.hzbianqu.com/game/894.html'}],
+    'translations': {'zh-CN': {
+        'family': '字牌计分系', 'name': '蚌埠麻将（无花）', 'subtitle': '四人 · 不吃 · 留尾 14 张',
+        'badge': '安徽 · 庄加一', 'description': '风牌和三元牌都作手牌，赢家才结算自己的杠分。',
+        'rules': ['136 张，留尾 14 张。只能碰杠，七对不胡。暗杠亮出一张。',
+                  '点炮 1，自摸每家 2。赢家每个明杠加 1，每个暗杠加 2。',
+                  '杠开翻倍。抢补杠按自摸计算，杠家包三份。涉及庄家的份额另加 1。'],
+    }},
+}
+
+VARIANTS[BENGBU_FLOWER.VARIANT] = {
+    **VARIANTS[BENGBU.VARIANT], 'id': BENGBU_FLOWER.VARIANT,
+    'name': 'Bengbu Mahjong · East Wind Flowers', 'aliases': ['蚌埠东风令', '东风令带花', '蚌埠补花'],
+    'rule_version': 'bengbu-136-east-flower-dojo-v1', 'subtitle': 'Four seats · East and dragons as flowers',
+    'badge': 'Anhui · Delayed flower replacement',
+    'description': 'Expose flowers on your first ordinary draw. An early call leaves your flowers concealed.',
+    'rules': ['136 tiles, no reserve. East and the three Dragons are flowers. The dealer replaces flowers before play. '
+              'Each other seat waits for its first ordinary draw, even after an early pon or kong.',
+              'Only standard hands can win, with no chow. Add 1 for each exposed flower in the winning hand. '
+              'On a self-draw, each exposed or concealed kong adds 2 per payer.',
+              'Robbing an added kong charges its owner one discard bill. Any bill involving the dealer adds 1.'],
+    'translations': {'zh-CN': {
+        'family': '字牌计分系', 'name': '蚌埠麻将（东风令带花）', 'subtitle': '四人 · 东风和中发白作花',
+        'badge': '安徽 · 延后补花', 'description': '庄家起手补花，闲家碰杠抢先上手时，花牌仍留在手中。',
+        'rules': ['136 张，摸尽牌墙。东风和中发白作花。庄家起手补，闲家首次正常摸牌时补，第一圈碰杠也要等。',
+                  '不吃、不胡七对。赢家每花加 1；自摸时每个明杠或暗杠每家加 2。',
+                  '抢补杠按一份点炮付款，庄家参与的账单另加 1。'],
+    }},
+}
+
+VARIANTS[LIPU.VARIANT] = {
+    'id': LIPU.VARIANT, 'family_id': 'honors-and-chows', 'family': 'Regional honors and scoring', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Lipu Mahjong · Feed Liability', 'aliases': ['荔浦麻将', '荔浦捞杠', '荔浦陪杀', '荔浦三比'],
+    'rule_version': 'lipu-136-feed-liability-dojo-v1', 'subtitle': 'Four seats · Three-feed liability · Multiple winners',
+    'badge': 'Guangxi · Kong ledger',
+    'description': 'A third feed links two seats. Feeding four sets or three pons to the same opponent blocks your wins.',
+    'rules': ['136 tiles. Chow, pon, kong and seven pairs are allowed. An added kong can be robbed. Several players can win on one discard.',
+              'A third feed to the same seat creates a reciprocal liability. The linked seat pays an extra share on a discard win or covers all shares on an ordinary self-draw.',
+              'Four feeds or three pons to the same opponent block wins and new kong points for the supplier. Earlier kong transfers stand.',
+              'A discard or pon supplier pays for the exposed kong. The last kong bill is returned on a kong-draw or post-kong discard win. Horses are off.'],
+    'sources': [{'title': 'Zhejiang Game Hall Lipu feeds, kongs and payout table', 'url': 'https://www.hzbianqu.com/game/1146.html'}],
+    'translations': {'zh-CN': {
+        'family': '字牌计分系', 'name': '荔浦麻将（陪杀与捞杠）', 'subtitle': '四人 · 三比互包 · 一炮多响',
+        'badge': '广西 · 杠分单算', 'description': '三比结成互包，向同一家供出四比或三碰后封胡。',
+        'rules': ['136 张，可吃碰杠，可胡七对。开启捞杠和抢补杠，允许一炮多响。',
+                  '向同一家供三比后互包。接炮时互包家陪付一份，普通自摸时互包家承担三份。',
+                  '向同一家供四比或三碰后，供牌家封胡、后续杠不计分，之前的杠分保留。',
+                  '明杠由点杠或点碰家付。杠开或杠后炮退最近一笔杠账。本桌关闭抓马和坐马。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1981,4 +2045,5 @@ SESSION_OPTIONS = {
     JIAXING.VARIANT: {'variant': JIAXING.VARIANT},
     PINGHU.VARIANT: {'variant': PINGHU.VARIANT},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (BENGBU, BENGBU_FLOWER, LIPU)},
 }

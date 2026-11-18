@@ -7,9 +7,11 @@ FLOWER_TILES = {tile: f'F{tile - TILE_COUNT + 1}' for tile in range(TILE_COUNT, 
 
 
 class FlowerWall:
+    EXTRA_FLOWERS = FLOWER_TILES.keys()
+
     def _tile_supply(self):
         supply = super()._tile_supply()
-        supply.update(FLOWER_TILES.keys())
+        supply.update(self.EXTRA_FLOWERS)
         return supply
 
     def _prepare_wall(self):
