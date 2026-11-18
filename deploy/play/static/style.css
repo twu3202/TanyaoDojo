@@ -32,3 +32,10 @@
 .table.three-player .opponent .river{grid-template-columns:repeat(6,minmax(0,20px))}
 .table.three-player .opponent .river img{width:100%}
 .ready-hidden{display:inline-flex;gap:2px}
+.table.two-player #seat-1{top:31px;left:50%;right:auto;transform:translateX(-50%);width:min(90%,308px)}
+.table.two-player #seat-1 .river{grid-template-columns:repeat(12,minmax(0,20px))}
+.table.two-player #seat-1 .river img{width:100%}
+.table.two-player #seat-2,.table.two-player #seat-3,.table.two-player .compass{display:none}
+.table.two-player .dora{flex-wrap:wrap;max-width:none;min-width:155px}
+.white-substitute{flex-basis:100%;line-height:1.4}
+.hand-tile.is-wildcard{box-shadow:inset 0 -3px 0 #e9c47c}

@@ -1,13 +1,14 @@
 # Playable Mahjong MVP
 
-Human vs two or three AI players, with a responsive browser table and a CPU-only server. The thirty-five playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The thirty-eight playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
 Shangsi, Hundred-Tile Mahjong, Hezhou, Liuzhou Exploding Fish, Guangzhou Three-Faan, Golden Island Guangdong,
 Guiliu Wake-Tile Mahjong, Sichuan Xuezhan Exchange Three, Yunnan Xuezhan Flower Pig, Kaxinwu Continuous Wins,
 Suizhou Ka Wu Xing, Xiangyang Ka Wu Xing, Shiyan Ka Wu Xing, JJ Three-Player Call Points,
-JJ Three-Player Multipliers, Xiaogan Ka Wu Xing, Hangzhou Three-Player and Hangzhou Four-Player.
+JJ Three-Player Multipliers, Xiaogan Ka Wu Xing, Hangzhou Three-Player, Hangzhou Four-Player, Tonglu,
+Chun’an and Hangzhou Two-Player Flip Wildcard.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture

@@ -1,7 +1,8 @@
 import random
 import unittest
 
-from deploy.play.hangzhou import FLOAT, FOUR_HANGZHOU, THREE_HANGZHOU, WHITE, HangzhouGame, score_hand
+from deploy.play.hangzhou import (CHUNAN, FLOAT, FOUR_HANGZHOU, THREE_HANGZHOU, TONGLU, TWO_HANGZHOU,
+                                  WHITE, HangzhouGame, score_hand)
 from deploy.play.honors import Meld, Offer, PASS, RON, ZIMO, WinContext
 from deploy.play.honors_game import HonorsSession
 from deploy.play.honors_policy import heuristic, policy_view
@@ -181,3 +182,134 @@ class HangzhouPlayTests(unittest.TestCase):
                 expected = min(8, expected * 2) if table['dealer'] == session.dealer else 2
         finally:
             session.close()
+
+
+class RegionalHangzhouTests(unittest.TestCase):
+    def offer(self, game, provider, actor, tile, kind='discard'):
+        if kind == 'discard':
+            game.discards[provider].append(tile)
+        game._open_offer(Offer(provider, tile, kind))
+        while game.legal_actions()[0] != actor:
+            game.step(PASS)
+        return game.legal_actions()[1]
+
+    def test_tonglu_requires_burst_with_a_wildcard(self):
+        ctx = WinContext('zimo', 33, 27, 27)
+        ordinary = counts(FOUR_SETS[1:] + [WHITE, 33, 33])
+        self.assertEqual(FOUR_HANGZHOU.faan(ordinary, (), ctx).share, 1)
+        self.assertIsNone(TONGLU.faan(ordinary, (), ctx))
+        self.assertEqual(TONGLU.faan(counts(FOUR_SETS + [33, 33]), (), ctx).share, 1)
+        self.assertEqual(TONGLU.faan(counts(FOUR_SETS + [WHITE, 33]), (), ctx).share, 2)
+        ctx = WinContext('zimo', 6, 27, 27)
+        pairs = counts([3, 3, 9, 9, 22, 22, 27, 27, 29, 29, 32, 32, WHITE, 6])
+        self.assertEqual(TONGLU.faan(pairs, (), ctx).patterns, ('七客',))
+
+    def test_tonglu_chows_and_pons_use_separate_slots(self):
+        game = HangzhouGame(9, 0, 27, rules=TONGLU)
+        caller = game.players[1]
+        caller.hand = counts([0, 0, 0, 1, 2, 8, 9, 10])
+        caller.melds = [Meld('chi', 9, 0), Meld('chi', 18, 0)]
+        actions = self.offer(game, 0, 1, 0)
+        self.assertNotIn(('chi', 0), actions)
+        self.assertIn(('peng', None), actions)
+        self.assertIn(('zhigang', None), actions)
+        caller.melds = [Meld('gang_bu', 8, 0), Meld('peng', 9, 0)]
+        self.assertIn(('chi', 0), game.legal_actions()[1])
+        self.assertNotIn(('peng', None), game.legal_actions()[1])
+        self.assertNotIn(('zhigang', None), game.legal_actions()[1])
+        self.assertEqual(game.related_seats, [])
+
+    def test_tonglu_floater_can_kong_open_and_opponents_cannot(self):
+        game = HangzhouGame(7, 0, 27, rules=TONGLU)
+        game.float_cycle_owner = 1
+        game.floated.add(1)
+        game.players[1].hand = counts([0, 0, 0])
+        actions = self.offer(game, 0, 1, 0)
+        self.assertIn(('zhigang', None), actions)
+        game.step(('zhigang', None))
+        play_passes(game)
+        self.assertEqual(game.players[1].melds, [Meld('gang_ming', 0, 0)])
+        self.assertEqual(game.kong_chain, 1)
+        self.assertIsNone(game.float_cycle_owner)
+        game.players[1].melds.append(Meld('peng', 33, 2))
+        game.players[1].hand[33] += 1
+        self.assertIn(('bugang', 33), game.legal_actions()[1])
+        game.float_cycle_owner = 2
+        self.assertNotIn(('bugang', 33), game.legal_actions()[1])
+
+    def test_chunan_guard_uses_only_callers_wildcard_and_preserves_chow(self):
+        game = HangzhouGame(8, 0, 27, rules=CHUNAN)
+        guard = game.players[3]
+        guard.hand = counts([3, 3, 4, 5, 32, 32])
+        self.assertNotIn(('peng', None), self.offer(game, 0, 3, 3))
+        guard.hand[WHITE] = 1
+        self.assertIn(('peng', None), game.legal_actions()[1])
+        guard.hand[WHITE] = 0
+        self.assertIn(('peng', None), self.offer(game, 2, 3, 3))
+        self.assertIn(('chi', 3), game.legal_actions()[1])
+        game.feeds[3, 2] = 2
+        self.assertNotIn(('chi', 3), game.legal_actions()[1])
+        self.assertNotIn(('peng', None), game.legal_actions()[1])
+
+    def test_chunan_only_dealer_links_ron_and_nearest_win_gets_paid(self):
+        game = HangzhouGame(8, 0, 27, rules=CHUNAN)
+        game.players[1].hand = counts(FOUR_SETS + [33])
+        game.players[2].hand = counts(FOUR_SETS + [33])
+        self.assertNotIn(RON, self.offer(game, 1, 2, 33))
+        self.assertIn(RON, self.offer(game, 0, 1, 33))
+        game.step(RON)
+        self.assertEqual(game.legal_actions(), (2, [PASS]))
+        play_passes(game)
+        self.assertEqual(game.winners, [1])
+        self.assertEqual(game.win_details[0].payments, (8, 0, 0, 0))
+        self.assertEqual(game.scores(), [-8, 8, 0, 0])
+        self.assertEqual(game.next_dealer, 1)
+
+    def test_chunan_rob_added_kong_is_one_dealer_link_without_kong_bonus(self):
+        game = HangzhouGame(3, 0, 27, rules=CHUNAN)
+        game.players[0].hand = counts(FOUR_SETS + [33])
+        game.players[1].hand = counts([33])
+        game.players[1].melds = [Meld('peng', 33, 2)]
+        game.float_cycle_owner = 2
+        self.assertNotIn(RON, self.offer(game, 1, 0, 33, 'gang_bu'))
+        game.float_cycle_owner = None
+        self.assertNotIn(RON, self.offer(game, 1, 0, 33, 'gang_an'))
+        self.assertIn(RON, self.offer(game, 1, 0, 33, 'gang_bu'))
+        session = HonorsSession(variant=CHUNAN.VARIANT)
+        session.game = game
+        self.assertEqual(session.option(RON)['win_type'], 'rob_kong')
+        game.step(RON)
+        self.assertEqual(game.win_details[0].kind, 'rob_kong')
+        self.assertEqual(game.win_details[0].payments, (0, 8, 0, 0))
+        self.assertEqual(game.players[1].melds, [Meld('peng', 33, 2)])
+        self.assertEqual(game.claimed_tile, 33)
+
+    def test_duel_indicator_counts_and_real_white_dragon_can_complete_chow(self):
+        game = next(game for seed in range(120) if (game := HangzhouGame(seed, 0, 27, rules=TWO_HANGZHOU)).wildcard_indicator == 1)
+        self.assertEqual(game.physical_counts(), game.tile_supply)
+        self.assertEqual(game.remaining, 136 - 27 - 1)
+        view = policy_view(game, 0, [])
+        self.assertEqual(view.visible[WHITE], 1)
+        self.assertEqual(view.visible[1], 0)
+        game.players[1].hand = counts([1, 2, WHITE])
+        self.assertIn(('chi', 0), self.offer(game, 0, 1, 0))
+        session = HonorsSession(variant=TWO_HANGZHOU.VARIANT)
+        session.game = game
+        self.assertEqual(session.option(('chi', 0))['tiles'], ['1m', 'P', '3m'])
+        game.step(('chi', 0))
+        self.assertEqual(game.players[1].hand[WHITE], 1)
+        table = session.view()
+        self.assertEqual(len(table['players']), 2)
+        self.assertEqual(table['wildcard'], '2m')
+        self.assertEqual(table['white_substitute'], '2m')
+        self.assertEqual(table['players'][1]['melds'][0]['tiles'], ['1m', 'P', '3m'])
+        self.assertEqual(session.option(('discard', WHITE))['tiles'], ['2m'])
+
+    def test_duel_flipped_white_stays_white(self):
+        game = next(game for seed in range(140) if (game := HangzhouGame(seed, 0, 27, rules=TWO_HANGZHOU)).wildcard_indicator == WHITE)
+        self.assertEqual(game.physical_counts(), game.tile_supply)
+        session = HonorsSession(variant=TWO_HANGZHOU.VARIANT)
+        session.game = game
+        self.assertEqual(session.view()['wildcard'], 'P')
+        self.assertNotIn('white_substitute', session.view())
+        self.assertEqual(policy_view(game, 0, []).visible[WHITE], 1)

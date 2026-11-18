@@ -76,9 +76,9 @@ class HonorsSession(GameSession):
                 'id': actor, 'score': self.totals[actor] + player.score, 'delta': player.score,
                 'hand_count': 0 if game.phase == 'piao' else sum(hand),
                 'revealed': reveal is not None, 'won': won, 'riichi': False,
-                'hand': [tile_name(tile) for tile, count in enumerate(reveal) for _ in range(count)]
+                'hand': [self.display_tile(tile) for tile, count in enumerate(reveal) for _ in range(count)]
                         if reveal is not None else [],
-                'river': [{'tile': tile_name(tile)} for tile in game.discards[actor]],
+                'river': [{'tile': self.display_tile(tile)} for tile in game.discards[actor]],
                 'melds': [self.view_meld(meld, actor == 0) for meld in player.melds],
             })
             if ready:
@@ -96,19 +96,28 @@ class HonorsSession(GameSession):
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
-        drawn = tile_name(game.drawn_tile) if current == 0 and game.drawn_tile is not None else None
+        drawn = self.display_tile(game.drawn_tile) if current == 0 and game.drawn_tile is not None else None
         table = {'players': players, 'hand_number': self.hand_number, 'dealer': None if game.phase == 'piao' else game.dealer,
                 'round_wind': tile_name(game.round_wind), 'show_winds': game.options.show_winds,
                 'match_hands': self.rules.MATCH_HANDS,
                 'current': current, 'remaining': game.remaining, 'dora': [], 'honba': 0,
                 'pot': 0, 'phase': game.phase, 'drawn': drawn}
         if isinstance(game, HangzhouGame):
-            table.update(wildcard=tile_name(self.rules.WILDCARD), dealer_multiplier=game.dealer_multiplier,
+            table.update(wildcard=self.display_tile(self.rules.WILDCARD), dealer_multiplier=game.dealer_multiplier,
                          float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())
+            if game.wildcard_indicator is not None:
+                table['wildcard_indicated'] = True
+                if game.wildcard_indicator != self.rules.WILDCARD:
+                    table['white_substitute'] = tile_name(game.wildcard_indicator)
         return table
 
+    def display_tile(self, tile):
+        if isinstance(self.game, HangzhouGame):
+            tile = self.game.physical_tile(tile)
+        return tile_name(tile)
+
     def view_meld(self, meld, own):
-        tiles = [tile_name(tile) for tile in meld.tiles]
+        tiles = [self.display_tile(tile) for tile in meld.tiles]
         if meld.kind == 'gang_an':
             visible = self.game.options.concealed_kong_faces
             if visible or not own:
@@ -118,16 +127,19 @@ class HonorsSession(GameSession):
     def option(self, action):
         kind, tile = action
         if kind == 'exchange':
-            tiles = [tile_name(index) for index in tile]
+            tiles = [self.display_tile(index) for index in tile]
         elif kind == 'piao':
             return {'action': action, 'kind': kind, 'label': kind, 'tiles': [], 'value': tile}
         elif kind == 'chi':
-            tiles = [tile_name(index) for index in range(tile, tile + 3)]
+            tiles = [self.display_tile(index) for index in range(tile, tile + 3)]
         elif kind in ('ron', 'peng', 'zhigang'):
-            tiles = [tile_name(self.game.offer.tile)]
+            tiles = [self.display_tile(self.game.offer.tile)]
         else:
-            tiles = [] if tile is None else [tile_name(tile)]
-        return {'action': action, 'kind': kind, 'label': kind, 'tiles': tiles}
+            tiles = [] if tile is None else [self.display_tile(tile)]
+        option = {'action': action, 'kind': kind, 'label': kind, 'tiles': tiles}
+        if kind == 'ron' and isinstance(self.game, HangzhouGame):
+            option['win_type'] = 'rob_kong' if self.game.offer.kind == 'gang_bu' else 'fangchong_win'
+        return option
 
     def play_round(self):
         game = self.game
@@ -148,7 +160,7 @@ class HonorsSession(GameSession):
             game.step(action)
             kind, tile = action
             if kind in ('discard', 'declare_ready', 'declare_dark'):
-                self.log_event('discard', {'actor': actor, 'tile': tile_name(tile)})
+                self.log_event('discard', {'actor': actor, 'tile': self.display_tile(tile)})
             elif action == FLOAT:
                 self.log_event('wildcard_float', {'actor': actor, 'count': game.float_streak[actor]}, 'call')
             if kind == 'declare_ready':

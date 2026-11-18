@@ -3,7 +3,7 @@ from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
 from .guiliu import VARIANT as GUILIU
-from .hangzhou import FOUR_HANGZHOU, HANGZHOU_ROOMS, THREE_HANGZHOU
+from .hangzhou import CHUNAN, FOUR_HANGZHOU, HANGZHOU_ROOMS, THREE_HANGZHOU, TONGLU, TWO_HANGZHOU
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
@@ -1287,6 +1287,94 @@ VARIANTS[FOUR_HANGZHOU.VARIANT] = {
                   '庄闲之间吃碰杠同一家满三摊，吃满者胡则供牌者包三份，供牌者胡则吃满者包三份再翻倍。'
                   '补杠仍算原来一摊，飘财人抓打圈内取得第三摊不触发承包。',
                   '涉及庄家每份起乘二，连庄升至四倍、八倍。赢家接庄，流局无付款并连庄。'],
+    }},
+}
+
+VARIANTS[TONGLU.VARIANT] = {
+    **_HANGZHOU, 'id': TONGLU.VARIANT,
+    'name': 'Tonglu Mahjong · Two Chows and Two Pons',
+    'aliases': ['桐庐麻将', '两吃两碰', '有财必拷响'],
+    'rule_version': 'tonglu-two-each-dojo-v1',
+    'subtitle': 'Four seats · Separate call limits · Wildcard Burst required',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'A wildcard in your winning hand requires a Burst. Calls from any one player have separate limits.',
+    'rules': [
+        '136 tiles. Only self-draw wins. White Dragon is the wildcard. With a wildcard, you must win by Burst or '
+        'seven-pairs Burst. Without one, regular hands and natural seven pairs can win.',
+        'You may take up to two chows and two pons from the same seat. A direct kong uses a pon slot. '
+        'An upgrade keeps its original slot. There is no three-feed liability.',
+        'Float to retain your Burst wait and double the next Burst. During the circuit, other seats may only '
+        'self-draw, make concealed kongs, or discard the drawn tile. The floater can still make open or concealed kongs.',
+        'Dealer shares start at ×2, then rise to ×4 and ×8 on repeats. Draw to the last tile. A draw has no payments.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Tonglu rules', 'url': 'https://www.hzbianqu.com/game/62.html'},
+                {'title': 'Tonglu scoring and room choices', 'url': 'https://www.hzbianqu.com/article/1444.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '桐庐麻将（两吃两碰）', 'subtitle': '四人 · 两吃两碰 · 有财必拷响',
+        'badge': '浙江 · 136 张', 'description': '有财神须以爆头或七客胡牌。同一家能吃、能碰的次数分别计算。',
+        'rules': ['136 张，白板财神，只自摸。有财神须爆头或七客，无财神可平胡或清七对。',
+                  '同一家最多取两次吃、两次碰。直杠占一次碰，补杠沿用原摊，无三摊承包。',
+                  '飘财本人仍可明杠或暗杠。抓打圈内另三家只可自摸、暗杠或摸切。',
+                  '庄闲倍率平庄 2 倍，连庄升到 4 倍、8 倍。摸完牌墙无人胡则荒庄，无付款。'],
+    }},
+}
+
+VARIANTS[CHUNAN.VARIANT] = {
+    **_HANGZHOU, 'id': CHUNAN.VARIANT,
+    'name': 'Chun’an Mahjong · Dealer Deal-ins',
+    'aliases': ['淳安麻将', '淳安杭麻', '守庄', '闲放冲'],
+    'rule_version': 'chunan-dealer-guard-dojo-v1',
+    'subtitle': 'Four seats · Dealer deal-ins · Guarded pon',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'The dealer and a non-dealer can win from one another’s discards and added kongs.',
+    'rules': [
+        '136 tiles, White Dragon wild. Self-draw, Burst and floats work as in the Hangzhou family. '
+        'Open kongs are unavailable after floating.',
+        'Only a dealer and a non-dealer can win from one another’s discards or rob one another’s added kongs. '
+        'The nearest accepting seat wins. The supplier alone pays ×8 of the hand value.',
+        'Without a wildcard, the seat just before the dealer can only pon from its own preceding seat. '
+        'Take up to two chows, pons or direct kongs in total from the same opponent, with no liability.',
+        'A self-draw charges all losers, with ×8 on shares involving the dealer. A discard win is suspended '
+        'while anyone’s wildcard float circuit is active. Draws have no payments.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Chun’an rules', 'url': 'https://www.hzbianqu.com/game/1055.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '淳安麻将（庄闲放冲）', 'subtitle': '四人 · 庄闲放冲和抢杠 · 守庄碰限制',
+        'badge': '浙江 · 136 张', 'description': '庄家与闲家之间可放冲和抢补杠，庄家上家受守庄碰限制。',
+        'rules': ['136 张，白板财神，可自摸、爆头、飘财。飘财后只能暗杠。',
+                  '只有庄闲之间可以放冲或抢补杠。按座次取最近的接胡者，供牌者独付牌型的 8 倍。',
+                  '庄家的上家无财神时，只能碰自己的上家。吃、碰、直杠合计同一家最多两摊，无承包。',
+                  '自摸时其他三席各付，涉及庄家的份额乘 8。飘财抓打圈暂停放冲，流局无付款。'],
+    }},
+}
+
+VARIANTS[TWO_HANGZHOU.VARIANT] = {
+    **_HANGZHOU, 'id': TWO_HANGZHOU.VARIANT, 'seat_count': 2,
+    'name': 'Hangzhou Two-Player · Flip Wildcard',
+    'aliases': ['二人杭麻', '二人杭州麻将', '翻财神', 'Hangzhou heads-up'],
+    'rule_version': 'hangzhou-two-flip-dojo-v1',
+    'subtitle': 'Heads-up · Rotating wildcard · White Dragon substitute',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'A face-up tile changes the wildcard every hand. The other three copies are wild.',
+    'rules': [
+        'One opponent and the full 136-tile set. One tile is turned up for the whole hand. Its three other copies '
+        'are wild, and White Dragons substitute for the indicated tile’s original face.',
+        'The White Dragon substitute keeps its physical face on the table. It can make a chow, pon or kong '
+        'as its substituted tile. A wildcard can complete concealed sets, pairs and Burst waits.',
+        'Chow, pon, kong and self-draw are available. Nobody may take an exposed call during a float circuit. '
+        'Seven pairs without a wildcard score natural seven pairs and actual quads double the hand.',
+        'This practice room plays to the last live tile. The other seat pays one share on a win. '
+        'The winner deals the next hand and an exhaustive draw keeps the dealer without a payment.',
+    ],
+    'sources': [{'title': 'Bianfeng two-player Hangzhou rules and White Dragon substitution',
+                 'url': 'https://www.hzbianqu.com/game/1611.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '二人杭麻（翻财神）', 'subtitle': '单挑 · 每局翻财神 · 白板替身',
+        'badge': '浙江 · 136 张', 'description': '每局翻一张，另外三张同样的牌作财神。白板替翻出牌的原牌面。',
+        'rules': ['两人用整副 136 张。翻出的牌留在桌上，其余三张同样的牌作财神，白板替其原牌面。',
+                  '白板还是显示白板，但吃碰杠时按替身牌计算。财神可在暗手凑牌、单吊爆头。',
+                  '可吃碰杠，只自摸。飘财抓打圈双方都不吃碰明杠。无财神七对算清七对，四张天然同牌另翻倍。',
+                  '本桌约定摸完可摸的牌，胡牌时对手付一份。赢家接庄，荒庄连庄且无付款。'],
     }},
 }
 

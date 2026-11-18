@@ -59,14 +59,18 @@ en:{
 }};
 Object.assign(I18N.en, {
  wildcardFloatTag:'Float ×{count}', promptFloatCycle:'An opponent floated a wildcard. You can discard your draw, make a concealed kong or win.',
- feedLiability:'{caller} ← {provider} · three feeds',
+ feedLiability:'{caller} ← {provider} · three feeds', setupNoteOne:'You and one AI opponent. You can autoplay the hand.',
+ wildcardIndicator:'Wildcard indicator', whiteSubstitute:'White Dragon plays as {tile}', selectWildcard:'Select {tile} (wildcard)',
 });
 Object.assign(I18N['zh-CN'], {
  wildcardFloatTag:'飘财 ×{count}', promptFloatCycle:'对手已飘财，你可摸切、暗杠或自摸。',
- feedLiability:'{caller} ← {provider} · 三摊承包',
+ feedLiability:'{caller} ← {provider} · 三摊承包', setupNoteOne:'你与一位 AI 单挑，可以随时托管本局。',
+ wildcardIndicator:'翻出的财神', whiteSubstitute:'白板替 {tile}', selectWildcard:'选择 {tile}（财神）',
 });
 I18N.en.action.float_wildcard='Float wildcard';
 I18N['zh-CN'].action.float_wildcard='飘财';
+I18N.en.action.fangchong_win='Win on discard';
+I18N['zh-CN'].action.fangchong_win='接炮胡';
 I18N.en.messages.wildcard_float='{actor} floated a wildcard · {count} in a row.';
 I18N['zh-CN'].messages.wildcard_float='{actor} 飘财，已连飘 {count} 次。';
 Object.assign(I18N.en.fans, {

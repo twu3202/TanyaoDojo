@@ -28,6 +28,8 @@ class PolicyView:
 
 def policy_view(game, actor, actions):
     visible = Counter(tile for river in game.discards for tile in river)
+    if getattr(game, 'wildcard_indicator', None) is not None:
+        visible[WHITE] += 1
     for seat, player in enumerate(game.players):
         for meld in player.melds:
             if (seat != actor and meld.kind == 'gang_an'
@@ -90,10 +92,19 @@ def _honors(counts):
 @lru_cache(maxsize=65536)
 def standard_distance(hand, meld_count):
     """Standard shanten on all 34 kinds, using the project's existing suit table."""
-    suited = _combine(_combine(_suit(hand[:9]), _suit(hand[9:18])), _suit(hand[18:27]))
-    states = _combine(suited, _honors(hand[27:]))
     return min(8 - 2 * total - min(parts, 4 - total) - pair
-               for sets, pair, parts in states if (total := sets + meld_count) <= 4)
+               for sets, pair, parts in _shape_states(hand) if (total := sets + meld_count) <= 4)
+
+
+def _shape_states(hand):
+    suited = _combine(_combine(_suit(hand[:9]), _suit(hand[9:18])), _suit(hand[18:27]))
+    return _combine(suited, _honors(hand[27:]))
+
+
+@lru_cache(maxsize=32768)
+def _sets_distance(hand, meld_count):
+    return min(2 * needed - min(parts, needed) for sets, pair, parts in _shape_states(hand)
+               if not pair and (needed := 4 - sets - meld_count) >= 0)
 
 
 def _triplet_distance(hand, needed):
@@ -109,7 +120,12 @@ def _triplet_distance(hand, needed):
 def _distance(hand, melds, view):
     if getattr(view.rules, 'WILDCARD', None) == WHITE:
         natural, wild = split_wild(hand)
-        distance = standard_distance(natural, len(melds)) - wild
+        if view.rules.require_burst and wild:
+            # Reserve one wildcard for the drawn tile instead of completing a natural pair.
+            wild -= 1
+            distance = _sets_distance(natural, len(melds)) - wild
+        else:
+            distance = standard_distance(natural, len(melds)) - wild
         if not melds:
             singles = sum(count % 2 for count in natural)
             matched = min(wild, singles)
