@@ -23,6 +23,7 @@ from .macau import VARIANT as MACAU
 from .northeast import HARBIN
 from .jilin_shuangliao import JILIN, SHUANGLIAO
 from .fuxin import FUXIN_DARK, FUXIN_ROOMS, FUXIN_ZAWU
+from .liaoning_joker import ANSHAN, PANJIN, LIAONING_JOKER_ROOMS
 from .liaoning_split import JIANCHANG, LIAOYANG, LIAONING_SPLIT_ROOMS
 from .shenyang import SHENYANG
 from .suited import Profile
@@ -2554,6 +2555,47 @@ VARIANTS[LIAOYANG.VARIANT] = {
     }},
 }
 
+VARIANTS[PANJIN.VARIANT] = {
+    **VARIANTS[LIAOYANG.VARIANT], 'id': PANJIN.VARIANT,
+    'name': 'Panjin Mahjong · Joker Kong', 'aliases': ['盘锦麻将', '盘锦混杠'],
+    'rule_version': 'panjin-joker-kong-dojo-v1', 'subtitle': 'Four seats · Protected jokers and a late kong',
+    'badge': 'Liaoning · Joker kong and discard liability',
+    'description': 'Kong four jokers for an immediate payment. On a discard win, the supplier covers all three bills.',
+    'rules': ['The indicator’s successor is the joker. Jokers can complete a chow or pair but cannot supply a terminal, pung or kong. '
+              'A winning hand needs three natural suits and a terminal or honor. Four printed jokers can form their own kong.',
+              'Ordinary open kongs charge each opponent 1, concealed kongs 2, and the joker kong 64. Keep all kong payments on a draw.',
+              'Four split draws start at 12 tiles. A kong on the preceding discard is still legal, and its replacement starts the split.'],
+    'sources': [{'title': 'Bianfeng Panjin joker kong, late split and supplier liability', 'url': 'https://www.hzbianqu.com/game/809.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '盘锦麻将（混杠分张）', 'subtitle': '四人 · 顺推混牌与末张杠',
+        'badge': '辽宁 · 混杠与点炮包三家', 'description': '四张同面混牌可以杠，点炮者包三家的账。',
+        'rules': ['查混牌的下一面作混。混牌能补顺子或将，不能补幺九或刻杠。和牌须自然三门，并有幺九或字牌。四张同面混牌可以例外作混杠。',
+                  '明杠每家付 1，暗杠每家付 2，混杠每家付 64。流局仍结杠分。',
+                  '余 12 张起分张。分张前最后一张弃牌仍可点杠，这次补牌直接进入分张。'],
+    }},
+}
+
+VARIANTS[ANSHAN.VARIANT] = {
+    **VARIANTS[LIAOYANG.VARIANT], 'id': ANSHAN.VARIANT,
+    'name': 'Anshan Mahjong · Open Guns', 'aliases': ['鞍山麻将', '鞍山明枪', '鞍山混儿'],
+    'rule_version': 'anshan-open-guns-dojo-v1', 'subtitle': 'Four seats · Natural suits and visible rank-seven bonuses',
+    'badge': 'Liaoning · Protected joker and open guns',
+    'description': 'A suited joker marks its suit’s seven as an open gun. Each physical copy in the winning hand adds one fan.',
+    'rules': ['The indicator’s successor is the joker. Ordinary wins need three natural suits, a natural terminal or honor, and a pung or dragon pair. '
+              'Seven pairs and thirteen orphans are also available.',
+              'Each printed seven in the joker’s suit adds one fan. An honor joker sets no open gun in this room. '
+              'A forced discard from an all-joker hand ends that seat’s eligibility to win.',
+              'All opponents pay. A discard win doubles the supplier’s bill, and a self-draw doubles every opponent’s bill.'],
+    'sources': [{'title': 'Bianfeng Anshan natural suits, open guns and fan payments', 'url': 'https://www.hzbianqu.com/game/957.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '鞍山麻将（混儿明枪）', 'subtitle': '四人 · 自然三门与七作明枪',
+        'badge': '辽宁 · 顺推混儿与明枪', 'description': '数牌混儿所在门的七是明枪，和牌每张实体枪计一番。',
+        'rules': ['开牌顺推一面作混儿。普通和须自然三门、有真幺九或字牌，并有刻杠或中发白作将。另可和七对、十三幺。',
+                  '数牌混儿同门的七每张加一番。本房字牌混儿无明枪。全混时被迫打混，之后该座本局停和。',
+                  '三家出账。接炮时放铳家多一番，自摸时三家各多一番。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2603,5 +2645,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
-    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS)},
 }

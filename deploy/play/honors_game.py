@@ -32,6 +32,7 @@ from .longyan import LONGYAN, LONGYAN_HALF, TRAVEL, LongyanGame
 from .northeast import HARBIN, BaoGame, HarbinGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
+from .liaoning_joker import ANSHAN, PANJIN, LiaoningJokerGame, PanjinGame, open_gun
 from .liaoning_split import JIANCHANG, LIAOYANG, JianchangGame, LiaoyangGame, SplitDrawGame
 from .shenyang import SHENYANG, ShenyangGame
 from .sixteen import SixteenGame
@@ -51,7 +52,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
     NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS, CHANGCHUN, HARBIN,
-    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG,
+    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS, JIANCHANG, LIAOYANG, PANJIN, ANSHAN,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -98,6 +99,8 @@ GAME_ENGINES = {
     SHENYANG.VARIANT: ShenyangGame,
     JIANCHANG.VARIANT: JianchangGame,
     LIAOYANG.VARIANT: LiaoyangGame,
+    PANJIN.VARIANT: PanjinGame,
+    ANSHAN.VARIANT: LiaoningJokerGame,
     **{room.VARIANT: FuxinGame for room in FUXIN_ROOMS},
 }
 
@@ -183,6 +186,8 @@ class HonorsSession(GameSession):
                 players[-1]['bought_base'] = game.buy_base[actor]
             if isinstance(game, JiaxingGame) and actor in game.folded:
                 players[-1]['folded'] = True
+            if isinstance(game, LiaoningJokerGame) and actor in game.stopped:
+                players[-1]['joker_win_lock'] = True
             if isinstance(game, LipuGame) and actor in game.sealed:
                 players[-1]['win_sealed'] = True
             if isinstance(game, HangzhouGame) and game.float_streak[actor]:
@@ -214,9 +219,13 @@ class HonorsSession(GameSession):
                 table['bao_roll'] = game.bao_slot + 1
         if isinstance(game, (ShenyangGame, SplitDrawGame)):
             table['split_draw'] = game.split_draw
-        if isinstance(game, LiaoyangGame):
+        if isinstance(game, (LiaoyangGame, LiaoningJokerGame)):
             table['wildcard'] = self.display_tile(game.wildcard_tile)
             table['wildcard_indicated'] = True
+        if isinstance(game, LiaoningJokerGame):
+            table['wildcard_indicator'] = self.display_tile(game.indicator_tile)
+            if self.rules is ANSHAN and (gun := open_gun(game.wildcard_tile)) is not None:
+                table['open_gun'] = self.display_tile(gun)
         if isinstance(game, HangzhouGame):
             table.update(wildcard=self.display_tile(game.wildcard_tile), dealer_multiplier=game.dealer_multiplier,
                          float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())

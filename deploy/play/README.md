@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 88 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 90 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -18,10 +18,13 @@ Longyan Half Self-Draw, Nanping Honors and Flowers, Nanping Suits and Flowers, N
 Ningde White Gold, Xianyou White Dragon Substitution, Xianyou White Dragon Flowers, Xianyou Self-Draw,
 Quanzhou Triplet and Kong Points, Ningde Random Gold and Flowers, Changchun Shared Bao, Harbin Four Bao Slots,
 Jilin City Dice Bao, Shuangliao Pung Multipliers, Shenyang Whirlwind Kongs, Fuxin Middle Five, Fuxin Hidden Ready,
-Jianchang Final Split, and Liaoyang Joker and Treasure.
+Jianchang Final Split, Liaoyang Joker and Treasure, Panjin Joker Kong, and Anshan Open Guns.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
+
+- `liaoning_joker.py`: Panjin's protected joker kong, late kong and supplier liability, and Anshan's
+  public gun face and seat-specific bills. [Panjin and Anshan rules](rules/PanjinAnshan.md).
 
 - `liaoning_split.py`: Jianchang's eye waits and dealer draw transfers, and Liaoyang's restricted joker,
   final split draws and post-win treasure. [Jianchang and Liaoyang rules](rules/JianchangLiaoyang.md).

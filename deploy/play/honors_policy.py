@@ -29,6 +29,7 @@ from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
 from .sixteen import SET_COUNT, SixteenRules
+from .liaoning_joker import LiaoningJokerRules
 from .liaoning_split import LiaoyangRules
 from .wildcard_shapes import without_tile
 from .wuhu import WuhuRules, suit_counts
@@ -304,7 +305,8 @@ def _ready_waits(hand, melds, view, live):
         params['gold'] = view.wildcard
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
-    elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, LiaoyangRules, PinghuRules, QuzhouRules)):
+    elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, LiaoningJokerRules,
+                                  LiaoyangRules, PinghuRules, QuzhouRules)):
         params['wildcard'] = view.wildcard
     if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules,
                               TiantaiWildcardRules, WuhuRules, SixteenRules, LongyanRules)):

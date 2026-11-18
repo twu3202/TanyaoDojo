@@ -213,6 +213,12 @@ I18N.en.baoRoll='Bao roll · {n}';
 I18N['zh-CN'].baoRoll='掷宝 · {n} 点';
 I18N.en.foldedReadyDiscard='Face-down ready discard';
 I18N['zh-CN'].foldedReadyDiscard='报听扣牌';
+I18N.en.openGun='Open gun';
+I18N['zh-CN'].openGun='明枪';
+I18N.en.jokerWinLock='Win locked';
+I18N['zh-CN'].jokerWinLock='停和';
+Object.assign(I18N.en.fans, {'明枪':'Open gun', '穷胡':'Natural hand', '鸡胡':'One Bamboo bonus',
+  '群鸡':'Four One Bamboo bonus', '杠流泪':'Discard after a kong', '上墙头':'Last live draw', '点炮':'Discard win'});
 I18N.en.splitTreasure='Treasure · +{points} per opponent';
 I18N['zh-CN'].splitTreasure='揭宝 · 每家加 {points} 分';
 I18N.en.splitDrawTransfers='Dealer draw payments · {amounts}';
