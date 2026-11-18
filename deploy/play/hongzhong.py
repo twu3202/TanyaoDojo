@@ -14,6 +14,7 @@ RED=27
 TWO_MA='two_ma'
 ONE_MA='one_ma'
 FANGCHENGGANG='fangchenggang'
+ANHUI='anhui'
 
 
 @lru_cache(maxsize=100000)
@@ -68,9 +69,9 @@ class Player:
 
 class HongzhongGame:
     def __init__(self,seed=0,dealer=0,*,profile=TWO_MA):
-        if profile not in (TWO_MA,ONE_MA,FANGCHENGGANG):raise ValueError('Unknown Hongzhong profile')
+        if profile not in (TWO_MA,ONE_MA,FANGCHENGGANG,ANHUI):raise ValueError('Unknown Hongzhong profile')
         self.profile=profile
-        self.reserve=4 if profile==FANGCHENGGANG else 0
+        self.reserve=4 if profile in (FANGCHENGGANG,ANHUI) else 0
         self.seven_pairs=profile==FANGCHENGGANG
         self.players=[Player() for _ in range(4)]
         self.wall=[t for t in range(28) for _ in range(4)];random.Random(seed).shuffle(self.wall)
@@ -106,8 +107,10 @@ class HongzhongGame:
         if not self._can_draw():
             self.phase='over';self.reason_code='hongzhong_draw';self.next_dealer=self.last_drawer
             return
-        from_tail=replacement and self.profile==FANGCHENGGANG
-        t=self.wall.pop(0 if from_tail else -1);self.players[actor].hand[t]+=1
+        end=-1
+        if replacement and self.reserve:
+            end=self.reserve if self.profile==ANHUI else 0
+        t=self.wall.pop(end);self.players[actor].hand[t]+=1
         self.drawn[actor]=t;self.last_drawer=self.cur=actor;self.draw_turn=True;self.phase='action'
 
     def legal_actions(self):
@@ -116,6 +119,7 @@ class HongzhongGame:
         if self.phase=='response':
             i=self.queue[0];t=self.pending_discard[1];p=self.players[i]
             acts=[('pass',None)]
+            if self.profile==ANHUI and t==RED:return i,acts
             if p.hand[t]>=2:acts.append(('peng',None))
             if p.hand[t]==3 and self._can_draw():acts.append(('zhigang',None))
             return i,acts  # Ordinary discards can never be won on.
@@ -124,9 +128,10 @@ class HongzhongGame:
             if can_win(p.hand,len(p.melds),seven_pairs=self.seven_pairs):acts.append(('zimo',None))
             if self._can_draw():
                 for t,n in enumerate(p.hand):
+                    if self.profile==ANHUI and t==RED:continue
                     if n==4:acts.append(('ankan',t))
                     if n>=1 and ('peng',t) in p.melds:
-                        if self.profile!=FANGCHENGGANG or t==self.drawn[self.cur]:acts.append(('bugang',t))
+                        if not self.reserve or t==self.drawn[self.cur]:acts.append(('bugang',t))
         return self.cur,acts
 
     def _settle(self,winners,robber=None):
@@ -137,13 +142,15 @@ class HongzhongGame:
             if robber is not None:h[self.rob_tile]+=1
             self.revealed[i]=h
             has_red=h[RED]>0 or any(t==RED for _,t in p.melds)
-            if self.profile==FANGCHENGGANG:need[i]=self.reserve
+            if self.reserve:need[i]=self.reserve
             elif self.profile==ONE_MA:need[i]=1
             else:need[i]=2+(not has_red)
-        bonus_end=0 if self.profile==FANGCHENGGANG else -1
+        bonus_end=0 if self.reserve else -1
         self.bonus=[self.wall.pop(bonus_end) for _ in range(min(max(need.values()),len(self.wall)))]
         for i in winners:
             tiles=self.bonus[:need[i]]
+            if self.profile==ANHUI and tiles and len(tiles)<need[i]:
+                tiles += [tiles[-1]]*(need[i]-len(tiles))
             if self.profile==ONE_MA:
                 hits=len(tiles)
                 extra=sum(11 if t==RED else t%9+2 for t in tiles)
@@ -170,7 +177,9 @@ class HongzhongGame:
         k,t=action;p=self.players[actor]
         if self.phase=='rob_kong':
             self.queue.pop(0)
-            if k=='ron':self.rob_winners.append(actor)
+            if k=='ron':
+                self.rob_winners.append(actor)
+                if self.profile==ANHUI:self.queue.clear()
             if not self.queue:
                 if self.rob_winners:self._settle(self.rob_winners,self.rob_actor)
                 else:self._finish_added_kong()
@@ -204,6 +213,7 @@ class HongzhongGame:
             for i in (1,2,3):
                 if self.profile==FANGCHENGGANG and t==RED:break
                 j=(actor+i)%4;q=self.players[j];h=q.hand[:];h[t]+=1
+                if self.profile==ANHUI and h[RED]:continue
                 if can_win(h,len(q.melds),four_red=False,seven_pairs=self.seven_pairs):self.queue.append(j)
             if self.queue:self.phase='rob_kong'
             else:self._finish_added_kong()

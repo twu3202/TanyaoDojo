@@ -5,7 +5,7 @@ import time
 from common.suit_table import load_table,query_np
 from .core import GameSession,TILES,Closed
 from .errors import ClientError
-from .hongzhong import HongzhongGame,can_win,RED,ONE_MA,TWO_MA
+from .hongzhong import ANHUI,HongzhongGame,can_win,RED,ONE_MA,TWO_MA
 
 _TABLE=None
 
@@ -79,6 +79,7 @@ class HongzhongSession(GameSession):
     def __init__(self,policy='heuristic',*,model=None,seed=None,pacing=.12,variant='hongzhong',profile=TWO_MA):
         super().__init__(variant,policy,seed=seed,pacing=pacing)
         self.profile=profile
+        self.match_hands=8 if profile==ANHUI else None
         self.round_no=0;self.totals=[0]*4;self.dealer=0;self.game=None
 
     def begin(self):
@@ -101,9 +102,11 @@ class HongzhongSession(GameSession):
                             'melds':[{'kind':k,'tiles':[tile(t)]*(3 if k=='peng' else 4)} for k,t in p.melds]})
         actor,_=g.legal_actions()
         if actor!=0 and g.phase in ('response','rob_kong'):actor=None
-        return {'players':players,'hand_number':self.round_no,'round':f'Hand {self.round_no}','dealer':g.dealer,'current':actor,
+        table={'players':players,'hand_number':self.round_no,'round':f'Hand {self.round_no}','dealer':g.dealer,'current':actor,
                 'remaining':max(0,len(g.wall)-g.reserve),'dora':[],'wildcard':'C','honba':0,'pot':0,'phase':g.phase,
                 'drawn':tile(g.drawn[0]) if g.phase=='action' and g.cur==0 and g.draw_turn else None}
+        if self.match_hands:table['match_hands']=self.match_hands
+        return table
 
     def play_round(self):
         g=self.game
@@ -128,9 +131,28 @@ class HongzhongSession(GameSession):
                 code='one_ma_bonus' if g.profile==ONE_MA else 'bonus'
                 self.log_event(code,{'tiles':[tile(t) for t in b['tiles']],'hits':b['hits'],'extra':b['extra']},'win')
         if not g.winners:self.log_event('hongzhong_draw',kind='round')
+        finished=self.round_no==self.match_hands
         with self.cv:
             self.result={'title':'Hand result','reason_code':g.reason_code,'scores':self.totals[:],'deltas':delta,'winners':g.winners[:],
                          'bonus_mode':ONE_MA if g.profile==ONE_MA else TWO_MA,'bonus':[tile(t) for t in g.bonus],
                          'bonus_details':[{'actor':i,'count':len(b['tiles']),'hits':b['hits'],'extra':b['extra'],
-                                           'per_loser':b['per_loser']} for i,b in g.bonus_details.items()],'next':True}
-            self.publish(view,'round_end')
+                                           'per_loser':b['per_loser']} for i,b in g.bonus_details.items()],'next':not finished}
+            if g.profile==ANHUI:
+                kong_delta=[0]*4
+                for payer,winner,amount in g.gang_ledger:
+                    kong_delta[payer]-=amount
+                    kong_delta[winner]+=amount
+                self.result['kong_deltas']=kong_delta
+                self.result['win_details']=[]
+                for winner,bonus in g.bonus_details.items():
+                    share=bonus['per_loser']
+                    payments=[3*share if seat==g.rob_actor else 0 for seat in range(4)] if g.rob_actor is not None else [
+                        share if seat!=winner else 0 for seat in range(4)]
+                    pattern={'rob_kong_win':'抢杠胡','four_red':'四红中'}.get(g.reason_code,'平胡')
+                    self.result['win_details'].append({'actor':winner,'provider':g.rob_actor,'points':share,
+                                                       'payments':payments,'patterns':[pattern]})
+            if finished:
+                best=max(self.totals)
+                self.result['match_hands']=self.match_hands
+                self.result['match_winners']=[seat for seat,score in enumerate(self.totals) if score==best]
+            self.publish(view,'finished' if finished else 'round_end')

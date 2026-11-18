@@ -9,7 +9,7 @@ from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
 from .guiliu import VARIANT as GUILIU
 from .hangzhou import CHUNAN, FOUR_HANGZHOU, HANGZHOU_ROOMS, THREE_HANGZHOU, TONGLU, TWO_HANGZHOU
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
-from .hongzhong import FANGCHENGGANG, ONE_MA
+from .hongzhong import ANHUI, FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
 from .jj_multiplier import VARIANT as JJ_MULTIPLIER
 from .jj_three import VARIANT as JJ_THREE
@@ -26,6 +26,7 @@ from .jinyun import JINYUN, JINYUN_CANTONESE
 from .jiaxing import JIAXING
 from .pinghu import PINGHU
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA
+from .wuhu import WUHU, WUHU_515
 from .xiaogan import XIAOGAN
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
@@ -2006,9 +2007,69 @@ VARIANTS[LIPU.VARIANT] = {
     }},
 }
 
+VARIANTS[WUHU.VARIANT] = {
+    'id': WUHU.VARIANT, 'family_id': 'honors-and-chows', 'family': 'Regional honors and scoring', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Wuhu Mahjong · Eight Suit Tiles', 'aliases': ['芜湖麻将', '芜湖八支', '芜湖四风'],
+    'rule_version': 'wuhu-four-winds-eight-branches-dojo-v1', 'subtitle': 'Four seats · Eight of a suit required',
+    'badge': 'Anhui · Four singleton winds',
+    'description': 'Keep at least eight tiles in one suit across your hand and melds. Feeding three pons can make you liable.',
+    'rules': ['112 tiles, including one of each wind. Pon and kong are allowed. A kong counts as four tiles toward the eight-tile requirement.',
+              'A discard has one winner. The player who supplied three pons pays on a discard win. On a self-draw each opponent pays.',
+              'Score suit count, a sole inside wait, kongs and special patterns. Pure suit, double eight tiles and double roots qualify for a 100-point award. Dealer bills add the base value.'],
+    'sources': [{'title': 'Tangren Wuhu rules and fan schedule', 'url': 'https://wuhumj.uc55.com/Rule/Detail/201803_000279.html'}],
+    'translations': {'zh-CN': {
+        'family': '字牌计分系', 'name': '芜湖麻将（四风八支）', 'subtitle': '四人 · 一门至少八支',
+        'badge': '安徽 · 四风各一张', 'description': '手牌连同副露一门够八支才能胡，同一家供三碰要包牌。',
+        'rules': ['112 张，东南西北各一张。可碰杠，不吃。杠按四张纳入支数。',
+                  '点炮只一人胡，供三碰包点炮，自摸其余各家付款。',
+                  '支数、唯一坎张、嘴子和杠计分。清一色、双八支和双四核等算交 100 分。庄家相关账单加底番。'],
+    }},
+}
+
+VARIANTS[WUHU_515.VARIANT] = {
+    **VARIANTS[WUHU.VARIANT], 'id': WUHU_515.VARIANT,
+    'name': 'Wuhu Mahjong · Red Dragon 515', 'aliases': ['芜湖红中八支', '芜湖515', '芜湖五一五'],
+    'rule_version': 'wuhu-red-dragon-515-dojo-v1', 'subtitle': 'Four seats · Natural red dragons · All losers pay',
+    'badge': 'Anhui · 515 scoring',
+    'description': 'Red Dragons play as natural tiles. All three opponents pay on a discard or draw win.',
+    'rules': ['112 tiles, with four natural Red Dragons. You need eight tiles of one suit, counting kongs as four.',
+              'Pon and kong are allowed. One winner takes a discard. All three opponents pay, with no three-pon transfer.',
+              'The four base scores are 2, 4, 6 and 8. An exceptional hand starts at 50 and adds 20 per qualifying bonus. A self-draw adds one such bonus.'],
+    'sources': [{'title': 'Xinyue Wuhu tile set and 515 score schedule', 'url': 'https://mobile.xinyueyouxi.com/game/237-20?from_app=0&region=&time=1440730121'}],
+    'translations': {'zh-CN': {
+        'family': '字牌计分系', 'name': '芜湖麻将（红中 515）', 'subtitle': '四人 · 红中本牌 · 三家付分',
+        'badge': '安徽 · 515 结算', 'description': '红中作本牌。接炮或自摸都向其余三家收分。',
+        'rules': ['112 张，含四张本牌红中。和牌仍要一门八支，杠计四张。',
+                  '可碰杠，不吃。一炮一响，其余三家付分，无三碰转付。',
+                  '四档底番为 2、4、6、8。交底 50，每嘴加 20，自摸另加一嘴。'],
+    }},
+}
+
+VARIANTS['anhui-hongzhong'] = {
+    'id': 'anhui-hongzhong', 'family_id': 'hongzhong', 'family': 'Red-dragon wildcard family', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Anhui Red Dragon Mahjong', 'aliases': ['安徽红中', '安徽乐乐麻将', '无红中抢杠'],
+    'rule_version': 'anhui-plain-rob-4-ma-dojo-v1', 'subtitle': 'Four seats · Rob only without red · Four reserved horses',
+    'badge': 'Anhui · Wild red dragons',
+    'description': 'Keep natural calls free of Red Dragons. Rob an added kong only with a hand containing no Red Dragons.',
+    'rules': ['112 tiles, including four wild Red Dragons. Red Dragons can be discarded. They cannot form or be used in an exposed set or kong.',
+              'Win on a draw or by robbing an added kong without any Red Dragon in hand. Four Red Dragons win immediately on your draw turn.',
+              'Reserve four horses. Each 1, 5, 9 or Red Dragon adds 2 to the 2-point win share. A robbed kong charges the supplier all three shares.'],
+    'sources': [{'title': 'Zhejiang Game Hall Anhui rules and horse reservation', 'url': 'https://www.hzbianqu.com/game/783.html'}],
+    'translations': {'zh-CN': {
+        'family': '红中麻将系', 'name': '安徽红中（素牌抢杠）', 'subtitle': '四人 · 素牌抢杠 · 留尾四码',
+        'badge': '安徽 · 红中百搭', 'description': '红中不参与碰杠，只能用无红中的听牌抢别人补杠。',
+        'rules': ['112 张，四张红中为百搭，可打出。红中不能组成副露，也不能替其他牌参与碰杠。',
+                  '只能自摸或无红中时抢补杠。摸牌轮有四张红中可直接胡。',
+                  '留尾四张扎码，1、5、9 和红中各加 2 分，胡牌底分 2。抢补杠时由补杠家包三份。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
+    'anhui-hongzhong': {'variant': 'anhui-hongzhong', 'profile': ANHUI},
     **{profile.value: {'profile': profile.value} for profile in Profile},
     **{room.VARIANT: {'variant': room.VARIANT} for room in (SHANGSI, HUNDRED, HEZHOU, LIUZHOU)},
     GUANGZHOU: {'variant': GUANGZHOU},
@@ -2046,4 +2107,5 @@ SESSION_OPTIONS = {
     PINGHU.VARIANT: {'variant': PINGHU.VARIANT},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (BENGBU, BENGBU_FLOWER, LIPU)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (WUHU, WUHU_515)},
 }

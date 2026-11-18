@@ -158,7 +158,14 @@ I18N['zh-CN'].messages.buy_base_complete='买底已选定，开始打牌。';
 Object.assign(I18N.en.fans, {
   '明杠':'Exposed kong', '暗杠':'Concealed kong', '碰碰胡':'All pons', '抢杠胡':'Robbed added kong',
   '小吊车':'Pair wait with a chow', '超豪华七对':'Super luxury seven pairs',
+  '压档':'Unique inside wait', '交':'Exceptional hand', '对对胡':'All pons', '通天':'Pure straight',
+  '四核':'Four undeclared copies', '双四核':'Two undeclared quads', '双八支':'Eight suit tiles plus two off-suit kongs',
+  '三碰包牌':'Third-pon liability', '四红中':'Four Red Dragons',
 });
+I18N.en.branchCount='{n} tiles in one suit';
+I18N['zh-CN'].branchCount='{n} 支';
+I18N.en.longestSuit='Best suit {n} · Need 8';
+I18N['zh-CN'].longestSuit='最多一门 {n} 支 · 需 8 支';
 let LANGUAGE='en';
 try{const saved=localStorage.getItem('tanyao_language');if(saved&&I18N[saved])LANGUAGE=saved;}catch{}
 const tr=(key,args={})=>{let s=I18N[LANGUAGE][key]??I18N.en[key]??key;return String(s).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');};
@@ -166,7 +173,7 @@ const tpl=(text,args={})=>String(text).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');
 const playerName=i=>I18N[LANGUAGE].names[i]??String(i);
 const tileText=t=>I18N[LANGUAGE].tileHonors[t]||(LANGUAGE==='en'?`${t.endsWith('r')?'Red ':''}${t[0]} ${I18N.en.suits['mps'.indexOf(t[1])]}`:`${t[0]}${I18N['zh-CN'].suits['mps'.indexOf(t[1])]}${t.endsWith('r')?'赤':''}`);
 const actionText=k=>I18N[LANGUAGE].action[k]??k;
-const countedPatterns=[['根x','gen'],['鬼x','ghost'],['花牌x','flowerBonus'],['底胡x','baseHu'],['台数x','taiCount'],['番数x','faanCount'],['花数x','countedFlowers']];
+const countedPatterns=[['根x','gen'],['鬼x','ghost'],['花牌x','flowerBonus'],['底胡x','baseHu'],['台数x','taiCount'],['番数x','faanCount'],['花数x','countedFlowers'],['八支x','branchCount']];
 function patternText(pattern){
   const match=countedPatterns.find(([prefix])=>pattern.startsWith(prefix));
   return match?tr(match[1],{n:pattern.slice(match[0].length)}):(I18N[LANGUAGE].fans[pattern]||pattern);

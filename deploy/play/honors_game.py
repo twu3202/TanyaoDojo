@@ -25,6 +25,7 @@ from .lipu import LIPU, LipuGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
 from .taizhou import TAIZHOU, TaizhouGame
+from .wuhu import WUHU, WUHU_515, WuhuGame, suit_counts
 from .xiaogan import XIAOGAN, XiaoganGame
 from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
                                DeqingXinshiGame, SongyangGame, SuichangGame, XiaoshanGame)
@@ -35,7 +36,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
-    BENGBU, BENGBU_FLOWER, LIPU,
+    BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -66,6 +67,8 @@ GAME_ENGINES = {
     BENGBU.VARIANT: BengbuGame,
     BENGBU_FLOWER.VARIANT: BengbuFlowerGame,
     LIPU.VARIANT: LipuGame,
+    WUHU.VARIANT: WuhuGame,
+    WUHU_515.VARIANT: WuhuGame,
 }
 
 
@@ -188,6 +191,12 @@ class HonorsSession(GameSession):
             table['yellow_faan'] = len(game.yellow)
         if isinstance(game, LipuGame):
             table['feed_liabilities'] = game.related_seats.copy()
+        if isinstance(game, WuhuGame):
+            hand = game.revealed.get(0, game.players[0].hand)
+            table['longest_suit'] = max(suit_counts(hand, game.players[0].melds))
+        if self.rules is WUHU:
+            table['feed_liabilities'] = [(caller, provider) for caller, player in enumerate(game.players)
+                                         for _, provider in player.liabilities]
         return table
 
     def display_tile(self, tile):

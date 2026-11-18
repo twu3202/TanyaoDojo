@@ -100,6 +100,7 @@ if(table.wildcard){
 }
 if(table.fresh_stage) $('dora').append(text('span',tr('taizhouFreshStage'),'tag'));
 if(table.yellow_faan) $('dora').append(text('span',tr('yellowFaan',{n:table.yellow_faan}),'tag'));
+if(table.longest_suit!==undefined) $('dora').append(text('span',tr('longestSuit',{n:table.longest_suit}),'tag'));
 $('table').classList.toggle('two-player',table.players.length===2);
 $('table').classList.toggle('three-player',table.players.length===3);
 $('seat-2').hidden=table.players.length<3;

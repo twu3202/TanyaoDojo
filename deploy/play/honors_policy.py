@@ -21,6 +21,7 @@ from .jinyun import JinyunClassicRules
 from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
+from .wuhu import WuhuRules, suit_counts
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
 
@@ -158,6 +159,8 @@ def _wild_distance(natural, wild, meld_count, require_burst, allow_pairs):
 
 
 def _distance(hand, melds, view):
+    if isinstance(view.rules, WuhuRules):
+        return max(standard_distance(hand, len(melds)), 7 - max(suit_counts(hand, melds)))
     wildcard = view.wildcard
     if wildcard is not None:
         natural, wild = split_wild(hand, wildcard)
@@ -223,6 +226,9 @@ def _distance(hand, melds, view):
 
 def _live_tiles(view):
     available = set(getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).tile_kinds) - view.excluded_tiles
+    if isinstance(view.rules, WuhuRules):
+        return tuple(max(0, view.rules.tile_copies(tile) - view.hand[tile] - view.visible[tile])
+                     if tile in available else 0 for tile in range(TILE_COUNT))
     return tuple(max(0, 4 - view.hand[tile] - view.visible[tile]) if tile in available else 0
                  for tile in range(TILE_COUNT))
 
@@ -237,7 +243,8 @@ def _ready_waits(hand, melds, view, live):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
     elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, PinghuRules, QuzhouRules)):
         params['wildcard'] = view.wildcard
-    if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules, TiantaiWildcardRules)):
+    if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules,
+                              TiantaiWildcardRules, WuhuRules)):
         def can_win(hand, melds, ctx):
             return view.rules.can_win(hand, melds, ctx, **params)
     else:
@@ -278,7 +285,7 @@ def _ukeire(distance, rest, melds, live, view):
     # Once a route has been chosen, compare ordinary shape improvements among tied discards.
     if distance == 0:
         return 0
-    if getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).seven_pairs:
+    if isinstance(view.rules, WuhuRules) or getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).seven_pairs:
         improve = lambda hand: _distance(hand, melds, view)
     else:
         improve = lambda hand: standard_distance(hand, len(melds))
