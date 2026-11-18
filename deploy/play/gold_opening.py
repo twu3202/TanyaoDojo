@@ -33,10 +33,14 @@ def record_opening_follow(game, actor, tile):
 
 
 class GoldOpening:
-    def _start_gold_opening(self, index, seats, *, heaven=False):
+    def _flip_gold_indicator(self, index):
         while (tile := self.wall.pop(index)) in self.flower_kinds:
             self._reveal_flower(self.dealer, tile)
-        self.indicator_tile = self.wildcard_tile = tile
+        self.indicator_tile = tile
+        return tile
+
+    def _start_gold_opening(self, index, seats, *, heaven=False):
+        self.wildcard_tile = tile = self._flip_gold_indicator(index)
         order = sorted(seats, key=lambda actor: self.players[actor].hand[tile] != 3)
         entries = [(actor, None) for actor in order]
         if heaven and self._qualifies_for_gold(self.players[self.dealer].hand):

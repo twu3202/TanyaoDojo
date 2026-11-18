@@ -99,6 +99,7 @@ if(table.wildcard){
   $('dora').append(text('span',tr(label)),img(table.wildcard));
   if(table.white_substitute) $('dora').append(text('span',tr('whiteSubstitute',{tile:tileText(table.white_substitute)}),'white-substitute'));
   if(table.white_optional) $('dora').append(text('span',tr('whiteOptional',{tile:tileText(table.white_optional)}),'white-substitute'));
+  if(table.white_flower) $('dora').append(text('span',tr('whiteFlower'),'white-substitute'));
 }
 if(table.fresh_stage) $('dora').append(text('span',tr('taizhouFreshStage'),'tag'));
 if(table.yellow_faan) $('dora').append(text('span',tr('yellowFaan',{n:table.yellow_faan}),'tag'));

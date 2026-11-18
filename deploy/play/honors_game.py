@@ -32,6 +32,7 @@ from .taiwan import TAIWAN, TaiwanGame
 from .taizhou import TAIZHOU, TaizhouGame
 from .wuhu import WUHU, WUHU_515, WuhuGame, suit_counts
 from .xiaogan import XIAOGAN, XiaoganGame
+from .xianyou import XIANYOU_ROOMS, XianyouGame
 from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
                                DeqingXinshiGame, SongyangGame, SuichangGame, XiaoshanGame)
 
@@ -42,7 +43,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
-    NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE,
+    NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -80,6 +81,7 @@ GAME_ENGINES = {
     LONGYAN.VARIANT: LongyanGame,
     LONGYAN_HALF.VARIANT: LongyanGame,
     **{room.VARIANT: FujianSixteenGame for room in (NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE)},
+    **{room.VARIANT: XianyouGame for room in XIANYOU_ROOMS},
 }
 
 
@@ -204,11 +206,17 @@ class HonorsSession(GameSession):
             table['yellow_faan'] = len(game.yellow)
         if isinstance(game, LipuGame):
             table['feed_liabilities'] = game.related_seats.copy()
-        if isinstance(game, (FuzhouGame, LongyanGame, FujianSixteenGame)):
+        if isinstance(game, (FuzhouGame, LongyanGame, FujianSixteenGame, XianyouGame)):
             table['wildcard'] = self.display_tile(game.wildcard_tile)
             table['fixed_gold' if game.indicator_tile is None else 'gold_indicator'] = True
-        if isinstance(game, FujianSixteenGame) and self.rules.WHITE_PROXY not in (None, game.wildcard_tile):
+        if isinstance(game, (FujianSixteenGame, XianyouGame)) and self.rules.WHITE_PROXY not in (None, game.wildcard_tile):
             table['white_substitute'] = self.display_tile(game.wildcard_tile)
+        if isinstance(game, XianyouGame):
+            table.update(travel_owner=game.travel_owner, travel_level=game.travel_level)
+            if game.indicator_tile is not None:
+                table['wildcard_indicator'] = self.display_tile(game.indicator_tile)
+            if self.rules.WHITE_FLOWER:
+                table['white_flower'] = True
         if isinstance(game, LongyanGame):
             table.update(travel_owner=game.travel_owner, travel_level=game.travel_level, gold_owner=game.gold_owner)
             if game.wildcard_tile != WHITE:

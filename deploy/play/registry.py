@@ -32,6 +32,7 @@ from .pinghu import PINGHU
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA
 from .wuhu import WUHU, WUHU_515
 from .xiaogan import XIAOGAN
+from .xianyou import XIANYOU_FLOWER, XIANYOU_ROOMS, XIANYOU_SELF_DRAW, XIANYOU_SUBSTITUTE
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
 VARIANTS = {'riichi': {'id': 'riichi',
@@ -2244,6 +2245,73 @@ VARIANTS[NINGDE.VARIANT] = {
     }},
 }
 
+XIANYOU_SOURCE = {'title': 'Xinyue Xianyou two room profiles and scoring',
+                  'url': 'https://xinyueyouxi.com/game/221-22?channel_id=0&product_id=33&region='}
+XIANYOU_SELF_DRAW_SOURCE = {'title': 'PonPon Xianyou wall, self-draw and gold scoring',
+                            'url': 'https://www.xyfish.com/thread-178477-1-1.html'}
+
+VARIANTS[XIANYOU_SUBSTITUTE.VARIANT] = {
+    'id': XIANYOU_SUBSTITUTE.VARIANT, 'family_id': 'sixteen-tile', 'family': 'Sixteen-tile Mahjong', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Xianyou Mahjong · White Dragon Substitution', 'aliases': ['仙游麻将', '仙游白板替金'],
+    'rule_version': 'xianyou-white-substitute-dojo-v1', 'subtitle': 'Four seats · 120 tiles · Pattern plus kongs',
+    'badge': 'Fujian · White Dragon substitution',
+    'description': 'White Dragons stand for the natural face of gold in your hand. Win with five sets and a pair, or travel with gold.',
+    'rules': ['Deal 16/17. Replace the eight flowers and flip a suited indicator. The next rank in that suit is gold. '
+              'White Dragons count as the natural gold face in the hand. Gold stays in hand.',
+              'Pon, kong, discard win and self-draw are available. You may claim the opening indicator as gold to complete your win. '
+              'After discarding to an all-tile self-draw wait with gold as the eyes, declare gold travel.',
+              'Ordinary wins pay 2, travel pays 4 or 6, and three or four golds pay 3 or 10. '
+              'Add 1 per added kong and 2 per concealed kong. A direct kong charges the supplier 3 immediately.'],
+    'sources': [XIANYOU_SOURCE],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '仙游麻将（白板替金）', 'subtitle': '四人 · 120 张 · 牌型加杠分',
+        'badge': '福建 · 白板替金', 'description': '白板当作金的自然牌面，五副一对可胡，也可游金。',
+        'rules': ['发 16／17 张，补八花后翻数牌，同门后一张为金。手中白板作金的自然牌面，金不能打出。',
+                  '可碰、杠、接炮、自摸。开局可把指示牌当金抢胡，打出一张后用金作将、任摸可胡时可宣游金。',
+                  '普通胡 2，游金 4 或 6，三金倒 3，四金倒 10。赢家补杠加 1、暗杠加 2，点杠向供牌者即时收 3。'],
+    }},
+}
+
+VARIANTS[XIANYOU_FLOWER.VARIANT] = {
+    **VARIANTS[XIANYOU_SUBSTITUTE.VARIANT], 'id': XIANYOU_FLOWER.VARIANT,
+    'name': 'Xianyou Mahjong · White Dragon Flowers', 'aliases': ['仙游白板补牌', '仙游白板花'],
+    'rule_version': 'xianyou-white-flower-dojo-v1', 'subtitle': 'Four seats · 120 tiles · Twelve replacement tiles',
+    'badge': 'Fujian · White Dragon replacement',
+    'description': 'Reveal each White Dragon and draw a replacement. Gold, flowers and completed kongs all feed the win multiplier.',
+    'rules': ['The four White Dragons and eight flowers are replacement tiles. The next suited rank after the indicator is gold.',
+              'Add base 2, held golds, flowers, and 1 per exposed kong or 2 per concealed kong. A gold-free self-draw adds 3 to the base.',
+              'Multiply by the win type. Ordinary discard wins use ×1, self-draw and opening gold claim ×2, travel ×4 or ×6, '
+              'three golds ×3 and four golds ×10.'],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '仙游麻将（白板补牌）', 'subtitle': '四人 · 120 张 · 十二张补牌',
+        'badge': '福建 · 白板作花', 'description': '白板亮出后补牌，按底、金、花、杠合计乘胡法倍数。',
+        'rules': ['四张白板和八张花均亮出并补牌。翻数牌，同门后一张为金。',
+                  '底 2，手金和花各 1，明杠 1、暗杠 2。白胡是无金自摸，底额外加 3。',
+                  '平胡 ×1，自摸或抢金 ×2，游金 ×4、三金游 ×6，三金倒 ×3、四金倒 ×10。'],
+    }},
+}
+
+VARIANTS[XIANYOU_SELF_DRAW.VARIANT] = {
+    **VARIANTS[XIANYOU_SUBSTITUTE.VARIANT], 'id': XIANYOU_SELF_DRAW.VARIANT,
+    'name': 'Xianyou Mahjong · Self-Draw', 'aliases': ['仙游自摸', '朋朋仙游', '仙游112张'],
+    'rule_version': 'xianyou-self-draw-dojo-v1', 'subtitle': 'Four seats · 112 tiles · Fixed gold',
+    'badge': 'Fujian · Self-draw and fixed White Dragon',
+    'description': 'Four White Dragons are gold. Complete five sets and a pair by self-draw, or declare three or four golds after play starts.',
+    'rules': ['Play the three suits and four White Dragons. White Dragons are fixed gold. Pon and kong are available.',
+              'Win by drawing a tile or declaring three or four golds after the dealer discards. You can also declare a gold travel wait.',
+              'Each opponent pays base 1 plus golds and completed kongs. Travel scores 3 for the first gold and 2 per additional gold. '
+              'Four golds pay 10 each.'],
+    'sources': [XIANYOU_SELF_DRAW_SOURCE],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '仙游麻将（自摸）', 'subtitle': '四人 · 112 张 · 固定白板金',
+        'badge': '福建 · 自摸和固定金', 'description': '四张白板固定为金。五副一对自摸，开打后也可三金倒或四金倒。',
+        'rules': ['三门数牌加四张白板，白板固定为金。可以碰杠。',
+                  '只能自摸胡牌。庄家打第一张后可三金倒、四金倒，也可宣游金。',
+                  '三家各付底 1 加金数和杠分。游金首金算 3，其余每金算 2。四金倒三家各付 10。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2289,4 +2357,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (FUZHOU, TAIWAN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (LONGYAN, LONGYAN_HALF)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in XIANYOU_ROOMS},
 }

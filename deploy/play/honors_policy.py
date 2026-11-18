@@ -27,6 +27,7 @@ from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
 from .sixteen import SET_COUNT, SixteenRules
 from .wuhu import WuhuRules, suit_counts
+from .xianyou import XianyouRules
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
 
@@ -210,7 +211,7 @@ def _distance(hand, melds, view):
         if isinstance(view.rules, FuzhouRules):
             natural, wild = split_gold(hand, view.wildcard)
             return max(0, standard_distance(natural, len(melds), SET_COUNT) - wild)
-        if isinstance(view.rules, FujianSixteenRules):
+        if isinstance(view.rules, (FujianSixteenRules, XianyouRules)):
             natural, wild = view.rules.split(hand, view.wildcard)
             return max(0, standard_distance(natural, len(melds), SET_COUNT) - wild)
         return standard_distance(hand, len(melds), SET_COUNT)
@@ -294,7 +295,7 @@ def _ready_waits(hand, melds, view, live):
     params = {}
     if isinstance(view.rules, SongyangRules):
         params['indicator'] = view.wildcard_indicator
-    elif isinstance(view.rules, (FuzhouRules, LongyanRules, FujianSixteenRules)):
+    elif isinstance(view.rules, (FuzhouRules, LongyanRules, FujianSixteenRules, XianyouRules)):
         params['gold'] = view.wildcard
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
@@ -371,6 +372,10 @@ def heuristic(view):
         travels = [action for action in actions if action[0] == TRAVEL]
         if travels and (ZIMO not in actions or view.travel_level or view.hand[view.wildcard] >= 2 or view.remaining >= 36):
             return next((action for action in travels if action[1] != view.wildcard), travels[0])
+    if isinstance(view.rules, XianyouRules) and not view.melds and view.remaining >= 28:
+        travel = next((action for action in actions if action[0] == TRAVEL), None)
+        if travel is not None:
+            return travel
     if actions[0][0] == 'liability_choice':
         worthwhile = _distance(view.hand, view.melds, view) <= 1 and view.remaining >= 5
         return 'liability_choice', int(worthwhile)
