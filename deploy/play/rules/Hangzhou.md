@@ -1,6 +1,6 @@
 # Hangzhou wildcard rooms
 
-The nine rooms play eight hands at base stake one with the 136-tile set and no flowers.
+The ten rooms play eight hands at base stake one with the 136-tile set and no flowers.
 The human hosts and deals the first hand. A kong needs a live replacement tile.
 Kongs draw from the other end of the wall and have no immediate payment. The winner deals next and the dealer
 repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard wins and robbing an added kong.
@@ -17,6 +17,7 @@ Songyang keeps 20 tiles in reserve and allows robbing an added kong from any sea
 | Songyang | Chow, pon and kong, with a 20-tile reserve | Always ×2 | Three feeds between any pair of seats |
 | Suichang | Chow, pon and kong, with a shrinking reserve | Same as non-dealers | An added-kong robbery charges its supplier the entire bill |
 | Deqing Wukang | Chow, pon and kong with a successor wildcard | Dealer pays 10 for Earth | An added-kong robbery charges its supplier three shares per winner |
+| Deqing Xinshi | Chow, pon and kong, including an immediate pon upgrade | Dealer pays 10 for Earth or a non-dealer opening special | A later robbery charges its supplier six shares at each winner’s rate |
 
 ## Wildcard and win multipliers
 
@@ -179,6 +180,24 @@ The Ten Winds declaration opens from the tenth consecutive discard of an East, S
 wildcard tile. An unrelated discard or open call restarts that seat’s count. This room pays four per loser
 on the tenth and doubles for each later qualifying discard. A draw has zero payments.
 
+## Deqing Xinshi
+
+The four-seat plain room shares Wukang’s successor wildcard, Earth window and discard-based Ten Winds.
+It uses base stake one, chow and no cap. When a player has never held a wildcard in the deal or on a draw,
+ordinary self-draw, seven pairs and replacement-win shares double. The lower rate still applies after a
+previously held wildcard has been discarded. Heavenly Hand pays ten per loser.
+
+Opening Ten Winds wins immediately with at least ten East, South, West, North or wildcard tiles at the deal.
+A non-dealer with nine may also claim the dealer’s first natural wind discard as the tenth before drawing.
+For Opening Ten Winds and Four Opening Wildcards, a dealer winner collects ten from each loser. A non-dealer
+collects ten from the dealer and five from the other losers. This room checks dealt hands in dealer order,
+gives Four Opening Wildcards priority within the same hand, and permits more than one winner on the discard.
+
+After pon, a player who already holds the fourth copy can add it before making their discard. Draw a kong
+replacement immediately, with no robbery window. An added kong in a later turn can be robbed by several
+players. For each winner the supplier pays six times that winner’s own share. Use at least their replacement
+win share, including the no-wildcard rate if it qualifies. Double for earlier kongs in the supplier’s chain.
+
 ## Sources
 
 - [Zhejiang Game Hall three-player rules and multiplier table](https://www.hzbianqu.com/game/581.html)
@@ -192,5 +211,5 @@ on the tenth and doubles for each later qualifying discard. A draw has zero paym
 - [Zhejiang Game Hall Xiaoshan hand and payout table](https://www.hzbianqu.com/game/55.html)
 - [Zhejiang Game Hall Songyang scoring and reserve](https://www.hzbianqu.com/game/218.html)
 - [Zhejiang Game Hall Suichang hand and payment table](https://www.hzbianqu.com/game/47.html)
-- [Zhejiang Game Hall Deqing Wukang scoring table and multi-win rules](https://www.hzbianqu.com/game/919.html)
+- [Zhejiang Game Hall Deqing Wukang and Xinshi scoring tables and multi-win rules](https://www.hzbianqu.com/game/919.html)
 - [Zhejiang Game Hall Seven Winds definition for the related Jinhua room](https://www.hzbianqu.com/game/74.html)

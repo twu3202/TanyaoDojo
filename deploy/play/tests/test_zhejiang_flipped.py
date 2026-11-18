@@ -1,14 +1,16 @@
 from collections import Counter
 import random
 import unittest
+from unittest.mock import patch
 
 from deploy.play.hangzhou import WHITE
 from deploy.play.honors import Meld, Offer, ORPHANS, PASS, RON, WinContext
 from deploy.play.honors_policy import _live_tiles, heuristic, policy_view
 from deploy.play.tests.test_hangzhou import play_passes
 from deploy.play.tests.test_hongkong import counts
-from deploy.play.zhejiang_flipped import (DEQING, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
-                                          SongyangGame, SuichangGame, XiaoshanGame, next_wildcard)
+from deploy.play.zhejiang_flipped import (DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN,
+                                          DeqingGame, DeqingXinshiGame, SongyangGame, SuichangGame, XiaoshanGame,
+                                          next_wildcard)
 
 
 class XiaoshanTests(unittest.TestCase):
@@ -182,6 +184,24 @@ class SuichangTests(unittest.TestCase):
         self.assertEqual((score.share, score.patterns), (4, ('全字',)))
 
 
+def fill_deqing_table(case, game, actor, hands):
+    used = Counter({game.wildcard_indicator: 1})
+    for player, hand in zip(game.players, hands, strict=True):
+        player.hand = hand
+        used.update(dict(enumerate(hand)))
+        for meld in player.melds:
+            used.update(meld.tiles)
+    case.assertLessEqual(used, game.tile_supply)
+    wall = list((game.tile_supply - used).elements())
+    for seat, player in enumerate(game.players):
+        needed = 13 + (seat == actor) - 3 * len(player.melds) - sum(player.hand)
+        case.assertGreaterEqual(needed, 0)
+        for _ in range(needed):
+            player.hand[wall.pop()] += 1
+    game.wall = wall
+    case.assertEqual(game.physical_counts(), game.tile_supply)
+
+
 class DeqingTests(unittest.TestCase):
     @staticmethod
     def game():
@@ -189,23 +209,6 @@ class DeqingTests(unittest.TestCase):
         game.wildcard_indicator = game.indicator_tile = 8
         game.wildcard_tile = next_wildcard(8)
         return game
-
-    def fill_table(self, game, actor, hands):
-        used = Counter({game.wildcard_indicator: 1})
-        for player, hand in zip(game.players, hands, strict=True):
-            player.hand = hand
-            used.update(dict(enumerate(hand)))
-            for meld in player.melds:
-                used.update(meld.tiles)
-        self.assertLessEqual(used, game.tile_supply)
-        wall = list((game.tile_supply - used).elements())
-        for seat, player in enumerate(game.players):
-            needed = 13 + (seat == actor) - 3 * len(player.melds) - sum(player.hand)
-            self.assertGreaterEqual(needed, 0)
-            for _ in range(needed):
-                player.hand[wall.pop()] += 1
-        game.wall = wall
-        self.assertEqual(game.physical_counts(), game.tile_supply)
 
     def test_successor_cycles_and_public_counts(self):
         for start, length, step in ((0, 9, 1), (9, 9, 1), (18, 9, 1), (27, 4, 1), (31, 3, -1)):
@@ -235,7 +238,7 @@ class DeqingTests(unittest.TestCase):
         game = self.game()
         game.opening = False  # Late in the first circuit, before the dealer's second draw.
         waiting = [1, 3, 9, 10, 11, 18, 19, 20, WHITE, WHITE]
-        self.fill_table(game, 1, [counts([]), counts([2]), counts(waiting + [27] * 3), counts(waiting + [28] * 3)])
+        fill_deqing_table(self, game, 1, [counts([]), counts([2]), counts(waiting + [27] * 3), counts(waiting + [28] * 3)])
         game._discard(1, 2)
         for seat in (2, 3):
             self.assertEqual(game.legal_actions()[0], seat)
@@ -260,7 +263,7 @@ class DeqingTests(unittest.TestCase):
         waiting = [1, 3, 9, 10, 11, 18, 19, 20, WHITE, WHITE]
         original = Meld('peng', 2, 3)
         game.players[0].melds = [original]
-        self.fill_table(game, 0, [counts([2]), counts(waiting + [27] * 3), counts(waiting + [28] * 3), counts([])])
+        fill_deqing_table(self, game, 0, [counts([2]), counts(waiting + [27] * 3), counts(waiting + [28] * 3), counts([])])
         game._open_offer(Offer(0, 2, 'gang_bu', kong_chain=1))
         game.step(RON)
         game.step(RON)
@@ -310,10 +313,102 @@ class DeqingTests(unittest.TestCase):
         self.assertEqual(game.scores(), [12, -4, -4, -4])
 
 
+class DeqingXinshiTests(unittest.TestCase):
+    @staticmethod
+    def game():
+        game = DeqingXinshiGame(6, 0, 27, rules=DEQING_XINSHI)
+        game.wildcard_indicator = game.indicator_tile = 8
+        game.wildcard_tile = 0
+        game.seen_wildcard = [False] * 4
+        return game
+
+    def test_wildcard_draw_changes_rate_even_after_discard(self):
+        game = self.game()
+        hand = counts([1, 2, 3, 9, 10, 11, 18, 19, 20, 27, 27, 27, WHITE, WHITE])
+        ctx = WinContext('zimo', WHITE, 27, 27)
+        self.assertEqual(game._score(0, hand, (), ctx).share, 2)
+        game.wall.append(game.wildcard_tile)
+        game._draw(0)
+        game._discard(0, game.wildcard_tile)
+        self.assertEqual(game._score(0, hand, (), ctx).share, 1)
+
+    def test_nondealer_opening_four_wildcards_bills_dealer_twice(self):
+        game = DeqingXinshiGame(8560, 0, 27, rules=DEQING_XINSHI)
+        self.assertEqual(game.winners, [3])
+        self.assertEqual(game.win_details[0].patterns, ('四财神',))
+        self.assertEqual(game.scores(), [-10, -5, -5, 20])
+        self.assertEqual(game.physical_counts(), game.tile_supply)
+
+    def test_opening_ten_winds_wins_at_the_deal_without_a_complete_shape(self):
+        tiles = [27, 27, 27, 27, 28, 28, 28, 29, 29, 30, 2, 10, 19]
+
+        def fixture_wall(wall):
+            remaining = list((Counter(wall) - Counter([8, *tiles])).elements())
+            positions = {-2 - 4 * i: tile for i, tile in enumerate(tiles)}
+            positions[0] = 8
+            for i in range(len(wall)):
+                fixed = positions.get(i - len(wall), positions.get(i))
+                wall[i] = fixed if fixed is not None else remaining.pop()
+
+        with patch('deploy.play.honors.random.Random.shuffle', side_effect=fixture_wall):
+            game = DeqingXinshiGame(6, 0, 27, rules=DEQING_XINSHI)
+        self.assertEqual(game.winners, [1])
+        self.assertEqual(game.win_details[0].patterns, ('起手十风',))
+        self.assertEqual(game.scores(), [-10, 20, -5, -5])
+        self.assertEqual(game.physical_counts(), game.tile_supply)
+
+    def test_dealer_first_wind_discard_can_complete_nondealer_opening_ten(self):
+        game = self.game()
+        nine_winds = [27] * 4 + [28] * 3 + [29] * 2 + [1, 5, 10, 20]
+        fill_deqing_table(self, game, 0, [counts([30]), counts(nine_winds), counts([]), counts([])])
+        game._discard(0, 30)
+        self.assertIn(RON, game.legal_actions()[1])
+        game.step(RON)
+        play_passes(game)
+        self.assertEqual(game.win_details[0].patterns, ('起手十风',))
+        self.assertEqual(game.scores(), [-10, 20, -5, -5])
+        self.assertEqual(game.claimed_tile, 30)
+        self.assertEqual(game.physical_counts(), game.tile_supply)
+
+    def test_same_turn_added_kong_does_not_offer_a_robbery(self):
+        game = self.game()
+        game.opening = game.uninterrupted = False
+        waiting = [1, 3, 9, 10, 11, 18, 19, 20, 27, 27, 27, WHITE, WHITE]
+        fill_deqing_table(self, game, 0, [counts([2]), counts([2] * 3), counts(waiting), counts([])])
+        game._discard(0, 2)
+        game.step(('peng', None))
+        play_passes(game)
+        kong = ('bugang', 2)
+        self.assertIn(kong, game.legal_actions()[1])
+        game.step(kong)
+        self.assertIsNone(game.offer)
+        self.assertEqual(game.phase, 'action')
+        self.assertEqual(game.kong_chain, 1)
+        self.assertEqual(game.players[1].melds, [Meld('gang_bu', 2, 0)])
+        self.assertEqual(game.physical_counts(), game.tile_supply)
+
+    def test_later_added_kong_uses_each_robbers_own_natural_rate(self):
+        game = self.game()
+        waiting = [1, 3, 9, 10, 11, 18, 19, 20, WHITE, WHITE]
+        original = Meld('peng', 2, 3)
+        game.players[0].melds = [original]
+        fill_deqing_table(self, game, 0, [counts([2]), counts(waiting + [27] * 3), counts(waiting + [28] * 3), counts([])])
+        game.seen_wildcard[1] = True
+        game.drawn_tile = 2
+        game.step(('bugang', 2))
+        game.step(RON)
+        game.step(RON)
+        play_passes(game)
+        self.assertEqual(game.reason_code, 'rob_kong_win')
+        self.assertEqual(game.scores(), [-36, 12, 24, 0])
+        self.assertEqual(game.players[0].melds, [original])
+        self.assertEqual(game.physical_counts(), game.tile_supply)
+
+
 class SharedFlipTests(unittest.TestCase):
     def test_complete_hands_keep_all_physical_tiles_and_points(self):
         for rules, engine in ((XIAOSHAN, XiaoshanGame), (SONGYANG, SongyangGame),
-                              (SUICHANG, SuichangGame), (DEQING, DeqingGame)):
+                              (SUICHANG, SuichangGame), (DEQING, DeqingGame), (DEQING_XINSHI, DeqingXinshiGame)):
             for seed in range(16):
                 rng = random.Random(seed)
                 game = engine(seed, seed % 4, 27, rules=rules, dealer_streak=seed % 3)

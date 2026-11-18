@@ -87,7 +87,7 @@ Object.assign(I18N.en.fans, {
  '豪华七对':'Luxury seven pairs', '双豪华七对':'Double luxury seven pairs', '三豪华七对':'Triple luxury seven pairs',
  '清七对':'Natural seven pairs', '豪华清七对':'Natural luxury seven pairs',
  '双豪华清七对':'Natural double luxury seven pairs', '三豪华清七对':'Natural triple luxury seven pairs',
- '十风':'Ten Winds', '乱风':'Unstructured honors', '正风':'All honor pungs', '豪杠开':'Concealed kong draw',
+ '十风':'Ten Winds', '起手十风':'Opening Ten Winds', '乱风':'Unstructured honors', '正风':'All honor pungs', '豪杠开':'Concealed kong draw',
  '大对子':'All pungs', '大碰胡':'All pungs', '大吊车':'Four sets and a pair', '全字':'All honors',
  '财神头':'Wildcard head', '三财神':'Three opening wildcards', '四财神':'Four opening wildcards', '正规十三幺':'Natural thirteen orphans',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',

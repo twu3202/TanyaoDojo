@@ -14,7 +14,7 @@ from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
 from .xiaogan import XIAOGAN
-from .zhejiang_flipped import DEQING, SONGYANG, SUICHANG, XIAOSHAN
+from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
 VARIANTS = {'riichi': {'id': 'riichi',
             'family_id': 'riichi',
@@ -1493,6 +1493,32 @@ VARIANTS[DEQING.VARIANT] = {
     }},
 }
 
+VARIANTS[DEQING_XINSHI.VARIANT] = {
+    **_HANGZHOU, 'id': DEQING_XINSHI.VARIANT,
+    'name': 'Deqing Mahjong · Xinshi',
+    'aliases': ['新市麻将', '德清新市', '起手十风', '碰后补杠'],
+    'rule_version': 'deqing-xinshi-plain-dojo-v1',
+    'subtitle': 'Four seats · Opening Ten Winds · Immediate pon upgrade',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'Win at the deal with ten winds or wildcards, or upgrade a pon immediately without a robbery window.',
+    'rules': [
+        '136 tiles, with the tile after the indicator as wildcard. Opening Ten Winds needs ten winds or wildcards. '
+        'A non-dealer holding nine may take the dealer’s first natural wind discard for the tenth.',
+        'An ordinary win or Seven Pairs pays double if the winner never drew or held a wildcard. '
+        'Heavenly Hand collects 10 per loser. Earth and opening wins by a non-dealer collect 10 from the dealer and 5 from other losers.',
+        'You may upgrade a pon before your first discard after calling it. This kong cannot be robbed. '
+        'Later added kongs can be robbed by multiple winners. The owner pays six times each winner’s own share.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Deqing Xinshi rules and payouts', 'url': 'https://www.hzbianqu.com/game/919.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '德清麻将（新市）', 'subtitle': '四人 · 起手十风 · 同轮碰后补杠',
+        'badge': '浙江 · 136 张', 'description': '起手风牌与财神凑足十张可胡，同轮碰后补杠可直接补牌。',
+        'rules': ['136 张，翻牌下一位为财神。起手有十张风牌或财神可直接胡。闲家起手九张时可以接庄家首弃的天然风牌。',
+                  '从未拿过财神时，普通自摸和七对分数翻倍。天胡每家付 10，地胡及闲家起手特胡庄家付 10、其他输家各 5。',
+                  '碰牌后尚未出牌，可立即补同一张牌，无抢杠窗口。之后的补杠可多家抢胡，被抢者按每位赢家自己的份额付六倍。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1516,4 +1542,5 @@ SESSION_OPTIONS = {
     SONGYANG.VARIANT: {'variant': SONGYANG.VARIANT},
     SUICHANG.VARIANT: {'variant': SUICHANG.VARIANT},
     DEQING.VARIANT: {'variant': DEQING.VARIANT},
+    DEQING_XINSHI.VARIANT: {'variant': DEQING_XINSHI.VARIANT},
 }
