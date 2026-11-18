@@ -16,6 +16,7 @@ from .kaxinwu import VARIANT as KAXINWU
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
+from .tiantai import VARIANT as TIANTAI
 from .xiaogan import XIAOGAN
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
@@ -1654,6 +1655,33 @@ VARIANTS[CHONGJI_SEVEN.VARIANT] = {
     }},
 }
 
+VARIANTS[TIANTAI] = {
+    'id': TIANTAI, 'family_id': 'taizhou-hu', 'family': 'Taizhou hu scoring', 'seat_count': 3,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Tiantai Mahjong · 300 Hu',
+    'aliases': ['天台麻将', '天台三人', '天台300胡', '位花'],
+    'rule_version': 'tiantai-108-300-hu-dojo-v1',
+    'subtitle': 'Three seats · 108 tiles · 15-tile reserve',
+    'badge': 'Zhejiang · Two suits and flowers',
+    'description': 'Play with characters, circles, honors and eight flowers. Each tai doubles the winning hu.',
+    'rules': [
+        '108 tiles. Use characters, circles, seven honors and eight flowers. Replace flowers publicly and keep 15 tiles in reserve. '
+        'Play with pon and kong, and use every honor at its printed value.',
+        'Start at 20 hu and add flower, pair, wait and set points. Each tai doubles the result. Round up to ten and cap at 300. '
+        'The dealer’s opening win and Eight Flowers pay 300; an Earth win pays 150.',
+        'Several players may win on one discard or added kong. The supplier pays each winner’s full score. '
+        'For self-draw, each opponent pays the full score. The last discard can only be taken to win.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Tiantai tiles, hu, tai and play restrictions', 'url': 'https://www.hzbianqu.com/game/970.html'}],
+    'translations': {'zh-CN': {
+        'family': '台州系胡数', 'name': '天台三人麻将（300 胡）', 'subtitle': '三人 · 108 张 · 留尾 15 张',
+        'badge': '浙江 · 万筒字花', 'description': '用万、筒、字牌和八花。每台将胡数翻倍。',
+        'rules': ['108 张，万筒字牌和八花。可碰、杠，字牌按本身使用。补花公开，牌墙留 15 张。',
+                  '20 胡起算，加花牌、对子、听口及刻杠分。每台翻倍，再向上进十，300 胡封顶。天胡和八花 300 胡，地胡 150 胡。',
+                  '放炮和抢补杠允许多响，供牌者向每位赢家付全额。自摸由其余两家各付全额。末张打出时只可胡。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1683,4 +1711,5 @@ SESSION_OPTIONS = {
     DONGYANG.VARIANT: {'variant': DONGYANG.VARIANT},
     CHONGJI.VARIANT: {'variant': CHONGJI.VARIANT},
     CHONGJI_SEVEN.VARIANT: {'variant': CHONGJI_SEVEN.VARIANT},
+    TIANTAI: {'variant': TIANTAI},
 }

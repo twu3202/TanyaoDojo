@@ -4,13 +4,14 @@ from dataclasses import asdict
 import random
 import time
 
-from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau
-from .anji import ANJI, ANJI_TEA_HOUSE, FLOWER_TILES, AnjiGame, AnjiTeaHouseGame
+from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau, tiantai
+from .anji import ANJI, ANJI_TEA_HOUSE, AnjiGame, AnjiTeaHouseGame
 from .chongji import CHONGJI, CHONGJI_SEVEN, ChongjiGame
 from .dongyang import DONGYANG, DongyangGame
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
+from .flower_wall import FLOWER_TILES, FlowerWall
 from .hangzhou import FLOAT, HANGZHOU_ROOMS, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
@@ -23,7 +24,7 @@ from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SU
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
-    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN,
+    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -41,6 +42,7 @@ GAME_ENGINES = {
     DONGYANG.VARIANT: DongyangGame,
     CHONGJI.VARIANT: ChongjiGame,
     CHONGJI_SEVEN.VARIANT: ChongjiGame,
+    tiantai.VARIANT: tiantai.TiantaiGame,
 }
 
 
@@ -111,7 +113,7 @@ class HonorsSession(GameSession):
                 players[-1]['wildcard_floats'] = game.float_streak[actor]
             if isinstance(game, XiaoshanGame) and actor == 0 and game.ten_winds[actor] >= 5:
                 players[-1]['ten_winds_run'] = game.ten_winds[actor]
-            if isinstance(game, AnjiGame):
+            if isinstance(game, FlowerWall):
                 players[-1]['flowers'] = [self.display_tile(tile) for tile in game.flowers[actor]]
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:

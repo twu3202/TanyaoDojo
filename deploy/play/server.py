@@ -25,10 +25,11 @@ from .hongzhong_game import HongzhongSession
 from .suited_game import SuitedSession
 from .honors_game import HonorsSession
 
-VERSION='0.27.0'
+VERSION='0.28.0'
 FACTORIES={'riichi':RiichiSession,'sichuan':SichuanSession,'hongzhong':HongzhongSession,
            'suited-discard-win':SuitedSession,'continuous-win':SuitedSession,'honors-and-chows':HonorsSession,
-           'honors-horse-tiles':HonorsSession,'ka-wu-xing':HonorsSession,'hangzhou-wildcard':HonorsSession}
+           'honors-horse-tiles':HonorsSession,'ka-wu-xing':HonorsSession,'hangzhou-wildcard':HonorsSession,
+           'taizhou-hu':HonorsSession}
 
 
 class Manager:
