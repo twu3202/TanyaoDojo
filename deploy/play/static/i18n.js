@@ -90,11 +90,14 @@ Object.assign(I18N.en.fans, {
  '十风':'Ten Winds', '起手十风':'Opening Ten Winds', '乱风':'Unstructured honors', '正风':'All honor pungs', '豪杠开':'Concealed kong draw',
  '大对子':'All pungs', '大碰胡':'All pungs', '大吊车':'Four sets and a pair', '全字':'All honors',
  '财神头':'Wildcard head', '三财神':'Three opening wildcards', '四财神':'Four wildcards', '无花无财神':'No flowers or wildcards', '正规十三幺':'Natural thirteen orphans',
+ '十三不搭':'Isolated honors',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 Object.assign(I18N.en.tileHonors, {F1:'Spring', F2:'Summer', F3:'Autumn', F4:'Winter',
  F5:'Plum', F6:'Orchid', F7:'Bamboo', F8:'Chrysanthemum'});
 Object.assign(I18N['zh-CN'].tileHonors, {F1:'春', F2:'夏', F3:'秋', F4:'冬', F5:'梅', F6:'兰', F7:'竹', F8:'菊'});
+I18N.en.flowerBonus='Flowers × {n}';
+I18N['zh-CN'].flowerBonus='花牌 × {n}';
 let LANGUAGE='en';
 try{const saved=localStorage.getItem('tanyao_language');if(saved&&I18N[saved])LANGUAGE=saved;}catch{}
 const tr=(key,args={})=>{let s=I18N[LANGUAGE][key]??I18N.en[key]??key;return String(s).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');};
@@ -102,6 +105,6 @@ const tpl=(text,args={})=>String(text).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');
 const playerName=i=>I18N[LANGUAGE].names[i]??String(i);
 const tileText=t=>I18N[LANGUAGE].tileHonors[t]||(LANGUAGE==='en'?`${t.endsWith('r')?'Red ':''}${t[0]} ${I18N.en.suits['mps'.indexOf(t[1])]}`:`${t[0]}${I18N['zh-CN'].suits['mps'.indexOf(t[1])]}${t.endsWith('r')?'赤':''}`);
 const actionText=k=>I18N[LANGUAGE].action[k]??k;
-const patternText=x=>x.startsWith('根x')?tr('gen',{n:x.slice(2)}):x.startsWith('鬼x')?tr('ghost',{n:x.slice(2)}):(I18N[LANGUAGE].fans[x]||x);
+const patternText=x=>x.startsWith('根x')?tr('gen',{n:x.slice(2)}):x.startsWith('鬼x')?tr('ghost',{n:x.slice(2)}):x.startsWith('花牌x')?tr('flowerBonus',{n:x.slice(3)}):(I18N[LANGUAGE].fans[x]||x);
 function localVariant(v){return {...v,...(v.translations?.[LANGUAGE]||{})};}
 function messageText(m){if(!m.code)return m.text||'';const p={...m.params};for(const k of ['actor','target'])if(p[k]!==undefined)p[k]=playerName(p[k]);if(p.tile)p.tile=tileText(p.tile);if(p.direction)p.direction=I18N[LANGUAGE].directions[p.direction];if(p.suit!==undefined)p.suit=I18N[LANGUAGE].suits[p.suit];if(p.action)p.action=m.code==='flow_win'?I18N[LANGUAGE].flowKinds[p.action]:actionText(p.action);if(p.tiles)p.tiles=p.tiles.map(tileText).join(', ');if(p.patterns){p.patterns=p.patterns.map(patternText).join(' · ');p.patterns=p.patterns?' · '+p.patterns:'';}return tpl(I18N[LANGUAGE].messages[m.code]??I18N.en.messages[m.code]??m.code,p);}

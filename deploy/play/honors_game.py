@@ -5,7 +5,7 @@ import random
 import time
 
 from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau
-from .anji import ANJI, FLOWER_TILES, AnjiGame
+from .anji import ANJI, ANJI_TEA_HOUSE, FLOWER_TILES, AnjiGame, AnjiTeaHouseGame
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
@@ -21,7 +21,7 @@ from .zhejiang_flipped import (DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, TEN_WI
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
-    DEQING, DEQING_XINSHI, ANJI,
+    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -35,6 +35,7 @@ GAME_ENGINES = {
     DEQING.VARIANT: DeqingGame,
     DEQING_XINSHI.VARIANT: DeqingXinshiGame,
     ANJI.VARIANT: AnjiGame,
+    ANJI_TEA_HOUSE.VARIANT: AnjiTeaHouseGame,
 }
 
 

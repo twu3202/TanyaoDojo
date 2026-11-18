@@ -1,6 +1,6 @@
 # Hangzhou wildcard rooms
 
-The eleven rooms play eight hands at base stake one. Anji uses 144 tiles with flowers. The other rooms use 136 tiles.
+The twelve rooms play eight hands at base stake one. The Anji rooms use 144 tiles with flowers. The other rooms use 136 tiles.
 The human hosts and deals the first hand. A kong needs a live replacement tile.
 Kongs draw from the other end of the wall and have no immediate payment. The winner deals next and the dealer
 repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard wins and robbing an added kong.
@@ -19,6 +19,7 @@ Songyang keeps 20 tiles in reserve and allows robbing an added kong from any sea
 | Deqing Wukang | Chow, pon and kong with a successor wildcard | Dealer pays 10 for Earth | An added-kong robbery charges its supplier three shares per winner |
 | Deqing Xinshi | Chow, pon and kong, including an immediate pon upgrade | Dealer pays 10 for Earth or a non-dealer opening special | A later robbery charges its supplier six shares at each winner’s rate |
 | Anji Fifteen Flowers | Chow, pon and kong, including after a call | Same as non-dealers | None |
+| Anji Tea House Self-Draw | Chow, pon and kong, with pon upgrades from the next draw | Same as non-dealers | None |
 
 ## Wildcard and win multipliers
 
@@ -228,6 +229,27 @@ higher payout. A float pays ten per floated wildcard, plus five per uninterrupte
 or after a float. Add ten when the floated wildcards plus those still held reach four. All other seats pay the
 winning share, with zero payments on a draw.
 
+## Anji Tea House Self-Draw
+
+The four-seat table uses the eight seasons and plants as its only flower faces. Set aside the indicator
+before dealing. A flower used as the indicator leaves seven replaceable flowers. Flowers and White Dragon
+point to East. Other indicators use the next suit rank, wind or the other member of the Red–Green pair.
+White Dragons, North and the remaining copies of the indicator stay in play. The first dealer is chosen
+uniformly, then the winner deals next and the dealer repeats on a draw.
+
+This room uses the operator's self-draw description. Earth applies on a non-dealer's first ordinary draw,
+including after another seat has called. All other discard win opportunities are disabled. A pon cannot be
+upgraded until a subsequent draw. Standard hands, seven pairs and the loose-honors special can win. Interpret
+the operator’s named special using the published Anji tile description of all seven honors and seven suited
+tiles, spaced at least three ranks apart in each suit. Wildcards may fill missing members.
+
+Plain self-draw pays one with a wildcard, two without it, or five with neither wildcards nor flowers. Seven
+pairs pay two with a wildcard or five without. Heaven, Earth and four wildcards pay ten. This room uses one
+point per exposed flower on top of the winning share, since the operator specifies the per-flower addition
+without a rate. Apply the highest independent hand value, adding the explicitly listed bonuses for consecutive
+kongs, floating and flowers during a float. A draw has zero payments. The rules table gives a price for false
+float without a trigger. This room uses the defined ordinary wildcard float.
+
 ## Sources
 
 - [Zhejiang Game Hall three-player rules and multiplier table](https://www.hzbianqu.com/game/581.html)
@@ -243,4 +265,5 @@ winning share, with zero payments on a draw.
 - [Zhejiang Game Hall Suichang hand and payment table](https://www.hzbianqu.com/game/47.html)
 - [Zhejiang Game Hall Deqing Wukang and Xinshi scoring tables and multi-win rules](https://www.hzbianqu.com/game/919.html)
 - [Zhejiang Game Hall Anji flowers, replacements and scoring](https://www.hzbianqu.com/game/886.html)
+- [Game Tea House Anji self-draw, calls and scoring](https://www.5158wan.com/news/201809/7408.html)
 - [Zhejiang Game Hall Seven Winds definition for the related Jinhua room](https://www.hzbianqu.com/game/74.html)

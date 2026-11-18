@@ -181,7 +181,7 @@ def _spaced_capacity(ranks):
     return max((len(candidate) for candidate in _SPACED_RANKS if all(rank in candidate for rank in ranks)), default=-1)
 
 
-def _seven_winds(physical, wild):
+def seven_winds_shape(physical, wild):
     if max(physical) > 1 or physical[27:].count(0) > wild:
         return False
     capacities = [_spaced_capacity(tuple(rank for rank in range(9) if physical[suit + rank]))
@@ -194,7 +194,7 @@ def _orphans_and_seven_winds(physical, wild, unit):
         missing = sum(not physical[tile] for tile in ORPHANS)
         if missing <= wild and max(physical) <= 2:
             yield ('不正规十三幺', unit) if wild else ('正规十三幺', 2 * unit)
-    if _seven_winds(physical, wild):
+    if seven_winds_shape(physical, wild):
         yield ('不正规七风', 2 * unit) if wild else ('正规七风', 4 * unit)
 
 

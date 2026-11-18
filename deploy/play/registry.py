@@ -1,5 +1,5 @@
 """Versioned playable rules; English is the API default."""
-from .anji import ANJI
+from .anji import ANJI, ANJI_TEA_HOUSE
 from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
@@ -1546,6 +1546,34 @@ VARIANTS[ANJI.VARIANT] = {
     }},
 }
 
+VARIANTS[ANJI_TEA_HOUSE.VARIANT] = {
+    **_HANGZHOU, 'id': ANJI_TEA_HOUSE.VARIANT,
+    'name': 'Anji Mahjong · Tea House Self-Draw',
+    'aliases': ['茶苑安吉', '安吉八花', '安吉纯自摸'],
+    'rule_version': 'anji-tea-house-self-draw-dojo-v1',
+    'subtitle': 'Four seats · Eight flower faces · Self-draw only',
+    'badge': 'Zhejiang · 144 tiles',
+    'description': 'Play with eight seasonal and plant flowers. Each flower you expose adds to your own win.',
+    'rules': [
+        '144 tiles, with only the four seasons and four plants used as flowers. The indicator stays out of play. '
+        'If it is a flower or White Dragon, East is the wildcard. Each exposed flower adds one point per opponent to your win.',
+        'Win by self-draw, including your first ordinary draw as a non-dealer. Chow, pon and kong are available. '
+        'Add a tile to a pon from your next draw onward. Kongs cannot be robbed.',
+        'Seven natural pairs pay five before flowers. The loose-honors special uses all seven honors and seven isolated suited tiles. '
+        'The room uses the ordinary wildcard float and the listed kong and flower combinations.',
+    ],
+    'sources': [{'title': 'Game Tea House Anji rules and payout table', 'url': 'https://www.5158wan.com/news/201809/7408.html'},
+                {'title': 'Zhejiang Game Hall Anji isolated-honors shape', 'url': 'https://www.hzbianqu.com/game/886.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '茶苑安吉麻将（纯自摸）', 'subtitle': '四人 · 八种实体花 · 纯自摸',
+        'badge': '浙江 · 144 张', 'description': '以春夏秋冬、梅兰竹菊作花。赢家每张补出的花都计入账单。',
+        'rules': ['144 张，只用春夏秋冬、梅兰竹菊作花。指示牌移出牌墙，翻白板或实体花时东风为财神。'
+                  '自己的每张补花在胡牌时使每位对手多付 1 分。',
+                  '只可自摸，闲家第一次普通摸牌可地胡。可吃、碰、杠。碰后下次摸牌起可补杠，杠牌不能被抢。',
+                  '天然七对每位对手付 5 再加花分。十三不搭使用七种字牌和七张隔张数牌。采用普通财飘及财飘、杠、补花的组合。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1571,4 +1599,5 @@ SESSION_OPTIONS = {
     DEQING.VARIANT: {'variant': DEQING.VARIANT},
     DEQING_XINSHI.VARIANT: {'variant': DEQING_XINSHI.VARIANT},
     ANJI.VARIANT: {'variant': ANJI.VARIANT},
+    ANJI_TEA_HOUSE.VARIANT: {'variant': ANJI_TEA_HOUSE.VARIANT},
 }
