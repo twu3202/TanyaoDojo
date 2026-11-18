@@ -1,8 +1,8 @@
 """Fuzhou 36-flower Mahjong with an opening gold claim."""
 
-from collections import deque
 from dataclasses import replace
 
+from .gold_opening import GoldOpening
 from .honors import DRAGONS, PASS, WINDS
 from .honors_bonus import Score
 from .sixteen import OPTIONS, SET_COUNT, SixteenGame, SixteenRules
@@ -10,7 +10,6 @@ from .wildcard_shapes import can_form_sets, can_form_standard, without_tile
 
 
 HONOR_FLOWERS = WINDS | DRAGONS
-GOLD_CLAIMS = ('claim_gold', 'three_gold')
 
 
 def split_gold(hand, gold):
@@ -72,74 +71,24 @@ class FuzhouRules(SixteenRules):
 FUZHOU = FuzhouRules()
 
 
-class FuzhouGame(SixteenGame):
+class FuzhouGame(GoldOpening, SixteenGame):
     excluded_tiles = HONOR_FLOWERS
 
     def _prepare_wall(self):
         super()._prepare_wall()
         self.flower_kinds = self.flower_kinds | HONOR_FLOWERS
-        self.indicator_tile = None
-        self.wildcard_tile = None
         self.gold_discards = set()
 
     def _deal_opening(self):
         super()._deal_opening()
-        while (tile := self.wall.pop(self._replacement_index())) in self.flower_kinds:
-            self.flowers[self.dealer].append(tile)
-        self.indicator_tile = self.wildcard_tile = tile
-
         order = [(self.dealer + step) % self.seat_count for step in range(self.seat_count)]
-        order.sort(key=lambda actor: self.players[actor].hand[tile] != 3)
-        self.gold_queue = deque(order)
-        self.phase = 'gold_opening'
-        self.cur = self.gold_queue[0]
+        self._start_gold_opening(self._replacement_index(), order)
 
-    def physical_counts(self):
-        counts = super().physical_counts()
-        counts[self.indicator_tile] += 1
-        return counts
+    def _qualifies_for_gold(self, hand):
+        natural, wild = split_gold(hand, self.wildcard_tile)
+        return can_form_standard(natural, wild, HONOR_FLOWERS)
 
-    def _gold_actions(self):
-        hand = tuple(self.players[self.cur].hand)
-        gold = self.wildcard_tile
-        if hand[gold] == 3:
-            return [PASS, ('three_gold', None)]
-        if self.cur != self.dealer:
-            natural, wild = split_gold(hand, gold)
-            return [PASS, ('claim_gold', None)] if can_form_standard(natural, wild + 1, HONOR_FLOWERS) else [PASS]
-        actions = [PASS]
-        for tile, count in enumerate(hand):
-            if count and tile != gold:
-                natural, wild = split_gold(without_tile(hand, tile), gold)
-                if can_form_standard(natural, wild + 1, HONOR_FLOWERS):
-                    actions.append(('claim_gold', tile))
-        return actions
-
-    def legal_actions(self):
-        if self.phase == 'gold_opening':
-            return self.cur, self._gold_actions()
-        return super().legal_actions()
-
-    def step(self, action):
-        if self.phase != 'gold_opening':
-            super().step(action)
-            return
-        if action not in self._gold_actions():
-            raise ValueError('Illegal opening gold action')
-        if action == PASS:
-            self.gold_queue.popleft()
-            self.phase = 'gold_opening' if self.gold_queue else 'action'
-            self.cur = self.gold_queue[0] if self.gold_queue else self.dealer
-            return
-        actor = self.cur
-        kind, discarded = action
-        hand = self.players[actor].hand.copy()
-        if kind == 'claim_gold':
-            if discarded is not None:
-                hand[discarded] -= 1
-                self.players[actor].hand[discarded] -= 1
-                self.discards[actor].append(discarded)
-            hand[self.wildcard_tile] += 1
+    def _finish_gold_opening(self, actor, kind, hand):
         reason = 'gold_claim' if kind == 'claim_gold' else 'three_gold_win'
         score = self.rules.score(hand, (), gold=self.wildcard_tile, flowers=len(self.flowers[actor]),
                                  dealer_streak=self.dealer_streak, kind=reason)

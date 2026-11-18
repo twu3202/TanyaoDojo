@@ -24,6 +24,7 @@ from .taiwan import TAIWAN
 from .daxi import DAXI
 from .linhai import LINHAI
 from .lipu import LIPU
+from .longyan import LONGYAN, LONGYAN_HALF
 from .jinyun import JINYUN, JINYUN_CANTONESE
 from .jiaxing import JIAXING
 from .pinghu import PINGHU
@@ -2115,6 +2116,49 @@ VARIANTS[TAIWAN.VARIANT] = {
     }},
 }
 
+VARIANTS[LONGYAN.VARIANT] = {
+    'id': LONGYAN.VARIANT, 'family_id': 'fujian-gold', 'family': 'Fujian gold wildcard', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Longyan Mahjong · New Chapter', 'aliases': ['龙岩麻将', '龙岩新章', '龙岩新庄', '龙岩分饼'],
+    'rule_version': 'longyan-new-chapter-gold-dojo-v1', 'subtitle': 'Four seats · Gold travel · Opening follow payments',
+    'badge': 'Fujian · 144 tiles',
+    'description': 'Claim the opening gold or use it to wait on any draw, then choose whether to travel for a higher award.',
+    'rules': ['144 tiles with eight flowers, a 13/14-tile deal and head-side replacements. Pon and kong are allowed. Reserve 12 tiles.',
+              'A gold wildcard cannot be called. White Dragons can take its printed value inside a hand. Three actual golds can win without a shape.',
+              'Discard to leave gold as a free pair tile and enter travel. A newly drawn gold can extend travel. Double and triple travel restrict opponents.',
+              'Dealer-related bills double. Everyone pays on ordinary discard wins and the supplier adds 1. Opening follow streaks and kongs transfer points immediately.'],
+    'sources': [{'title': 'Ourgame Longyan New Chapter rules and payouts', 'url': 'https://www.ourgame.com/game/game-intro-new/df/fj/h2g/lyxzmj_002.html'}],
+    'translations': {'zh-CN': {
+        'family': '福建翻金', 'name': '龙岩麻将（新章）', 'subtitle': '四人 · 游金 · 跟牌分饼',
+        'badge': '福建 · 144 张', 'description': '可开局抢金，也可留一金单吊进入游金，争取双游或三游。',
+        'rules': ['144 张含八花，13／14 张发牌，从牌头补，留尾 12 张。可碰杠，不吃。',
+                  '翻金后白板在手中可代金的本牌，金不参加副露，实际三金可直接胡。',
+                  '打出一张后留金单吊即可游金，后续摸到金可续游。双游与三游会限制对手。',
+                  '涉庄账单翻倍，放冲时三家付分，点炮者加付 1。跟牌、花杠和普通杠分即时入账。'],
+    }},
+}
+
+VARIANTS[LONGYAN_HALF.VARIANT] = {
+    **VARIANTS[LONGYAN.VARIANT], 'id': LONGYAN_HALF.VARIANT,
+    'name': 'Longyan Mahjong · Half Self-Draw', 'aliases': ['龙岩半自摸', '龙岩半自摸抢杠'],
+    'rule_version': 'longyan-half-self-draw-gold-dojo-v1', 'subtitle': 'Four seats · Natural discards cannot win · Kong robbery',
+    'description': 'Win by drawing or robbing an added kong. Gold discards restrict opponents and passed kongs stay locked.',
+    'rules': ['Use all three numbered suits and eight flowers. No ordinary discard win. An added kong can be robbed by the nearest accepting seat.',
+              'The robbed kong owner pays 12 if the winner or owner is the dealer, or 8 between nondealers. A direct kong declined in favor of pon cannot be upgraded.',
+              'Dealer heaven wins have the first opening choice. Gold-discard restrictions apply until the last gold discarder plays again.',
+              'The room counts the plants and seasons separately for flower kongs and allows natural Thirteen Orphans.'],
+    'sources': [{'title': 'Zhejiang Game Hall Longyan Half Self-Draw rules and robbery bills', 'url': 'https://www.hzbianqu.com/game/1114.html'},
+                {'title': 'Ourgame Longyan New Chapter hand and travel payouts', 'url': 'https://www.ourgame.com/game/game-intro-new/df/fj/h2g/lyxzmj_002.html'}],
+    'translations': {'zh-CN': {
+        'family': '福建翻金', 'name': '龙岩麻将（半自摸）', 'subtitle': '四人 · 自摸和抢杠 · 过手杠',
+        'badge': '福建 · 半自摸', 'description': '可自摸、抢补杠，打金限制旁家，过手的杠保留禁令。',
+        'rules': ['三门数牌和八花，不可普通点炮胡。多人可抢补杠时按座次只收一家。',
+                  '抢杠涉及庄家时补杠家付 12，闲家抢闲家付 8。能直杠而选碰，该面不可再补杠。',
+                  '开局先问庄家天胡。旁家受打金限制，直到末次打金者再次出牌。',
+                  '四季与四君子各自凑齐计一花杠，可胡天然十三幺。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2158,4 +2202,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (BENGBU, BENGBU_FLOWER, LIPU)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (WUHU, WUHU_515)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (FUZHOU, TAIWAN)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (LONGYAN, LONGYAN_HALF)},
 }

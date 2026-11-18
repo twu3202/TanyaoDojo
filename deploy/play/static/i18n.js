@@ -168,16 +168,29 @@ I18N.en.longestSuit='Best suit {n} · Need 8';
 I18N['zh-CN'].longestSuit='最多一门 {n} 支 · 需 8 支';
 Object.assign(I18N.en, {
   goldIndicator:'Gold wildcard', dealerTai:'Dealer +{n} tai', goldCount:'Gold tiles × {n}', passedWinBlock:'Win blocked after pass',
-  promptGold:'Claim the opening gold or pass. A tile on the claim button is the dealer’s discard.',
+  promptGold:'Choose an opening win or pass. A tile on a gold claim is the dealer’s discard.',
   promptFlowerWin:'Declare the flower win or keep playing.',
 });
 Object.assign(I18N['zh-CN'], {
   goldIndicator:'翻出的金', dealerTai:'庄加 {n} 台', goldCount:'金牌 × {n}', passedWinBlock:'过水禁胡',
-  promptGold:'可抢金或过。抢金按钮上的牌是庄家要换出的牌。',
+  promptGold:'可选择开局胡牌或过。抢金按钮上的牌是庄家要换出的牌。',
   promptFlowerWin:'可胡花或继续打牌。',
 });
 Object.assign(I18N.en.action, {claim_gold:'Claim gold', three_gold:'Win with three golds', flower_hu:'Win with flowers'});
 Object.assign(I18N['zh-CN'].action, {claim_gold:'抢金', three_gold:'三金倒', flower_hu:'胡花'});
+Object.assign(I18N.en.action, {opening_heaven:'Win on the opening deal', travel_gold:'Travel with gold'});
+Object.assign(I18N['zh-CN'].action, {opening_heaven:'天胡', travel_gold:'游金'});
+Object.assign(I18N.en, {
+  travelStatus:'{name} · Gold travel {n}', goldDiscardStatus:'{name} discarded gold · Win restrictions apply',
+  flowerKongTransfers:'Flower kong points · {amounts}',
+});
+Object.assign(I18N['zh-CN'], {
+  travelStatus:'{name} · 游金第 {n} 阶', goldDiscardStatus:'{name} 打金 · 本轮胡牌受限',
+  flowerKongTransfers:'花杠分 · {amounts}',
+});
+I18N.en.messages.travel_gold='{actor} discarded {tile} and declared gold travel {level}.';
+I18N['zh-CN'].messages.travel_gold='{actor} 打出 {tile}，进入第 {level} 阶游金。';
+Object.assign(I18N.en.fans, {'游金':'Gold travel', '双游':'Double gold travel', '三游':'Triple gold travel'});
 Object.assign(I18N.en.reason, {gold_claim:'{names} claimed the opening gold.', three_gold_win:'{names} won with three gold tiles.',
   flower_hu:'{names} won with flowers.'});
 Object.assign(I18N['zh-CN'].reason, {gold_claim:'{names} 开局抢金胡牌', three_gold_win:'{names} 三金倒胡牌', flower_hu:'{names} 胡花'});

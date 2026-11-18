@@ -23,6 +23,7 @@ from .jiaxing import JIAXING, JiaxingGame
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .linhai import LINHAI, LinhaiGame
 from .lipu import LIPU, LipuGame
+from .longyan import LONGYAN, LONGYAN_HALF, TRAVEL, LongyanGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
 from .sixteen import SixteenGame
@@ -39,7 +40,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
-    BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN,
+    BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -74,6 +75,8 @@ GAME_ENGINES = {
     WUHU_515.VARIANT: WuhuGame,
     FUZHOU.VARIANT: FuzhouGame,
     TAIWAN.VARIANT: TaiwanGame,
+    LONGYAN.VARIANT: LongyanGame,
+    LONGYAN_HALF.VARIANT: LongyanGame,
 }
 
 
@@ -198,8 +201,12 @@ class HonorsSession(GameSession):
             table['yellow_faan'] = len(game.yellow)
         if isinstance(game, LipuGame):
             table['feed_liabilities'] = game.related_seats.copy()
-        if isinstance(game, FuzhouGame):
+        if isinstance(game, (FuzhouGame, LongyanGame)):
             table.update(wildcard=self.display_tile(game.wildcard_tile), gold_indicator=True)
+        if isinstance(game, LongyanGame):
+            table.update(travel_owner=game.travel_owner, travel_level=game.travel_level, gold_owner=game.gold_owner)
+            if game.wildcard_tile != WHITE:
+                table['white_substitute'] = self.display_tile(game.wildcard_tile)
         if isinstance(game, TaiwanGame):
             table['dealer_tai'] = 1 + 2 * game.dealer_streak
             table['win_blocked'] = 0 in game.passed_win
@@ -265,6 +272,9 @@ class HonorsSession(GameSession):
                 self.log_event('discard', {'actor': actor, 'tile': self.display_tile(tile)})
             elif kind == FLOAT[0]:
                 self.log_event('wildcard_float', {'actor': actor, 'count': game.float_streak[actor]}, 'call')
+            elif kind == TRAVEL:
+                self.log_event('travel_gold', {'actor': actor, 'level': game.travel_level,
+                                              'tile': self.display_tile(tile)}, 'call')
             if kind == 'declare_ready':
                 code = 'paid_ready' if game.players[actor].closed_ready else 'open_ready'
                 self.log_event(code, {'actor': actor}, 'call')
@@ -307,8 +317,10 @@ class HonorsSession(GameSession):
                 self.result['taizhou_settlement'] = game.taizhou_settlement
             if isinstance(game, DaxiGame):
                 self.result['buy_base_deltas'] = game.buy_base_deltas.copy()
-            if isinstance(game, JinyunClassicGame):
+            if isinstance(game, (JinyunClassicGame, LongyanGame)):
                 self.result['follow_deltas'] = game.follow_deltas.copy()
+            if isinstance(game, LongyanGame):
+                self.result['flower_kong_deltas'] = game.flower_kong_deltas.copy()
             if isinstance(game, (JinyunCantoneseGame, LipuGame)) and any(game.kong_refunds):
                 self.result['kong_refund_deltas'] = game.kong_refunds.copy()
             if game.options.kong_points:

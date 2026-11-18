@@ -103,6 +103,8 @@ if(table.fresh_stage) $('dora').append(text('span',tr('taizhouFreshStage'),'tag'
 if(table.yellow_faan) $('dora').append(text('span',tr('yellowFaan',{n:table.yellow_faan}),'tag'));
 if(table.longest_suit!==undefined) $('dora').append(text('span',tr('longestSuit',{n:table.longest_suit}),'tag'));
 if(table.win_blocked) $('dora').append(text('span',tr('passedWinBlock'),'tag'));
+if(table.travel_level) $('dora').append(text('span',tr('travelStatus',{name:playerName(table.travel_owner),n:table.travel_level}),'tag'));
+if(table.gold_owner!=null) $('dora').append(text('span',tr('goldDiscardStatus',{name:playerName(table.gold_owner)}),'tag'));
 $('table').classList.toggle('two-player',table.players.length===2);
 $('table').classList.toggle('three-player',table.players.length===3);
 $('seat-2').hidden=table.players.length<3;
@@ -237,7 +239,7 @@ function renderActions() {
   for (const option of game.choices) {
     if (isDiscard(option) || ['declare_ready','declare_dark'].includes(option.kind)) continue;
     const button = text('button', optionText(option), 'action' +
-      (['hora', 'ron', 'zimo', 'ten_winds', 'eleven_winds', 'claim_gold', 'three_gold', 'flower_hu'].includes(option.kind) ? ' primary-action' : ''));
+      (['hora', 'ron', 'zimo', 'ten_winds', 'eleven_winds', 'claim_gold', 'three_gold', 'flower_hu', 'opening_heaven'].includes(option.kind) ? ' primary-action' : ''));
     for (const tile of option.tiles.slice(0, 4)) button.append(img(tile));
     button.onclick = () => sendAction(option.id);
     box.append(button);
@@ -284,6 +286,7 @@ function renderTaizhou(settlement, container) {
   }));
 }
 function renderBonusTiles(result, container) {
+  renderTransfers(result.flower_kong_deltas, 'flowerKongTransfers', container);
   if(result.busted?.length) {
     container.append(text('p', tr('bankExhausted', {names: result.busted.map(playerName).join(' · ')}), 'bonus-detail'));
   }

@@ -11,13 +11,15 @@ from . import hongkong
 from .anji import AnjiRules
 from .chongji import ChongjiRules
 from .dongyang import DongyangRules, white_assignments
-from .fuzhou import FuzhouRules, GOLD_CLAIMS, split_gold
+from .fuzhou import FuzhouRules, split_gold
+from .gold_opening import GOLD_CLAIMS
 from .hangzhou import FLOAT, WHITE, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
 from .tiantai import TiantaiWildcardRules
 from .taizhou import TaizhouRules
 from .linhai import LinhaiRules
+from .longyan import TRAVEL, LongyanRules, split_longyan
 from .jinyun import JinyunClassicRules
 from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
@@ -42,6 +44,7 @@ class PolicyView:
     wildcard_indicator: int | None = None
     wildcard_tile: int | None = None
     excluded_tiles: frozenset[int] = frozenset()
+    travel_level: int = 0
 
     @property
     def wildcard(self):
@@ -80,7 +83,8 @@ def policy_view(game, actor, actions):
                       tuple(actions), seat_wind, game.round_wind,
                       offered, game.remaining, game.rules,
                       None if offered is None else game.offer.actor, getattr(game, 'wildcard_indicator', None),
-                      getattr(game, 'wildcard_tile', None), getattr(game, 'excluded_tiles', frozenset()))
+                      getattr(game, 'wildcard_tile', None), getattr(game, 'excluded_tiles', frozenset()),
+                      game.travel_level if getattr(game, 'travel_owner', None) == actor else 0)
 
 
 @lru_cache(maxsize=1)
@@ -194,6 +198,13 @@ def _wild_distance(natural, wild, meld_count, require_burst, allow_pairs):
 
 
 def _distance(hand, melds, view):
+    if isinstance(view.rules, LongyanRules):
+        natural, wild = split_longyan(hand, view.wildcard)
+        distance = _wild_distance(natural, wild, len(melds), False, True)
+        if view.rules.half_self_draw and not melds:
+            orphans = 13 - sum(bool(hand[t]) for t in ORPHANS) - any(hand[t] > 1 for t in ORPHANS)
+            distance = min(distance, orphans)
+        return max(0, distance)
     if isinstance(view.rules, SixteenRules):
         if isinstance(view.rules, FuzhouRules):
             natural, wild = split_gold(hand, view.wildcard)
@@ -279,14 +290,14 @@ def _ready_waits(hand, melds, view, live):
     params = {}
     if isinstance(view.rules, SongyangRules):
         params['indicator'] = view.wildcard_indicator
-    elif isinstance(view.rules, FuzhouRules):
+    elif isinstance(view.rules, (FuzhouRules, LongyanRules)):
         params['gold'] = view.wildcard
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
     elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, PinghuRules, QuzhouRules)):
         params['wildcard'] = view.wildcard
     if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules,
-                              TiantaiWildcardRules, WuhuRules, SixteenRules)):
+                              TiantaiWildcardRules, WuhuRules, SixteenRules, LongyanRules)):
         def can_win(hand, melds, ctx):
             return view.rules.can_win(hand, melds, ctx, **params)
     else:
@@ -348,10 +359,14 @@ def _ukeire(distance, rest, melds, live, view):
 
 def heuristic(view):
     actions = view.actions
-    if isinstance(view.rules, SixteenRules):
+    if isinstance(view.rules, (SixteenRules, LongyanRules)):
         special = next((action for action in actions if action[0] in (*GOLD_CLAIMS, 'flower_hu')), None)
         if special is not None:
             return special
+    if isinstance(view.rules, LongyanRules) and view.remaining >= 12:
+        travels = [action for action in actions if action[0] == TRAVEL]
+        if travels and (ZIMO not in actions or view.travel_level or view.hand[view.wildcard] >= 2 or view.remaining >= 36):
+            return next((action for action in travels if action[1] != view.wildcard), travels[0])
     if actions[0][0] == 'liability_choice':
         worthwhile = _distance(view.hand, view.melds, view) <= 1 and view.remaining >= 5
         return 'liability_choice', int(worthwhile)

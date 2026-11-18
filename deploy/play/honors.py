@@ -646,6 +646,15 @@ class HonorsGame:
                                          self._liabilities_for(winner.actor))
         return score, payments
 
+    def _settle_special(self, actor, provider, kind, score, hand):
+        payments = self.rules.payments(self, actor, provider, score)
+        self.offer = None
+        self.winners = [actor]
+        self.revealed[actor] = hand
+        self._transfer(actor, payments)
+        self.win_details.append(Win(actor, provider, kind, score.fan, score.share, score.patterns, payments))
+        self._end(kind)
+
     def _end(self, reason):
         self.phase = 'over'
         self.drawn_tile = None

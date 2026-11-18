@@ -1,7 +1,7 @@
 """Shared opening, replacement wall and settlement for 16-tile tables."""
 
 from .flower_wall import FlowerWall
-from .honors import HonorsGame, PASS, TableOptions, Win
+from .honors import HonorsGame, PASS, TableOptions
 
 SET_COUNT = 5
 WAITING_HAND = SET_COUNT * 3 + 1
@@ -40,34 +40,9 @@ class SixteenGame(FlowerWall, HonorsGame):
         return self.rules.WALL_RESERVE
 
     def _deal_opening(self):
-        order = tuple((self.dealer + i) % self.seat_count for i in range(self.seat_count))
-        racks = [[] for _ in self.players]
-        for _ in range(4):
-            for actor in order:
-                racks[actor].extend(self.wall.pop() for _ in range(4))
-        racks[self.dealer].append(self.wall.pop())
-        while any(tile in self.flower_kinds for rack in racks for tile in rack):
-            for actor in order:
-                for index, tile in enumerate(racks[actor]):
-                    if tile in self.flower_kinds:
-                        self.flowers[actor].append(tile)
-                        racks[actor][index] = self.wall.pop(self._replacement_index())
-        for actor, rack in enumerate(racks):
-            for tile in rack:
-                self.players[actor].hand[tile] += 1
-        self.players[self.dealer].draws = 1
-        self.drawn_tile = racks[self.dealer][-1]
+        self._deal_flower_racks(WAITING_HAND)
 
     def _response_actions(self):
         if self.winners:
             return self.responses[0], [PASS]
         return super()._response_actions()
-
-    def _settle_special(self, actor, provider, kind, score, hand):
-        payments = self.rules.payments(self, actor, provider, score)
-        self.offer = None
-        self.winners = [actor]
-        self.revealed[actor] = hand
-        self._transfer(actor, payments)
-        self.win_details.append(Win(actor, provider, kind, score.fan, score.share, score.patterns, payments))
-        self._end(kind)
