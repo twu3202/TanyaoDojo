@@ -16,7 +16,7 @@ from .kaxinwu import VARIANT as KAXINWU
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
-from .tiantai import VARIANT as TIANTAI
+from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
 from .xiaogan import XIAOGAN
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
@@ -1682,6 +1682,30 @@ VARIANTS[TIANTAI] = {
     }},
 }
 
+VARIANTS[TIANTAI_WILD.VARIANT] = {
+    **VARIANTS[TIANTAI], 'id': TIANTAI_WILD.VARIANT,
+    'name': 'Tiantai Mahjong · White Dragon Wild',
+    'aliases': ['天台白板财神', '天台财神房', '天台四财神', '天台清牌'],
+    'rule_version': 'tiantai-108-white-wild-dojo-v1',
+    'subtitle': 'Three seats · Four wildcards · 300-hu cap',
+    'description': 'White Dragons can complete your hand. Score the highest legal wildcard assignment.',
+    'rules': [
+        '108 tiles, eight flowers and a 15-tile reserve. All four White Dragons are wild and can stand for '
+        'another face in concealed shapes. Calls use ordinary printed faces.',
+        'Hu and tai use the best legal assignment, including the winning tile’s role. A winning hand with '
+        'no White Dragons earns one extra tai. Four wildcards or Eight Flowers pay the 300-hu maximum.',
+        'Standard opening wins use their usual score. Multiple players may win on a discard or added kong. '
+        'The supplier pays each winner; on self-draw both opponents pay.',
+    ],
+    'translations': {'zh-CN': {
+        'family': '台州系胡数', 'name': '天台三人麻将（白板财神）', 'subtitle': '三人 · 四张白板财神 · 300 胡封顶',
+        'badge': '浙江 · 万筒字花', 'description': '白板可在手内代牌，按合法归位的最高得分结算。',
+        'rules': ['108 张，八花，留尾 15 张。四张白板均为财神，手内可代其他牌面。副露使用常规印刷牌面。',
+                  '同时核算胡数、台数和胡张位置，取最佳合法归位。手里无白板的和牌计清牌一台。四财神或八花封顶 300 胡。',
+                  '开局和牌按常规计分。接炮和抢补杠可多响，供牌家逐家付款，自摸由余下两家付款。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1712,4 +1736,5 @@ SESSION_OPTIONS = {
     CHONGJI.VARIANT: {'variant': CHONGJI.VARIANT},
     CHONGJI_SEVEN.VARIANT: {'variant': CHONGJI_SEVEN.VARIANT},
     TIANTAI: {'variant': TIANTAI},
+    TIANTAI_WILD.VARIANT: {'variant': TIANTAI_WILD.VARIANT},
 }

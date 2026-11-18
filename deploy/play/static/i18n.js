@@ -101,7 +101,7 @@ Object.assign(I18N.en.fans, {
  '一杠一达':'One kong and five pairs', '二杠二达':'Two kongs and three pairs', '三杠三达':'Three kongs and one pair',
  '全风向':'All honors', '抛龙':'Wildcard-head declaration',
  '位花':'Seat flower', '四花':'Four matching flowers', '八花':'Eight flowers', '靠柄':'Edge wait', '嵌档':'Inside wait',
- '排胡':'All sequences', '门风刻杠':'Seat-wind set', '字牌刻杠':'Dragon set',
+ '排胡':'All sequences', '门风刻杠':'Seat-wind set', '字牌刻杠':'Dragon set', '清牌':'No wildcards in hand',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 Object.assign(I18N.en.tileHonors, {F1:'Spring', F2:'Summer', F3:'Autumn', F4:'Winter',

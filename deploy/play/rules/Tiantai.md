@@ -37,4 +37,18 @@ non-dealer's first uninterrupted draw. The operator's online rounding example an
 are incomplete. This room uses the full share from each opponent on self-draw, or from the supplier to
 each winner on a discard or robbed kong. A draw pays zero.
 
+## White Dragon Wild
+
+Keep all four White Dragons in the 108-tile wall as fixed wildcards. This room uses them for any other
+available face in concealed sets or a pair. A wildcard stays a physical White Dragon when drawn, discarded
+or revealed. Calls and claims use ordinary printed faces. The discard of a White Dragon passes through the
+response window, and no player uses those tiles as a natural White Dragon pung or kong.
+
+Calculate the hand’s base hu and tai for every legal wildcard assignment and winning-tile placement. Use
+the highest value before rounding and capping. When the winning draw is a wildcard, consider each face
+the drawn wildcard could occupy. A winning hand containing zero physical White Dragons earns one extra
+tai. Four White Dragons can declare on the holder’s draw for 300. Eight Flowers also pays 300. Opening
+wins use normal scoring, as the operator lists Heaven and Earth for the no-wildcard option. The shared
+flower, reserve, multi-winner and payment rules apply.
+
 - [Zhejiang Game Hall Tiantai rules and hu and tai tables](https://www.hzbianqu.com/game/970.html)

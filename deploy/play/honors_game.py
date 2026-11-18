@@ -24,7 +24,7 @@ from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SU
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
-    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai,
+    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -43,6 +43,7 @@ GAME_ENGINES = {
     CHONGJI.VARIANT: ChongjiGame,
     CHONGJI_SEVEN.VARIANT: ChongjiGame,
     tiantai.VARIANT: tiantai.TiantaiGame,
+    tiantai.TIANTAI_WILD.VARIANT: tiantai.TiantaiWildcardGame,
 }
 
 
@@ -137,6 +138,8 @@ class HonorsSession(GameSession):
                     table['white_optional'] = self.display_tile(game.wildcard_tile)
         if isinstance(game, ChongjiGame):
             table['dealer_stake'] = game.dealer_stake
+        if isinstance(game, tiantai.TiantaiWildcardGame):
+            table.update(wildcard=tile_name(self.rules.WILDCARD), wildcard_fixed=True)
         return table
 
     def display_tile(self, tile):
