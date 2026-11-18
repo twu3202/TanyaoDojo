@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 98 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 100 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -20,10 +20,13 @@ Quanzhou Triplet and Kong Points, Ningde Random Gold and Flowers, Changchun Shar
 Jilin City Dice Bao, Shuangliao Pung Multipliers, Shenyang Whirlwind Kongs, Fuxin Middle Five, Fuxin Hidden Ready,
 Jianchang Final Split, Liaoyang Joker and Treasure, Panjin Joker Kong, Anshan Open Guns,
 Dalian Qionghu Private Bao, Tieling Closed Ready, Changbai Piao and Single Wait,
-Chaoyang Town Eggs and Opposite End, Nanchang Double Jing, Shangrao Bao Self-Draw, Yichun Honor Chows, and Pingxiang True Pair.
+Chaoyang Town Eggs and Opposite End, Nanchang Double Jing, Shangrao Bao Self-Draw, Yichun Honor Chows, Pingxiang True Pair, Tianjin Double Hun, and Beijing Upstairs Hun.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
+
+- `northern_mix.py`: Tianjin dual jokers and dealer stakes, and Beijing protected jokers and upstairs scoring.
+  [Tianjin and Beijing rules](rules/TianjinBeijing.md).
 
 - `jiangxi_natural.py`: Yichun honor chows and multiple winners, and Pingxiang 2/5/8 eyes,
   feed liability and dealer-ready settlement. [Yichun and Pingxiang rules](rules/YichunPingxiang.md).

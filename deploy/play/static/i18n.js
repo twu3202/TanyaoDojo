@@ -317,3 +317,18 @@ Object.assign(I18N['zh-CN'], {suitFeedLiability:'{provider} 包 {caller} · 同�
 Object.assign(I18N.en.fans, {'字一色成阙':'All honors with four sets and a pair',
   '海底炮':'Win on the final discard', '真将':'2/5/8 eyes', '包牌':'Feed liability',
   '龙七':'Seven pairs with one quad', '双龙七':'Seven pairs with two quads', '三龙七':'Seven pairs with three quads'});
+Object.assign(I18N.en, {doubleHun:'Jokers', noDealerRaise:'Keep stake', raiseDealer:'Dealer stake ×{n}',
+  promptDealerRaise:'Choose your stake with the dealer before the deal.', upstairsTag:'Upstairs · ×2',
+  discardedHun:'Joker discarded · cannot win this hand'});
+Object.assign(I18N['zh-CN'], {doubleHun:'双混', noDealerRaise:'不拉庄', raiseDealer:'拉庄 ×{n}',
+  promptDealerRaise:'发牌前选择与庄家之间的倍率。', upstairsTag:'上楼 · ×2', discardedHun:'已打混 · 本手不能和'});
+I18N.en.messages.dealer_raise_complete='Dealer stakes are set. The hand begins.';
+I18N['zh-CN'].messages.dealer_raise_complete='拉庄选定，开始发牌。';
+Object.assign(I18N.en.reason, {beijing_burn_draw:'Matching discards burned the hand. The next hand goes upstairs.',
+  beijing_dragon_rob:'{names} robbed a concealed kong to complete a straight.'});
+Object.assign(I18N['zh-CN'].reason, {beijing_burn_draw:'同面弃牌烧庄，下一手上楼。',
+  beijing_dragon_rob:'{names} 以一条龙抢暗杠和牌。'});
+Object.assign(I18N.en.fans, {'提溜':'Basic hand', '素提溜':'No-joker hand', '混吊':'Single-joker wait',
+  '双混吊':'Double-joker wait', '捉五':'Catch the 5 characters', '龙':'1–9 straight', '本混龙':'Joker-suit straight',
+  '上楼':'Upstairs', '混杠':'Four-joker win', '杠瓷':'Kong replacement win', '抢暗杠':'Robbed concealed kong',
+  '捉五魁':'Single wait on 5 characters', '海捞':'Sea draw', '素':'No jokers'});

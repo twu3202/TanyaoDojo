@@ -32,6 +32,7 @@ from .sixteen import SET_COUNT, SixteenRules
 from .jiangxi import HonorChow, NanchangRules, ShangraoRules, honor_chows
 from .jiangxi_natural import TRUE_PAIRS, PingxiangRules, YichunRules
 from .jiangxi_shapes import HONOR_CHOW_ID, honor_chow_routes, spaced_distance, split_jing
+from .northern_mix import RAISE_PHASE, BeijingRules, TianjinRules
 from .liaoning_joker import next_face
 from .changbai import CHANGBAI
 from .chaoyang_town import ROB_FED_KONG
@@ -68,7 +69,8 @@ class PolicyView:
 
 def policy_view(game, actor, actions):
     visible = Counter(tile for river in game.discards for tile in river)
-    indicator_tile = getattr(game, 'indicator_tile', None)
+    raising = game.phase == RAISE_PHASE
+    indicator_tile = None if raising else getattr(game, 'indicator_tile', None)
     if indicator_tile is not None:
         visible[indicator_tile] += 1
     lower_indicator = getattr(game, 'lower_indicator_tile', None)
@@ -91,7 +93,7 @@ def policy_view(game, actor, actions):
             if game.offer.kind != 'discard':
                 visible[offered] += 1
     player = game.players[actor]
-    before_play = game.phase in ('piao', 'buy_base')
+    before_play = raising or game.phase in ('piao', 'buy_base')
     flower_kinds = getattr(game, 'flower_kinds', frozenset())
     hand = (0,) * TILE_COUNT if before_play else tuple(
         count if tile not in flower_kinds else 0 for tile, count in enumerate(player.hand)
@@ -99,9 +101,10 @@ def policy_view(game, actor, actions):
     seat_wind = 27 if before_play else 27 + (actor - game.dealer) % game.seat_count
     return PolicyView(hand, tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
                       tuple(actions), seat_wind, game.round_wind,
-                      offered, game.remaining, game.rules,
-                      None if offered is None else game.offer.actor, getattr(game, 'wildcard_indicator', None),
-                      getattr(game, 'wildcard_tile', None), getattr(game, 'excluded_tiles', frozenset()),
+                      offered, 0 if raising else game.remaining, game.rules,
+                      None if offered is None else game.offer.actor,
+                      None if raising else getattr(game, 'wildcard_indicator', None),
+                      None if raising else getattr(game, 'wildcard_tile', None), getattr(game, 'excluded_tiles', frozenset()),
                       game.travel_level if getattr(game, 'travel_owner', None) == actor else 0)
 
 
@@ -227,6 +230,12 @@ def _wild_distance(natural, wild, meld_count, require_burst, allow_pairs):
 
 
 def _distance(hand, melds, view):
+    if isinstance(view.rules, TianjinRules):
+        natural, wild = split_jing(hand, view.rules.mixed_faces(view.wildcard_indicator))
+        return max(-1 if sum(hand) % 3 == 2 else 0, _wild_distance(natural, wild, len(melds), False, False))
+    if isinstance(view.rules, BeijingRules):
+        natural, wild = split_wild(hand, view.wildcard)
+        return max(-1 if sum(hand) % 3 == 2 else 0, _wild_distance(natural, wild, len(melds), False, True))
     if isinstance(view.rules, (NanchangRules, ShangraoRules, YichunRules)):
         if isinstance(view.rules, NanchangRules):
             natural, wild = split_jing(hand, (view.wildcard, next_face(view.wildcard)))
@@ -346,13 +355,13 @@ def _ready_waits(hand, melds, view, live):
     waits = 0
     augmented = list(hand)
     params = {}
-    if isinstance(view.rules, SongyangRules):
+    if isinstance(view.rules, (SongyangRules, TianjinRules)):
         params['indicator'] = view.wildcard_indicator
     elif isinstance(view.rules, (FuzhouRules, LongyanRules, FujianSixteenRules, XianyouRules)):
         params['gold'] = view.wildcard
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
-    elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, LiaoningJokerRules,
+    elif isinstance(view.rules, (BeijingRules, ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, LiaoningJokerRules,
                                   LiaoyangRules, NanchangRules, PinghuRules, QuzhouRules, ShangraoRules)):
         params['wildcard'] = view.wildcard
     if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules,
@@ -397,7 +406,7 @@ def _ukeire(distance, rest, melds, live, view):
     # Once a route has been chosen, compare ordinary shape improvements among tied discards.
     if distance == 0:
         return 0
-    if isinstance(view.rules, (WuhuRules, SixteenRules)) or getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).seven_pairs:
+    if isinstance(view.rules, (WuhuRules, SixteenRules, TianjinRules)) or getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).seven_pairs:
         improve = lambda hand: _distance(hand, melds, view)
     else:
         improve = lambda hand: standard_distance(hand, len(melds))
@@ -418,6 +427,8 @@ def _ukeire(distance, rest, melds, live, view):
 
 def heuristic(view):
     actions = view.actions
+    if actions[0][0] == RAISE_PHASE:
+        return RAISE_PHASE, 1
     if isinstance(view.rules, (SixteenRules, LongyanRules)):
         special = next((action for action in actions if action[0] in (*GOLD_CLAIMS, 'flower_hu')), None)
         if special is not None and (special[0] != 'three_gold' or RON not in actions):
@@ -503,9 +514,9 @@ def heuristic(view):
             if _rank(tuple(hand), new_melds, view, live) <= best:
                 return kind, tile
         choices = [(tile, rest) for rank, tile, rest in ranked if rank == best]
-        wildcard = view.wildcard
+        wildcards = view.rules.mixed_faces(view.wildcard_indicator) if isinstance(view.rules, TianjinRules) else (view.wildcard,)
         tile, _ = max(choices, key=lambda item: (_ukeire(best[0], item[1], view.melds, live, view),
-                                                item[0] != wildcard,
+                                                item[0] not in wildcards,
                                                 -view.hand[item[0]], item[0]))
         if best[0] == 0 and view.remaining > 0:
             for declaration in ('declare_dark', 'declare_ready'):

@@ -25,6 +25,7 @@ from .jilin_shuangliao import JILIN, SHUANGLIAO
 from .fuxin import FUXIN_DARK, FUXIN_ROOMS, FUXIN_ZAWU
 from .jiangxi import NANCHANG, SHANGRAO
 from .jiangxi_natural import PINGXIANG, YICHUN
+from .northern_mix import BEIJING, TIANJIN
 from .changbai import CHANGBAI
 from .chaoyang_town import CHAOYANG_TOWN
 from .dalian_tieling import DALIAN, TIELING, DALIAN_TIELING_ROOMS
@@ -2773,6 +2774,49 @@ VARIANTS[PINGXIANG.VARIANT] = {
     }},
 }
 
+VARIANTS[TIANJIN.VARIANT] = {
+    **VARIANTS[YICHUN.VARIANT], 'id': TIANJIN.VARIANT, 'family_id': 'northern-hun', 'family': 'Northern Hun Mahjong',
+    'name': 'Tianjin Mahjong · Double Hun', 'aliases': ['天津麻将', '天津双混', '天津捉五'],
+    'rule_version': 'tianjin-double-hun-dojo-v1', 'subtitle': 'Four seats · Two joker faces and a two-point minimum',
+    'badge': 'Tianjin · Self-draw and dealer raises',
+    'description': 'Two faces are jokers. Build a joker wait, catch 5 characters or complete a straight from 1 to 9.',
+    'rules': ['Before the deal, nondealers may keep, double or quadruple their stake with the dealer. Bills involving the dealer already double.',
+              'The flipped face and its successor are jokers. Pon and kong are allowed. Chow and discard wins are unavailable.',
+              'Self-draw needs at least two points. A joker wait, no-joker win, catch-five, full straight or kong draw can qualify.',
+              'Discard a joker and you lose the right to win this hand. Four matching jokers can form a golden kong, and all completed kongs count on a draw.'],
+    'sources': [{'title': 'Laiyouxi Tianjin table, kongs and stakes', 'url': 'https://static.laiyouxi.com/games/6.html'},
+                {'title': 'Laiyouxi Tianjin hand combinations', 'url': 'https://static.laiyouxi.com/skill/724.html'},
+                {'title': '91y Tianjin golden kong explanation', 'url': 'https://mj.91y.com/mjjq/844.html'}],
+    'translations': {'zh-CN': {
+        'family': '北方混儿麻将', 'name': '天津麻将（双混捉五）', 'subtitle': '四人 · 双混、自摸与两分起和',
+        'badge': '天津 · 混吊和拉庄', 'description': '两种牌作混。混吊、捉五和一条龙可组合计分。',
+        'rules': ['发牌前闲家可选择不拉、拉一次或拉两次，与庄家之间的账单在坐庄翻倍后再乘 1、2 或 4。',
+                  '翻起的本张和顺推下一张都是混。可碰杠，不吃，不接炮。',
+                  '自摸至少两分。混吊、素和、捉五、龙、杠开均可能满足门槛。',
+                  '打出混后本手失去和牌资格。四张同面混可作金杠，流局保留杠分。'],
+    }},
+}
+
+VARIANTS[BEIJING.VARIANT] = {
+    **VARIANTS[TIANJIN.VARIANT], 'id': BEIJING.VARIANT, 'name': 'Beijing Mahjong · Upstairs Hun',
+    'aliases': ['北京麻将', '北京上楼', '北京点炮包庄'], 'rule_version': 'beijing-upstairs-mixed-dojo-v1',
+    'subtitle': 'Four seats · Protected joker and full discard liability', 'badge': 'Beijing · Closed-hand ron and upstairs scoring',
+    'description': 'Keep the successor joker. A closed hand can claim a discard, while exposed hands and three-joker hands need self-draw.',
+    'rules': ['The successor of the public flip is the joker. It stays in the rack and cannot be discarded or used in a call.',
+              'After a chow, pon or exposed kong, only self-draw can win. Three jokers also require self-draw. Four jokers force a special self-draw win.',
+              'A discarder pays the whole winning bill, including the dealer’s double share. Only the winner receives completed-kong bonuses.',
+              'A round of identical dealer-led discards can burn the hand. The next hand after a draw, or the fourth consecutive hand by the same dealer, doubles.'],
+    'sources': [{'title': 'JJ Beijing room rules and scoring', 'url': 'https://www.jj.cn/news/320/20120716143900024737.shtml'}],
+    'translations': {'zh-CN': {
+        'family': '北方混儿麻将', 'name': '北京麻将（上楼包庄）', 'subtitle': '四人 · 单混、门清接炮与跨手上楼',
+        'badge': '北京 · 混不出手、点炮包庄', 'description': '顺推一面为混。门清可接炮，开口或三混时只许自摸。',
+        'rules': ['公示翻牌的下一面作混。不能打出混或用混吃碰杠。',
+                  '吃、碰、明杠后及三混只可自摸，四混强制按混杠和牌。',
+                  '点炮者包三份账，计入庄家翻倍。喜金只付本手赢家的已完成杠。',
+                  '庄家领打的一圈同面弃牌可烧庄。黄庄后下一手或同庄连续第四手上楼翻倍。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2824,4 +2868,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS, *LIAONING_SPLIT_ROOMS, *LIAONING_JOKER_ROOMS, *DALIAN_TIELING_ROOMS, CHANGBAI, CHAOYANG_TOWN, NANCHANG, SHANGRAO)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (YICHUN, PINGXIANG)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (TIANJIN, BEIJING)},
 }
