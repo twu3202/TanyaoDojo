@@ -18,6 +18,8 @@ from .macau import VARIANT as MACAU
 from .suited import Profile
 from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
 from .taizhou import TAIZHOU
+from .daxi import DAXI
+from .linhai import LINHAI
 from .xiaogan import XIAOGAN
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
@@ -1734,6 +1736,54 @@ VARIANTS[TAIZHOU.VARIANT] = {
     }},
 }
 
+VARIANTS[DAXI.VARIANT] = {
+    'id': DAXI.VARIANT, 'family_id': 'taizhou-hu', 'family': 'Taizhou hu scoring', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Daxi Mahjong · Buy the Base', 'aliases': ['大溪麻将', '大溪买底', '温岭大溪'],
+    'rule_version': 'daxi-136-buy-base-dojo-v1', 'subtitle': 'Four seats · Opening buy-in · Direct kong payments',
+    'badge': 'Zhejiang · Standard tiles',
+    'description': 'Decide whether to buy the base, then match tiles into sets and a pair.',
+    'rules': [
+        '136 tiles and a 16-tile reserve. A win uses four sets and a pair. Several players may win on one discard.',
+        'Nondealers choose whether to buy the base before hands are revealed. The dealer buys automatically. '
+        'Each payer pays one point, plus one if they bought and one if the winner bought. On a discard, the supplier pays.',
+        'A direct kong is paid by the discarder, an added kong by the player who fed the original pon, and a concealed kong by everyone else. '
+        'Kong points settle immediately and stay on a draw.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Daxi rules and buy-in scoring', 'url': 'https://www.hzbianqu.com/article/1123.html'}],
+    'translations': {'zh-CN': {
+        'family': '台州系胡数', 'name': '大溪麻将（买底）', 'subtitle': '四人 · 开局买底 · 杠分即时结算',
+        'badge': '浙江 · 全副基础牌', 'description': '先选是否买底，再凑四副一对。',
+        'rules': ['136 张，留尾 16 张，四副一对即可胡，同一张可以一炮多响。',
+                  '开局摸牌展示前，闲家选买底或不买，庄家默认买底。自摸由其他三家各付，放炮由供牌家付。'
+                  '每笔起付 1 子，付款家、胡家各自有买底就各加 1 子。',
+                  '点杠由放牌家付，补杠由原来供碰的那家付，暗杠由另外三家各付。杠分即时结算，荒庄保留。'],
+    }},
+}
+
+VARIANTS[LINHAI.VARIANT] = {
+    'id': LINHAI.VARIANT, 'family_id': 'taizhou-hu', 'family': 'Taizhou hu scoring', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Linhai Mahjong · Six Chong Tiles', 'aliases': ['临海麻将', '临海抓冲', '四风聚齐', '三摊临海'],
+    'rule_version': 'linhai-136-six-chong-dojo-v1', 'subtitle': 'Four seats · Wild White Dragons · Wind-based bonus',
+    'badge': 'Zhejiang · Six bonus tiles',
+    'description': 'Win with White Dragon wildcards and reveal six chong tiles matched to your seat wind.',
+    'rules': [
+        '136 tiles, 14 tiles in reserve, and White Dragons are wild. Several players may win on one discard.',
+        'Seat-wind or dragon sets, pure or mixed suits, and Four Winds score tai. The base doubles each tai up to eight points. '
+        'Reveal six chong tiles after a win. Each tile that matches the winner’s seat-wind group adds one to their payment share.',
+        'Win on a discard and the supplier pays. Win by self-draw and each opponent pays, unless a reciprocal three-feed link makes one opponent pay all three shares.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Linhai rules, chong tiles and feed liability', 'url': 'https://www.hzbianqu.com/game/847.html'}],
+    'translations': {'zh-CN': {
+        'family': '台州系胡数', 'name': '临海麻将（六张抓冲）', 'subtitle': '四人 · 白板财神 · 按门风抓冲',
+        'badge': '浙江 · 六张抓冲', 'description': '白板可在手内代牌，胡牌后抓六张，按门风找中冲牌。',
+        'rules': ['136 张，留尾 14 张，白板为财神，允许一炮多响。',
+                  '门风和字牌刻杠、清混一色、四风聚齐计台。底分逐台翻倍，最高 8，胡后抓六张，每中一冲，按份加 1。',
+                  '点炮由放铳家付。自摸由其他三家付，双方形成三摊承包时由对应那家付三份。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1766,4 +1816,6 @@ SESSION_OPTIONS = {
     TIANTAI: {'variant': TIANTAI},
     TIANTAI_WILD.VARIANT: {'variant': TIANTAI_WILD.VARIANT},
     TAIZHOU.VARIANT: {'variant': TAIZHOU.VARIANT},
+    DAXI.VARIANT: {'variant': DAXI.VARIANT},
+    LINHAI.VARIANT: {'variant': LINHAI.VARIANT},
 }

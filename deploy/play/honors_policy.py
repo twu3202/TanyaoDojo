@@ -16,6 +16,7 @@ from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZI
 from .honors_bonus import HorseRoom
 from .tiantai import TiantaiWildcardRules
 from .taizhou import TaizhouRules
+from .linhai import LinhaiRules
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
 
@@ -62,9 +63,9 @@ def policy_view(game, actor, actions):
             if game.offer.kind != 'discard':
                 visible[offered] += 1
     player = game.players[actor]
-    setting_piao = game.phase == 'piao'
-    hand = (0,) * TILE_COUNT if setting_piao else tuple(player.hand)
-    seat_wind = 27 if setting_piao else 27 + (actor - game.dealer) % game.seat_count
+    before_play = game.phase in ('piao', 'buy_base')
+    hand = (0,) * TILE_COUNT if before_play else tuple(player.hand)
+    seat_wind = 27 if before_play else 27 + (actor - game.dealer) % game.seat_count
     return PolicyView(hand, tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
                       tuple(actions), seat_wind, game.round_wind,
                       offered, game.remaining, game.rules,
@@ -202,7 +203,7 @@ def _ready_waits(hand, melds, view, live):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
     elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules)):
         params['wildcard'] = view.wildcard
-    if isinstance(view.rules, (TaizhouRules, TiantaiWildcardRules)):
+    if isinstance(view.rules, (LinhaiRules, TaizhouRules, TiantaiWildcardRules)):
         can_win = view.rules.can_win
     else:
         def can_win(hand, melds, ctx):
@@ -263,6 +264,8 @@ def _ukeire(distance, rest, melds, live, view):
 
 def heuristic(view):
     actions = view.actions
+    if actions[0][0] == 'buy_base':
+        return 'buy_base', 1
     if actions[0][0] == 'piao':
         return 'piao', 1
     if actions[0][0] == 'exchange':

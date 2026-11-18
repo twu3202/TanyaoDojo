@@ -7,6 +7,7 @@ import time
 from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau, tiantai
 from .anji import ANJI, ANJI_TEA_HOUSE, AnjiGame, AnjiTeaHouseGame
 from .chongji import CHONGJI, CHONGJI_SEVEN, ChongjiGame
+from .daxi import DAXI, DaxiGame
 from .dongyang import DONGYANG, DongyangGame
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
@@ -16,6 +17,7 @@ from .hangzhou import FLOAT, HANGZHOU_ROOMS, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
+from .linhai import LINHAI, LinhaiGame
 from .taizhou import TAIZHOU, TaizhouGame
 from .xiaogan import XIAOGAN, XiaoganGame
 from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
@@ -25,7 +27,8 @@ from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SU
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
-    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD, TAIZHOU,
+    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
+    TAIZHOU, DAXI, LINHAI,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -46,6 +49,8 @@ GAME_ENGINES = {
     tiantai.VARIANT: tiantai.TiantaiGame,
     tiantai.TIANTAI_WILD.VARIANT: tiantai.TiantaiWildcardGame,
     TAIZHOU.VARIANT: TaizhouGame,
+    DAXI.VARIANT: DaxiGame,
+    LINHAI.VARIANT: LinhaiGame,
 }
 
 
@@ -85,17 +90,18 @@ class HonorsSession(GameSession):
 
     def view(self):
         game = self.game
+        before_play = game.phase in ('piao', 'buy_base')
         players = []
         for actor, player in enumerate(game.players):
             won = actor in game.revealed
             hand = game.revealed.get(actor, player.hand)
             ready = player.open_ready_hand is not None
             reveal = hand if actor == 0 or won else player.open_ready_hand
-            if game.phase == 'piao':
+            if before_play:
                 reveal = None
             players.append({
                 'id': actor, 'score': self.totals[actor] + player.score, 'delta': player.score,
-                'hand_count': 0 if game.phase == 'piao' else sum(hand),
+                'hand_count': 0 if before_play else sum(hand),
                 'revealed': reveal is not None, 'won': won, 'riichi': False,
                 'hand': [self.display_tile(tile) for tile, count in enumerate(reveal) for _ in range(count)]
                         if reveal is not None else [],
@@ -112,6 +118,8 @@ class HonorsSession(GameSession):
                     players[-1]['hidden_ready_tiles'] = game.hidden_ready_tiles(actor)
             if isinstance(game, XiaoganGame) and len(game.piao) == game.seat_count:
                 players[-1]['piao'] = game.piao[actor]
+            if isinstance(game, DaxiGame) and not before_play:
+                players[-1]['bought_base'] = game.buy_base[actor]
             if isinstance(game, HangzhouGame) and game.float_streak[actor]:
                 players[-1]['wildcard_floats'] = game.float_streak[actor]
             if isinstance(game, XiaoshanGame) and actor == 0 and game.ten_winds[actor] >= 5:
@@ -142,6 +150,8 @@ class HonorsSession(GameSession):
             table['dealer_stake'] = game.dealer_stake
         if isinstance(game, tiantai.TiantaiWildcardGame):
             table.update(wildcard=tile_name(self.rules.WILDCARD), wildcard_fixed=True)
+        if isinstance(game, LinhaiGame):
+            table['wildcard_fixed'] = True
         if isinstance(game, TaizhouGame):
             table['fresh_stage'] = game.fresh_stage
         return table
@@ -165,7 +175,7 @@ class HonorsSession(GameSession):
         kind, tile = action
         if kind == 'exchange':
             tiles = [self.display_tile(index) for index in tile]
-        elif kind == 'piao':
+        elif kind in ('piao', 'buy_base'):
             return {'action': action, 'kind': kind, 'label': kind, 'tiles': [], 'value': tile}
         elif kind == 'chi':
             tiles = [self.display_tile(index) for index in range(tile, tile + 3)]
@@ -207,6 +217,8 @@ class HonorsSession(GameSession):
                 self.log_event('dark_ready', {'actor': actor}, 'call')
             elif kind == 'piao' and game.phase != 'piao':
                 self.log_event('piao_complete', kind='round')
+            elif kind == 'buy_base' and game.phase != 'buy_base':
+                self.log_event('buy_base_complete', kind='round')
             if game.last_call:
                 caller, meld = game.last_call
                 self.log_event('action', {'actor': caller, 'action': meld.kind}, 'call')
@@ -237,6 +249,8 @@ class HonorsSession(GameSession):
                            'win_details': [asdict(win) for win in game.win_details], 'next': not finished}
             if isinstance(game, TaizhouGame) and game.taizhou_settlement is not None:
                 self.result['taizhou_settlement'] = game.taizhou_settlement
+            if isinstance(game, DaxiGame):
+                self.result['buy_base_deltas'] = game.buy_base_deltas.copy()
             if game.options.kong_points:
                 self.result['kong_deltas'] = game.kong_deltas.copy()
             if any(game.echo_deltas):
