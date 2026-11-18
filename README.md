@@ -21,7 +21,8 @@ for **Sichuan mahjong**.
 > **Play a full game.** [🀄 TanyaoDojo Mahjong](https://huggingface.co/spaces/Twu31/TanyaoDojo-Play) supports riichi hanchan,
 > Sichuan Xuezhan, two Hongzhong bonus profiles, Fangchenggang Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan,
 > Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu,
-> no-flower Hong Kong Old Style, Macau Tournament Mahjong, Shangsi, Hundred-Tile Mahjong and Hezhou
+> no-flower Hong Kong Old Style, Macau Tournament Mahjong, Shangsi, Hundred-Tile Mahjong, Hezhou,
+> Liuzhou Exploding Fish and Guangzhou Three-Faan Mahjong
 > against three AI opponents. The UI defaults to English,
 > with a persistent Simplified Chinese option; beginner heuristics and existing trained models are available.
 > Source and deployment notes: [`deploy/play/`](deploy/play/README.md).

@@ -4,15 +4,15 @@ from dataclasses import asdict
 import random
 import time
 
-from . import hongkong, macau
-from .honors_bonus import HEZHOU, HUNDRED, SHANGSI
+from . import guangzhou, hongkong, macau
+from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 
 
-RULESETS = {rule.VARIANT: rule for rule in (hongkong, macau, SHANGSI, HUNDRED, HEZHOU)}
+RULESETS = {rule.VARIANT: rule for rule in (hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU)}
 
 
 class HonorsSession(GameSession):
@@ -136,6 +136,9 @@ class HonorsSession(GameSession):
                 self.result['echo_deltas'] = game.echo_deltas.copy()
             if game.horse_tiles:
                 self.result['bonus'] = [tile_name(tile) for tile in game.horse_tiles]
+                mode = getattr(self.rules, 'BONUS_MODE', None)
+                if mode:
+                    self.result['bonus_mode'] = mode
                 self.result['bonus_details'] = [
                     {'actor': actor, 'count': count, 'hits': hits, 'per_loser': points, 'extra': extra}
                     for actor, count, hits, points, extra in game.horse_details

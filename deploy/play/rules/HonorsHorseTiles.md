@@ -1,6 +1,6 @@
 # Regional rooms with honors and horse tiles
 
-All three tables deal 13 tiles, then give the dealer the opening draw. Ordinary draws use one end
+These tables deal 13 tiles, then give the dealer the opening draw. Ordinary draws use one end
 of the wall. Kong replacement draws use the other end of the live wall and leave the entire bonus
 reserve untouched. The last live discard may be won on where the room allows it. No meld calls are
 available on that discard and the last live draw cannot begin a kong.
@@ -69,3 +69,34 @@ Rule ID `hezhou-136-four-yao-horses-dojo-v1`. [Operator rules](https://www.hzbia
   partners could cover a self-draw, the last established pair takes responsibility.
 - Direct kong costs its supplier 1. Added and concealed kong cost each other seat 1. Kong points
   stand on a draw. The sole winner or the multi-win provider deals next. The dealer repeats on a draw.
+
+## Liuzhou Exploding Fish Mahjong / 柳州爆炸鱼麻将
+
+Rule ID `liuzhou-exploding-fish-dojo-v1`. [Operator rules](https://www.hzbianqu.com/game/908.html).
+
+- Four seats, 136 tiles, no joker. Chow is allowed only from the previous seat and cannot be
+  immediately followed by a discard of the called type. A passed offered win blocks all other
+  offered wins until the next draw. A passed pon blocks the same tile until the next draw.
+  Standard hands and seven pairs are allowed; four matching tiles can form two pairs without a
+  luxury-seven-pairs premium. No thirteen orphans.
+- The table uses unlimited big-pattern doubling and the closed-self-draw option. Ordinary
+  discard/self-draw shares are 1/1 for a simple win or 3/2 for one big pattern (all triplets,
+  pure suit or seven pairs). Each additional big pattern doubles the share. Closed self-draw
+  doubles it again.
+- Added-kong robbery, a discard win immediately after a kong and four-open-sets single-wait
+  discard wins start at 3. Each big pattern doubles that amount. This table takes the applicable
+  event once when conditions coincide. A regular four-open-sets self-draw starts at 2, with
+  additional big-pattern doubles as above. Replacement self-draw starts at 2 per opponent
+  with a double for each big pattern. If the latest replacement came from a direct kong,
+  its supplier alone covers the three shares.
+- Set aside one fish tile at the start. After a win, reveal it once for all winners.
+  A suited tile contributes its rank and an honor contributes five. Multiply each share by
+  fish count plus one. Direct-kong and added-kong transfers of 1 are billed to their original
+  suppliers. Concealed kongs charge each other seat 1. Kong points stand on a drawn hand.
+- Three exposed calls from one supplier, including direct kong, make those seats partners.
+  On a discard win, a partner pays one additional share, including a second share if they
+  supplied the winning tile. On an ordinary self-draw, every related opponent pays three
+  shares and unrelated opponents each pay one. Partners are direct, with no indirect liability.
+- You deal first. A sole winner or the first accepting seat in turn order on double wins deals
+  next. Three wins return the deal to the provider, including on a robbed kong. The dealer
+  repeats on a draw.

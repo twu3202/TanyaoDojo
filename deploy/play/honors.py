@@ -24,6 +24,7 @@ class KongPoints:
     concealed: int
     single_direct_payer: bool = False
     refund_on_draw: bool = False
+    added_payer_from_pong: bool = False
 
 
 @dataclass(frozen=True)
@@ -36,6 +37,7 @@ class TableOptions:
     concealed_kong_faces: int = 4
     host_deals_first: bool = False
     show_winds: bool = True
+    pass_win_same: bool = False
     pass_win_all: bool = False
     pass_pon_all: bool = False
     pass_pon_same: bool = False
@@ -44,6 +46,10 @@ class TableOptions:
     horse_counts: tuple[int, int, int] = (0, 0, 0)  # discard, self-draw, rob added kong
     dealer_echo: bool = False
     reciprocal_liability: bool = False
+    chow_lock_extensions: bool = True
+    pass_win_clear_by_call: bool = False
+    kong_requires_live_tile: bool = False
+    first_liability_only: frozenset[str] = frozenset()
 
 
 DEFAULT_OPTIONS = TableOptions()
@@ -71,6 +77,9 @@ class WinContext:
     kong_chain: int = 0
     opening: str | None = None
     first_nondealer_draw: bool = False
+    kong_provider: int | None = None
+    last_live_draw: bool = False
+    winner_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -106,7 +115,7 @@ class Win:
     tier: str | None = None
 
 
-def chow_choices(hand, tile, *, swap_lock=True):
+def chow_choices(hand, tile, *, swap_lock=True, lock_extensions=True):
     """Yield (sequence start, consumed tiles, forbidden next discards)."""
     if tile >= 27:
         return
@@ -116,9 +125,9 @@ def chow_choices(hand, tile, *, swap_lock=True):
         if not all(hand[other] for other in consumed):
             continue
         forbidden = {tile} if swap_lock else set()
-        if swap_lock and tile == start and start < suit + 6:
+        if swap_lock and lock_extensions and tile == start and start < suit + 6:
             forbidden.add(start + 3)
-        if swap_lock and tile == start + 2 and start > suit:
+        if swap_lock and lock_extensions and tile == start + 2 and start > suit:
             forbidden.add(start - 1)
         if any(count > (other in consumed) for other, count in enumerate(hand) if other not in forbidden):
             yield start, consumed, frozenset(forbidden)
@@ -182,6 +191,7 @@ class HonorsGame:
         self.phase = 'action'
         self.drawn_tile = None
         self.kong_chain = 0
+        self.kong_provider = None
         self.opening = True
         self.uninterrupted = True
         self.forbidden_discards = frozenset()
@@ -223,7 +233,7 @@ class HonorsGame:
             counts[self.claimed_tile] += 1
         return counts
 
-    def _draw(self, actor, kong_chain=0):
+    def _draw(self, actor, kong_chain=0, provider=None):
         if not self.remaining:
             self._end('draw')
             return
@@ -239,20 +249,22 @@ class HonorsGame:
         self.phase = 'action'
         self.drawn_tile = tile
         self.kong_chain = kong_chain
+        self.kong_provider = provider
         self.forbidden_discards = frozenset()
 
-    def _win(self, actor, offer=None):
+    def _win(self, actor, offer=None, winner_count=0):
         player = self.players[actor]
         hand = player.hand.copy()
         if offer is None:
             ctx = WinContext('zimo', self.drawn_tile, 27 + (actor - self.dealer) % 4,
                              self.round_wind, self.kong_chain, '天胡' if self.opening else None,
-                             self.uninterrupted and actor != self.dealer and player.draws == 1)
+                             self.uninterrupted and actor != self.dealer and player.draws == 1,
+                             self.kong_provider, self.remaining == 0)
         else:
             hand[offer.tile] += 1
             kind = {'discard': 'ron', 'gang_bu': 'rob_kong', 'gang_an': 'rob_concealed'}[offer.kind]
             ctx = WinContext(kind, offer.tile, 27 + (actor - self.dealer) % 4,
-                             self.round_wind, offer.kong_chain, offer.opening)
+                             self.round_wind, offer.kong_chain, offer.opening, winner_count=winner_count)
         return self.rules.faan(hand, tuple(player.melds), ctx), hand, ctx.kind
 
     def legal_actions(self):
@@ -267,7 +279,7 @@ class HonorsGame:
         if self.drawn_tile is not None:
             if self._win(self.cur)[0] is not None:
                 actions.append(ZIMO)
-            if self.remaining or not self.rules.WALL_RESERVE:
+            if self.remaining or not (self.rules.WALL_RESERVE or self.options.kong_requires_live_tile):
                 actions.extend(('ankan', tile) for tile, count in enumerate(player.hand) if count == 4)
                 actions.extend(('bugang', meld.tile) for meld in player.melds
                                if meld.kind == 'peng' and player.hand[meld.tile]
@@ -297,7 +309,8 @@ class HonorsGame:
         return actor, actions
 
     def _chows(self, player, tile):
-        return chow_choices(player.hand, tile, swap_lock=self.rules.SWAP_LOCK)
+        return chow_choices(player.hand, tile, swap_lock=self.rules.SWAP_LOCK,
+                            lock_extensions=self.options.chow_lock_extensions)
 
     def step(self, action):
         actor, actions = self.legal_actions()
@@ -338,7 +351,7 @@ class HonorsGame:
         if action == RON:
             self.winners.append(actor)
         elif RON in actions:
-            if self.rules.PASS_LOCK or self.options.pass_win_all:
+            if self.rules.PASS_LOCK or self.options.pass_win_same or self.options.pass_win_all:
                 player.declined_wins.add(offer.tile)
             elif self.options.pass_win_higher_same:
                 score, _, _ = self._win(actor, offer)
@@ -379,7 +392,11 @@ class HonorsGame:
             player.hand[tile] -= 1
         player.melds.append(meld)
         liabilities = self.rules.liability(player.melds, meld)
-        player.liabilities.extend((pattern, offer.actor) for pattern in liabilities)
+        for pattern in liabilities:
+            entry = pattern, offer.actor
+            if pattern in self.options.first_liability_only and any(entry in p.liabilities for p in self.players):
+                continue
+            player.liabilities.append(entry)
         if self.options.reciprocal_liability and liabilities:
             related = (actor, offer.actor)
             if related not in self.related_seats and related[::-1] not in self.related_seats:
@@ -390,9 +407,13 @@ class HonorsGame:
         self.cur = actor
         self.phase = 'action'
         self.kong_chain = 0
+        self.kong_provider = None
+        if self.options.pass_win_clear_by_call:
+            player.declined_wins.clear()
+            player.declined_win_values.clear()
         if kind == 'zhigang':
             self._pay_kong(actor, meld)
-            self._draw(actor, kong_chain=1)
+            self._draw(actor, kong_chain=1, provider=meld.provider)
 
     def _finish_own_kong(self, offer):
         player = self.players[offer.actor]
@@ -424,7 +445,8 @@ class HonorsGame:
         if points is None:
             return
         share = {'gang_ming': points.direct, 'gang_bu': points.added, 'gang_an': points.concealed}[meld.kind]
-        if meld.kind == 'gang_ming' and points.single_direct_payer:
+        if (meld.kind == 'gang_ming' and points.single_direct_payer
+                or meld.kind == 'gang_bu' and points.added_payer_from_pong) and meld.provider is not None:
             payers = (meld.provider,)
         else:
             payers = tuple(seat for seat in range(4) if seat != actor)
@@ -445,14 +467,15 @@ class HonorsGame:
             self.horse_tiles = self.wall[:count]
             del self.wall[:count]
         hits = sum(self.rules.horse_hit(tile, actor, self.dealer) for tile in self.horse_tiles)
-        self.horse_details.append((actor, count, hits, score.share * (hits + 1), score.share * hits))
-        return self.rules.with_horses(score, hits)
+        adjusted = self.rules.with_horses(score, hits)
+        self.horse_details.append((actor, count, hits, adjusted.share, adjusted.share - score.share))
+        return adjusted
 
     def _settle(self, winners, offer):
         self.winners = list(winners)
         provider = None if offer is None else offer.actor
         for actor in self.winners:
-            score, hand, kind = self._win(actor, offer)
+            score, hand, kind = self._win(actor, offer, winner_count=len(self.winners))
             self.revealed[actor] = hand
             score = self._apply_horses(actor, kind, score)
             payments = self.rules.settlement(score, kind, actor, provider, self._liabilities_for(actor))

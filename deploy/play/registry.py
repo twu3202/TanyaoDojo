@@ -1,5 +1,6 @@
 """Versioned playable rules; English is the API default."""
-from .honors_bonus import HEZHOU, HUNDRED, SHANGSI
+from .guangzhou import VARIANT as GUANGZHOU
+from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
 from .macau import VARIANT as MACAU
@@ -728,10 +729,100 @@ VARIANTS[HEZHOU.VARIANT] = {
     }},
 }
 
+VARIANTS[LIUZHOU.VARIANT] = {
+    **_HORSE_ROOMS,
+    'id': LIUZHOU.VARIANT,
+    'name': 'Liuzhou Exploding Fish Mahjong',
+    'aliases': ['Liuzhou', 'Exploding Fish', '柳州', '柳州麻将', '爆炸鱼', '天天爱柳州'],
+    'rule_version': 'liuzhou-exploding-fish-dojo-v1',
+    'subtitle': 'Guangxi · One fish tile · Three-feeds payments',
+    'badge': 'Liuzhou · 136 tiles',
+    'description': 'A Liuzhou room with one reveal worth the tile rank or five for an honor. Three-feeds payments apply.',
+    'rules': [
+        '136 tiles. Chow from the previous seat, but do not immediately discard the claimed tile. '
+        'Pon, kong, seven pairs, multiple discard wins and added-kong robbery are allowed.',
+        'Regular wins pay 1 per liable seat, all triplets, pure suit or seven pairs pay 3 on discards or 2 on self-draw. '
+        'Extra big patterns double the payout. A closed self-draw doubles the share.',
+        'An added-kong robbery, a win on the discard after a kong or a four-exposed-meld discard win pays 3 before '
+        'big-pattern doubles. Replacement self-draw starts at 2 from each opponent, or 6 from the direct-kong supplier alone.',
+        'Reveal one reserved fish tile after any win. It counts its rank, or five for any honor. Multiply the win share '
+        'by one plus that number. Kong points are separate.',
+        'After three exposed calls from the same supplier, the two seats become partners. A winner’s partner '
+        'pays an extra share on any discard win, or three shares total on an ordinary self-draw. Other opponents '
+        'still pay on self-draw, except when the direct-kong supplier covers the win.',
+        'Direct or added kong pays 1 from the original supplier, concealed kong 1 from each opponent. '
+        'Passing a win locks offered wins, and passing a pon locks its tile until the next draw.',
+        'You deal first. The first winner in turn order takes the next deal, except three winners return the deal '
+        'to the provider. The dealer stays on a draw.',
+    ],
+    'sources': [{'title': 'Liuzhou operator rules', 'url': 'https://www.hzbianqu.com/game/908.html'}],
+    'translations': {'zh-CN': {
+        'name': '柳州麻将（爆炸鱼）', 'family': '字牌奖码家族', 'subtitle': '广西 · 一张爆炸鱼 · 三比赔付',
+        'badge': '柳州 · 136 张', 'description': '胡后钓一张爆炸鱼，数牌按点数，字牌按五条，三比另行赔付。',
+        'rules': [
+            '136 张，可吃上家，吃后不能打吃进的同张。可碰杠，可胡七对、一炮多响和抢补杠。',
+            '普通胡每份 1，清一色、碰碰胡、七小对点炮 3／自摸每家 2。多个大牌型继续翻倍。门清自摸再翻倍。',
+            '抢杠、杠后炮、全求人点炮从 3 起算，每个大胡翻倍。杠开从自摸每家 2 起算，直杠杠开由供牌者从 6 起包付。',
+            '胡后翻一张爆炸鱼。数牌按点数、字牌算五条，胡分乘以鱼数加一，杠分另算。',
+            '同一对手供三副露后两家互为三比。赢家的三比席在点炮胡时另付一份，普通自摸时付三份，其他输家仍各付一份。'
+            '直杠杠开由供牌者包三。',
+            '直杠或补杠由最初供牌者付 1，暗杠其他每家付 1。过胡锁接炮，过碰锁同张，自己再摸时解锁。',
+            '首局你坐庄，单胡或双响由顺位最先的赢家接庄，三响供牌者接庄，流局连庄。',
+        ],
+    }},
+}
+
+VARIANTS[GUANGZHOU] = {
+    'id': GUANGZHOU,
+    'family_id': 'honors-and-chows',
+    'family': 'Honors and chows',
+    'default_policy': 'heuristic',
+    'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Guangzhou Three-Faan Mahjong',
+    'aliases': ['Guangzhou', 'Canton', 'Three Faan', '广州', '廣州', '三番封顶', '爆胡'],
+    'rule_version': 'guangzhou-three-faan-dojo-v1',
+    'subtitle': 'Guangzhou · Three-faan ordinary cap · First-supplier liability',
+    'badge': 'Guangzhou · 136 tiles',
+    'description': 'An honors-and-chows table with ordinary hands capped at three faan and separate big hands.',
+    'rules': [
+        '136 tiles, chow, pon and kong. Four sets and one pair, or thirteen orphans, may win. '
+        'Passing a win blocks that tile until a successful call or your draw.',
+        'No minimum. Chicken hand 0 faan, all sequences 1, all triplets and half flush 2. '
+        'This room adds pure suit and all honors at 3, and caps the ordinary total at 3.',
+        'Opening wins, thirteen orphans and big three dragons are 6; big four winds is 8. '
+        'Kong replacement self-draw, last draw, robbery and a three-way discard win score at least 3.',
+        'One share is 2 to the power of the faan. Each opponent pays one share for self-draw; a discarder '
+        'pays each winner. A robbed kong maker covers three shares per winner. Only thirteen orphans may rob a concealed kong.',
+        'The direct-kong supplier covers its replacement win. The first applicable supplier of a fourth open meld, '
+        'third dragon pung or fourth wind pung may cover the self-draw. A supplier can carry only their first twelve-open obligation.',
+        'No separate kong transfers in this room. Deal starts at a random seat. The dealer stays when among the winners '
+        'and otherwise passes to the next seat.',
+    ],
+    'sources': [
+        {'title': 'Guangzhou special rules', 'url': 'https://www.hzbianqu.com/game/164.html'},
+        {'title': 'Bianfeng three-faan base table', 'url': 'https://www.hzbianqu.com/game/489.html'},
+    ],
+    'translations': {'zh-CN': {
+        'name': '广州麻将（三番封顶）', 'family': '字牌与吃牌家族', 'subtitle': '广州 · 普通三番封顶 · 包先不包后',
+        'badge': '广州 · 136 张', 'description': '普通牌型三番爆胡，特殊大牌单列，含十二张落地包牌。',
+        'rules': [
+            '136 张，可吃碰杠。四组一对或十三幺可胡。同张过胡到自己摸牌或成功吃碰杠后解除。',
+            '鸡胡 0 番、平胡 1 番、碰碰胡及混一色 2 番。本桌清一色、字一色各按 3，普通牌型叠加后最多 3 番。',
+            '天和、地和、人和、十三幺及大三元 6 番，大四喜 8 番。杠开、海底自摸、抢杠或一炮三响至少 3 番。',
+            '每份为 2 的番数次方。自摸其他每家付一份，点炮供牌者向每个赢家付一份，抢杠由杠家向每个赢家包三份。'
+            '只有十三幺能抢暗杠。',
+            '直杠杠开优先由供杠者包。否则十二张落地、第三副三元刻或第四副风刻按最早成立的适用责任包自摸。'
+            '同一供牌者只包最早促成的十二张落地。',
+            '本桌不另算杠分。首局随机庄，庄家胡则连庄，否则轮庄。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
     **{profile.value: {'profile': profile.value} for profile in Profile},
-    **{room.VARIANT: {'variant': room.VARIANT} for room in (SHANGSI, HUNDRED, HEZHOU)},
+    **{room.VARIANT: {'variant': room.VARIANT} for room in (SHANGSI, HUNDRED, HEZHOU, LIUZHOU)},
+    GUANGZHOU: {'variant': GUANGZHOU},
     MACAU: {'variant': MACAU},
 }

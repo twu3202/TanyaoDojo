@@ -221,7 +221,9 @@ def heuristic(view):
         if kind == 'pass':
             continue
         if kind == 'chi':
-            choices = chow_choices(view.hand, offered, swap_lock=view.rules.SWAP_LOCK)
+            options = getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS)
+            choices = chow_choices(view.hand, offered, swap_lock=view.rules.SWAP_LOCK,
+                                   lock_extensions=options.chow_lock_extensions)
             take, block = next((take, block) for start, take, block in choices
                                if start == argument)
             meld = Meld('chi', argument)

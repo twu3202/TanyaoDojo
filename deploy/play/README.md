@@ -1,10 +1,10 @@
 # Playable Mahjong MVP
 
-Human vs three AI players, with a responsive browser table and a CPU-only server. The twenty playable rulesets are
+Human vs three AI players, with a responsive browser table and a CPU-only server. The twenty-two playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
-Shangsi, Hundred-Tile Mahjong and Hezhou.
+Shangsi, Hundred-Tile Mahjong, Hezhou, Liuzhou Exploding Fish and Guangzhou Three-Faan Mahjong.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
@@ -19,11 +19,13 @@ The Macau room plays a complete 16-hand match.
 - `suited.py`, `suited_game.py`, `suited_regional.py`: shared 108-tile first-win engine, with per-room passed-win
   rules, ready declarations, payout schedules, kong refunds and Guilin wake indicators.
   [Rules and operator sources](rules/SuitedDiscardWin.md).
-- `honors.py`, `hongkong.py`, `macau.py`, `honors_game.py`: 136-tile engine with chows, scoring over all hand decompositions,
+- `honors.py`, `hongkong.py`, `macau.py`, `guangzhou.py`, `honors_game.py`: 136-tile engine with chows, scoring over all hand decompositions,
   and named payers. `honors_policy.py` ranks legal waits and routes to a three-faan hand using public tiles and the
-  existing suit table. [Hong Kong](rules/HongKongOldStyle.md) and [Macau](rules/MacauTournament.md) rules.
+  existing suit table. Rules for [Hong Kong](rules/HongKongOldStyle.md), [Macau](rules/MacauTournament.md)
+  and [Guangzhou](rules/GuangzhouThreeFaan.md).
 - `honors_bonus.py`: regional point schedules with reserved horse tiles, configurable tile sets, immediate kong
-  transfers, and shared bonus reveals on multi-win hands. [Shangsi, Hundred-Tile and Hezhou rules](rules/HonorsHorseTiles.md).
+  transfers, and shared bonus reveals on multi-win hands.
+  [Shangsi, Hundred-Tile, Hezhou and Liuzhou rules](rules/HonorsHorseTiles.md).
 - `policies.py`, `sichuan_model.py`: existing tpt 408k and Sichuan P2 adaptation `seed201`, CPU inference only. The Sichuan Torch
   port and NumPy observation encoder are cross-checked against the original JAX network/encoder.
 - `server.py`: one HTTP port, session-capability IDs, server-side legal-choice validation, bounded request sizes.
