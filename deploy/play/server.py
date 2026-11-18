@@ -22,9 +22,11 @@ from .errors import ClientError, MESSAGES
 from .sichuan_game import SichuanSession
 from .riichi_game import RiichiSession
 from .hongzhong_game import HongzhongSession
+from .suited_game import SuitedSession
 
-VERSION='0.3.0'
-FACTORIES={'riichi':RiichiSession,'sichuan':SichuanSession,'hongzhong':HongzhongSession}
+VERSION='0.4.0'
+FACTORIES={'riichi':RiichiSession,'sichuan':SichuanSession,'hongzhong':HongzhongSession,
+           'suited-discard-win':SuitedSession}
 
 
 class Manager:

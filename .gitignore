@@ -6,6 +6,8 @@ data/
 *.mjlog.gz
 *.jsonl
 *.jsonl.gz
+*.parquet
+/artifacts/deal_in_table_v0.json
 
 # Training outputs and evaluation logs (large; weight snapshots stay local in weights_backup/)
 runs/
@@ -18,6 +20,7 @@ data_staging/
 *.ckpt
 *.safetensors
 *.npz
+*.npy
 
 # Rust build products
 Mortal/target/
@@ -32,6 +35,9 @@ __pycache__/
 .env.*
 !.env.example
 /.claude/
+/.codex/
+/_private/
+/AGENTS.md
 
 # Third-party opponent (akochan source clone, not checked in)
 vendor/
@@ -64,9 +70,10 @@ research/
 /deploy/play/deployment.json
 /patches/sichuan_rulefix/run_chain.py
 
-# Sichuan: the lookup table is a build product (rebuilt in about 2 s); docs/ holds internal plans (kept locally)
-common/suit_table.npy
+# Internal documentation and local deployment build inputs
 docs/
+/native_source/
+/assets/model.py
 
 # Game-log data expansion survey: kept locally, not checked in
 /paipu_data_research_20261006/

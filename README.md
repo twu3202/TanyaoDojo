@@ -19,7 +19,8 @@ for **Sichuan mahjong**.
 > live in a separate repository, [riichi-eval](https://github.com/twu3202/riichi-eval).
 >
 > **Play a full game.** [🀄 TanyaoDojo Mahjong](https://huggingface.co/spaces/Twu31/TanyaoDojo-Play) supports riichi hanchan,
-> Sichuan Xuezhan, two Hongzhong bonus profiles, and Fangchenggang Hongzhong against three AI opponents. The UI defaults to English,
+> Sichuan Xuezhan, two Hongzhong bonus profiles, Fangchenggang Hongzhong, Wenzhou Fangpao, and Changsha Zhuanzhuan
+> against three AI opponents. The UI defaults to English,
 > with a persistent Simplified Chinese option; beginner heuristics and existing trained models are available.
 > Source and deployment notes: [`deploy/play/`](deploy/play/README.md).
 >

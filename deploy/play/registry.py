@@ -1,5 +1,6 @@
 """Versioned playable rules; English is the API default."""
 from .hongzhong import FANGCHENGGANG, ONE_MA
+from .suited import Profile
 
 VARIANTS = {'riichi': {'id': 'riichi',
             'family_id': 'riichi',
@@ -169,7 +170,87 @@ VARIANTS['fangchenggang-hongzhong'] = {
     }},
 }
 
+_SUITED = {
+    'family_id': 'suited-discard-win',
+    'family': 'Suited discard-win',
+    'default_policy': 'heuristic',
+    'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+}
+_WENZHOU = Profile.WENZHOU.value
+_CHANGSHA = Profile.CHANGSHA.value
+VARIANTS[_WENZHOU] = {
+    **_SUITED,
+    'id': _WENZHOU,
+    'name': 'Wenzhou Fangpao Mahjong',
+    'aliases': ['Wenzhou', 'Zhejiang', '温州', '浙江', '温州放炮', '溫州麻將'],
+    'rule_version': 'wenzhou-fangpao-dojo-v1-20261118',
+    'subtitle': 'Zhejiang · Multiple discard wins · Fan scoring',
+    'badge': 'Wenzhou · 108 tiles',
+    'description': 'A suited Wenzhou room with discard wins, same-suit declined-win restrictions and fan scoring.',
+    'rules': [
+        '108 suited tiles. Pon and kong are allowed; no chi, void selection or wildcards.',
+        'A self-draw or the first winning discard ends the hand. One discard may have several winners. '
+        'If you decline an ordinary discard win, discard wins in that suit are locked until your next draw.',
+        'Take the highest base fan: ordinary 1, all triplets 2, one suit / seven pairs / golden hook 3, '
+        'one-suit triplets 4, dragon seven pairs / one-suit seven pairs / one-suit hook 5, one-suit dragon seven pairs 6.',
+        'Self-draw, winning on or immediately after a kong replacement, and robbing an added kong each '
+        'add 1 when applicable without stacking. Heavenly and earthly wins are fixed at 6 fan in this room.',
+        'The payer owes 2 to the power of fan minus 1. All opponents pay for self-draw; the provider pays for '
+        'each discard or robbed-kong winner. Kong transfers are immediate: open 1, added 1 each, concealed 2 each.',
+        'First dealer is random. A sole winner deals next, or the provider after multiple wins. '
+        'The dealer repeats on a draw. The final discard allows wins, with no further melds.',
+    ],
+    'sources': [{'title': 'GameTea Wenzhou Fangpao rules', 'url': 'https://www.gametea.com/games/fangpaomj.html'}],
+    'translations': {'zh-CN': {
+        'name': '温州放炮麻将', 'family': '数牌点炮家族',
+        'subtitle': '浙江 · 一炮多响 · 按番算分', 'badge': '温州 · 108 张',
+        'description': '温州数牌房间，支持点炮胡、按花色过水和番型结算。',
+        'rules': [
+            '108 张数牌。不吃、可碰杠，不定缺、无财神。',
+            '自摸或首次有人点炮胡后结束，允许一炮多响。过普通点炮胡后，同花色的点炮胡锁至自己再次摸牌。',
+            '基础番只取最高：平胡 1、对对胡 2、清一色／七对／金钩钩 3、清对 4、龙七对／清七对／清金钩钩 5、清龙七对 6。',
+            '自摸、杠上花、杠上炮、抢杠符合条件各加一番且不叠加。本桌天胡、地胡固定六番。',
+            '每份胡牌分为 2 的（番数减 1）次方，自摸三家付，点炮或抢杠由供牌者分别支付各赢家。'
+            '直杠供牌者付 1，补杠其他每家付 1，暗杠其他每家付 2。',
+            '首庄随机，单人胡由赢家接庄，多响由供牌者接庄；流局连庄。最后一张弃牌可胡，不再碰杠。',
+        ],
+    }},
+}
+VARIANTS[_CHANGSHA] = {
+    **_SUITED,
+    'id': _CHANGSHA,
+    'name': 'Changsha Zhuanzhuan Mahjong',
+    'aliases': ['Changsha', 'Hunan', '长沙', '湖南', '转转麻将', '轉轉麻將'],
+    'rule_version': 'changsha-zhuanzhuan-91sui-dojo-v1-20261118',
+    'subtitle': 'Hunan · Seven pairs · Flat scoring plus kongs',
+    'badge': 'Changsha · 108 tiles',
+    'description': 'The 91sui-style Zhuanzhuan room with simple points, seven pairs and multiple wins on a discard.',
+    'rules': [
+        '108 suited tiles. No chi, wildcards, void suit, or restriction on the pair.',
+        'Standard hands and concealed seven pairs may win. This room allows discard wins, self-draw, '
+        'robbing added kongs and multiple winners. The first win ends the hand after all replies.',
+        'One point plus the winner’s completed kong count per liable player. All opponents pay on '
+        'self-draw; the discarder or kong maker pays on a shared tile. No separate kong payments or bonus birds.',
+        'Kongs require a replacement draw and an added kong uses the tile just drawn. '
+        'The final discard allows wins, with no further melds. The next dealer is randomized among non-winners.',
+    ],
+    'sources': [{'title': '91sui Changsha Zhuanzhuan rules', 'url': 'https://www.91sui.com/Home/GameDetail?id=11'}],
+    'translations': {'zh-CN': {
+        'name': '长沙转转麻将', 'family': '数牌点炮家族',
+        'subtitle': '湖南 · 可胡七对 · 固定底分加杠', 'badge': '长沙 · 108 张',
+        'description': '依据 91 随便玩版本的转转房间，支持七对、一炮多响和带杠胡结算。',
+        'rules': [
+            '108 张数牌，不吃、无百搭、不定缺，任意对子可作将。',
+            '可胡标准型与门清七对。可自摸、点炮和抢补杠，允许多响，询问所有响应者后结束。',
+            '每份胡牌分为 1 加赢家的成杠数。自摸三家付，点炮或被抢杠由供牌者支付。此桌不另结杠分或抓鸟。',
+            '杠须有补牌，补杠须用刚摸的同张牌。最后一张弃牌可胡，不再碰杠。下一局在未胡玩家中随机选庄。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
+    _WENZHOU: {'profile': _WENZHOU},
+    _CHANGSHA: {'profile': _CHANGSHA},
 }
