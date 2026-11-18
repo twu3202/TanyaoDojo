@@ -203,9 +203,12 @@ class HangzhouGame(HonorsGame):
         elif self.drawn_tile is not None and self.remaining and ('discard', wildcard) in actions:
             player = self.players[actor]
             before = without_tile(tuple(player.hand), wildcard)
-            if any(burst_wait(before, len(player.melds), wildcard, self.excluded_tiles)):
+            if self._has_float_wait(before, len(player.melds)):
                 actions[actions.index(('discard', wildcard))] = FLOAT[0], wildcard
         return actor, actions
+
+    def _has_float_wait(self, hand, meld_count):
+        return any(burst_wait(hand, meld_count, self.wildcard_tile, self.excluded_tiles))
 
     def step(self, action):
         if action[0] != FLOAT[0]:

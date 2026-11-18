@@ -9,6 +9,7 @@ from common.suit_table import load_table
 
 from . import hongkong
 from .anji import AnjiRules
+from .dongyang import DongyangRules, white_assignments
 from .hangzhou import FLOAT, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
@@ -130,21 +131,27 @@ def _triplet_distance(hand, needed):
     return 3 * needed + 1 - best
 
 
+def _wild_distance(natural, wild, meld_count, require_burst):
+    if require_burst and wild:
+        # Reserve one wildcard for the drawn tile instead of completing a natural pair.
+        wild -= 1
+        distance = _sets_distance(natural, meld_count) - wild
+    else:
+        distance = standard_distance(natural, meld_count) - wild
+    if not meld_count:
+        singles = sum(count % 2 for count in natural)
+        matched = min(wild, singles)
+        pairs = sum(count // 2 for count in natural) + matched + (wild - matched) // 2
+        distance = min(distance, 6 - pairs)
+    return distance
+
+
 def _distance(hand, melds, view):
     wildcard = view.wildcard
     if wildcard is not None:
         natural, wild = split_wild(hand, wildcard)
-        if view.rules.require_burst and wild:
-            # Reserve one wildcard for the drawn tile instead of completing a natural pair.
-            wild -= 1
-            distance = _sets_distance(natural, len(melds)) - wild
-        else:
-            distance = standard_distance(natural, len(melds)) - wild
-        if not melds:
-            singles = sum(count % 2 for count in natural)
-            matched = min(wild, singles)
-            pairs = sum(count // 2 for count in natural) + matched + (wild - matched) // 2
-            distance = min(distance, 6 - pairs)
+        choices = white_assignments(natural, wildcard) if isinstance(view.rules, DongyangRules) else (natural,)
+        distance = min(_wild_distance(choice, wild, len(melds), view.rules.require_burst) for choice in choices)
         return max(-1 if sum(hand) % 3 == 2 else 0, distance)
     if not view.rules.MIN_FAAN:
         best = standard_distance(hand, len(melds))
@@ -188,7 +195,7 @@ def _ready_waits(hand, melds, view, live):
         params['indicator'] = view.wildcard_indicator
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
-    elif isinstance(view.rules, DeqingRules):
+    elif isinstance(view.rules, (DeqingRules, DongyangRules)):
         params['wildcard'] = view.wildcard
     for tile, count in enumerate(live):
         if not count:

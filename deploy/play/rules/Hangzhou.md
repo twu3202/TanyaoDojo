@@ -1,6 +1,6 @@
 # Hangzhou wildcard rooms
 
-The twelve rooms play eight hands at base stake one. The Anji rooms use 144 tiles with flowers. The other rooms use 136 tiles.
+The thirteen rooms play eight hands at base stake one. The Anji rooms use 144 tiles with flowers. The other rooms use 136 tiles.
 The human hosts and deals the first hand. A kong needs a live replacement tile.
 Kongs draw from the other end of the wall and have no immediate payment. The winner deals next and the dealer
 repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard wins and robbing an added kong.
@@ -20,6 +20,7 @@ Songyang keeps 20 tiles in reserve and allows robbing an added kong from any sea
 | Deqing Xinshi | Chow, pon and kong, including an immediate pon upgrade | Dealer pays 10 for Earth or a non-dealer opening special | A later robbery charges its supplier six shares at each winner’s rate |
 | Anji Fifteen Flowers | Chow, pon and kong, including after a call | Same as non-dealers | None |
 | Anji Tea House Self-Draw | Chow, pon and kong, with pon upgrades from the next draw | Same as non-dealers | None |
+| Dongyang | Chow, pon and kong by printed face | Same as non-dealers | Discard supplier pays one share and other opponents pay half each |
 
 ## Wildcard and win multipliers
 
@@ -250,6 +251,30 @@ without a rate. Apply the highest independent hand value, adding the explicitly 
 kongs, floating and flowers during a float. A draw has zero payments. The rules table gives a price for false
 float without a trigger. This room uses the defined ordinary wildcard float.
 
+## Dongyang
+
+Set aside the flipped tile and use its remaining three copies as wildcards. This room interprets the operator's
+White Dragon option as the choice to use its printed face or the natural face of the indicator in a concealed
+ordinary shape. Declared melds use printed faces. For the isolated shapes White Dragon ordinarily keeps its
+own face. When a wind is the wildcard, the Seven Winds tier requires two White Dragons so one can represent
+that wind and the other can remain a White Dragon.
+
+On a self-draw, each opponent pays the full share. On a discard win the supplier pays one share and the other
+two opponents pay exactly half a share. A regular hand wins only by self-draw. Seven pairs, the isolated and
+honor shapes, a pure suit, three exposed pons and an all-called hand can accept a discard. Earth accepts the
+dealer's first discard for a valid shape. Use the nearest accepting seat. Heaven and Earth pay ten shares as
+hand values. Choose a random first dealer. A winning non-dealer deals next. A draw or dealer win advances the
+deal by one seat under this room's no-repeat convention.
+
+Isolated hands use 14 distinct identities with at least five honors. Each suit must have at least two ranks
+between neighboring tiles. In the strict tier each suit uses a single rank grid such as 1–4–7. The regular
+tier pays one and either strict or Seven Winds pays two. The combined tier pays four. An unstructured or
+structured all-honor hand pays eight or sixteen. Three physical wildcards can win by self-draw independent
+of shape. Burst and seven-pairs Burst pay two and four. Ordinary Kong Draw uses two, and Burst after an
+open kong made from a discard uses four. An ordinary float starts at two and adds one per float. Kong then
+float begins at three with one float, with another share when three physical wildcards are held or floated.
+Choose the highest applicable independent value. Kongs and draws carry zero separate transfers.
+
 ## Sources
 
 - [Zhejiang Game Hall three-player rules and multiplier table](https://www.hzbianqu.com/game/581.html)
@@ -266,4 +291,5 @@ float without a trigger. This room uses the defined ordinary wildcard float.
 - [Zhejiang Game Hall Deqing Wukang and Xinshi scoring tables and multi-win rules](https://www.hzbianqu.com/game/919.html)
 - [Zhejiang Game Hall Anji flowers, replacements and scoring](https://www.hzbianqu.com/game/886.html)
 - [Game Tea House Anji self-draw, calls and scoring](https://www.5158wan.com/news/201809/7408.html)
+- [Zhejiang Game Hall Dongyang hands and discard payments](https://www.hzbianqu.com/game/910.html)
 - [Zhejiang Game Hall Seven Winds definition for the related Jinhua room](https://www.hzbianqu.com/game/74.html)

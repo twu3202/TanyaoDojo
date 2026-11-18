@@ -96,6 +96,7 @@ if(table.wildcard){
   if(table.wildcard_indicator) $('dora').append(text('span',tr('wildcardIndicatorTile')),img(table.wildcard_indicator));
   $('dora').append(text('span',tr(table.wildcard_indicated&&!table.wildcard_indicator?'wildcardIndicator':'wild')),img(table.wildcard));
   if(table.white_substitute) $('dora').append(text('span',tr('whiteSubstitute',{tile:tileText(table.white_substitute)}),'white-substitute'));
+  if(table.white_optional) $('dora').append(text('span',tr('whiteOptional',{tile:tileText(table.white_optional)}),'white-substitute'));
 }
 $('table').classList.toggle('two-player',table.players.length===2);
 $('table').classList.toggle('three-player',table.players.length===3);

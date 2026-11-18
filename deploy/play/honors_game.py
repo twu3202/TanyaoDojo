@@ -6,6 +6,7 @@ import time
 
 from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau
 from .anji import ANJI, ANJI_TEA_HOUSE, FLOWER_TILES, AnjiGame, AnjiTeaHouseGame
+from .dongyang import DONGYANG, DongyangGame
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
@@ -21,7 +22,7 @@ from .zhejiang_flipped import (DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, TEN_WI
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
-    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE,
+    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -36,6 +37,7 @@ GAME_ENGINES = {
     DEQING_XINSHI.VARIANT: DeqingXinshiGame,
     ANJI.VARIANT: AnjiGame,
     ANJI_TEA_HOUSE.VARIANT: AnjiTeaHouseGame,
+    DONGYANG.VARIANT: DongyangGame,
 }
 
 
@@ -126,6 +128,8 @@ class HonorsSession(GameSession):
                     table['wildcard_indicator'] = self.display_tile(game.wildcard_indicator)
                 elif game.wildcard_indicator != game.wildcard_tile:
                     table['white_substitute'] = tile_name(game.wildcard_indicator)
+                if isinstance(game, DongyangGame) and game.wildcard_tile != DONGYANG.WILDCARD:
+                    table['white_optional'] = self.display_tile(game.wildcard_tile)
         return table
 
     def display_tile(self, tile):

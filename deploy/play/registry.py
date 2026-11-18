@@ -1,6 +1,7 @@
 """Versioned playable rules; English is the API default."""
 from .anji import ANJI, ANJI_TEA_HOUSE
 from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
+from .dongyang import DONGYANG
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
 from .guiliu import VARIANT as GUILIU
@@ -1574,6 +1575,32 @@ VARIANTS[ANJI_TEA_HOUSE.VARIANT] = {
     }},
 }
 
+VARIANTS[DONGYANG.VARIANT] = {
+    **_HANGZHOU, 'id': DONGYANG.VARIANT,
+    'name': 'Dongyang Mahjong',
+    'aliases': ['东阳麻将', '假财神', '真十三不靠', '半份账单'],
+    'rule_version': 'dongyang-flexible-white-dojo-v1',
+    'subtitle': 'Four seats · Flexible White Dragon · Shared discard bill',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'Use White Dragon at face value or as the ordinary face of the flipped wildcard.',
+    'rules': [
+        '136 tiles. The flipped face is the wildcard. In concealed ordinary shapes, White Dragon can keep its face '
+        'or represent the natural face of the wildcard. Calls use the printed faces.',
+        'Regular hands win by self-draw. Special shapes and first-discard Earth can also win on a discard. '
+        'On a discard win, its supplier pays the full share and the other two opponents pay half each.',
+        'Isolated tile hands score by the number of distinct honors and the spacing of suited ranks. '
+        'Three wildcards can win on a draw. Burst, floating and kong-draw wins have separate values.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Dongyang rules and payout table', 'url': 'https://www.hzbianqu.com/game/910.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '东阳麻将', 'subtitle': '四人 · 白板两用 · 放铳分摊',
+        'badge': '浙江 · 136 张', 'description': '白板可按本身使用，也可在手内补作财神翻出前的牌面。',
+        'rules': ['136 张，翻牌同种为财神。白板在手内常规牌型可按本身或翻牌原牌面计算，副露按实际牌面。',
+                  '平胡只可自摸，特殊牌型与庄家首弃地胡可接炮。放铳者付一份，另外两位输家各付半份。',
+                  '十三不靠按字牌张数与数牌间距分档。手握三财神可以自摸特胡，另有爆头、漂财与杠开。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1600,4 +1627,5 @@ SESSION_OPTIONS = {
     DEQING_XINSHI.VARIANT: {'variant': DEQING_XINSHI.VARIANT},
     ANJI.VARIANT: {'variant': ANJI.VARIANT},
     ANJI_TEA_HOUSE.VARIANT: {'variant': ANJI_TEA_HOUSE.VARIANT},
+    DONGYANG.VARIANT: {'variant': DONGYANG.VARIANT},
 }

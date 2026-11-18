@@ -177,14 +177,14 @@ _SPACED_RANKS = tuple(ranks for count in range(4) for ranks in combinations(rang
 
 
 @lru_cache(maxsize=512)
-def _spaced_capacity(ranks):
+def spaced_capacity(ranks):
     return max((len(candidate) for candidate in _SPACED_RANKS if all(rank in candidate for rank in ranks)), default=-1)
 
 
 def seven_winds_shape(physical, wild):
     if max(physical) > 1 or physical[27:].count(0) > wild:
         return False
-    capacities = [_spaced_capacity(tuple(rank for rank in range(9) if physical[suit + rank]))
+    capacities = [spaced_capacity(tuple(rank for rank in range(9) if physical[suit + rank]))
                   for suit in (0, 9, 18)]
     return min(capacities) >= 0 and sum(capacities) >= 7
 
