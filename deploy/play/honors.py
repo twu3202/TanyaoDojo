@@ -112,6 +112,7 @@ class Player:
     draws: int = 0
     score: int = 0
     open_ready_hand: tuple[int, ...] | None = None
+    closed_ready: bool = False
 
 
 @dataclass(frozen=True)
@@ -194,6 +195,33 @@ def thirteen_orphans(hand, melds):
 
 def seven_pairs(hand, melds):
     return not melds and sum(hand) == 14 and all(count % 2 == 0 for count in hand)
+
+
+@lru_cache(maxsize=16384)
+def ready_waits(hand, melds, tile_kinds, allow_seven_pairs=True):
+    used = Counter(tile for meld in melds for tile in meld.tiles)
+    augmented = list(hand)
+    waits = []
+    for tile in tile_kinds:
+        if hand[tile] + used[tile] >= 4:
+            continue
+        augmented[tile] += 1
+        if ((allow_seven_pairs and seven_pairs(augmented, melds)) or
+                next(standard_shapes(augmented, len(melds)), None) is not None):
+            waits.append(tile)
+        augmented[tile] -= 1
+    return tuple(waits)
+
+
+def ready_discards(player, actions, options):
+    hand = player.hand.copy()
+    melds = tuple(player.melds)
+    for kind, tile in actions:
+        if kind == 'discard':
+            hand[tile] -= 1
+            if ready_waits(tuple(hand), melds, options.tile_kinds, options.seven_pairs):
+                yield 'declare_ready', tile
+            hand[tile] += 1
 
 
 class HonorsGame:

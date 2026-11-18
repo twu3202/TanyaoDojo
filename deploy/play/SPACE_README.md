@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play 29 Mahjong rulesets vs AI. English / 中文.
+short_description: Play 31 Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
@@ -17,7 +17,8 @@ Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hong
 **Hong Kong Old Style**, **Macau Tournament Mahjong**, **Shangsi**, **Hundred-Tile Mahjong**, **Hezhou**,
 **Liuzhou Exploding Fish**, **Guangzhou Three-Faan**, **Golden Island Guangdong**, **Guiliu Wake-Tile Mahjong**,
 **Sichuan Xuezhan Exchange Three**, **Yunnan Xuezhan Flower Pig**, **Kaxinwu Continuous Wins**,
-**Suizhou Ka Wu Xing**, or **Xiangyang Ka Wu Xing** and play with two or three AI opponents. Search in either language or
+**Suizhou Ka Wu Xing**, **Xiangyang Ka Wu Xing**, **Shiyan Ka Wu Xing**, or **JJ Three-Player Call Points**
+and play with two or three AI opponents. Search in either language or
 filter by family. Riichi plays a complete East-South match, and Macau plays a 16-hand match over four winds.
 
 - **Beginner:** a rule-aware tile-efficiency policy.
@@ -48,6 +49,11 @@ settlement includes ready-hand payments to seats that already won. [Rules](deplo
 
 The 84-tile **Suizhou** and **Xiangyang Ka Wu Xing** rooms have three seats and open-ready declarations.
 They use different caps, discard liabilities and passed-win rules. [Rules](deploy/play/rules/KaWuXing.md).
+
+**Shiyan Ka Wu Xing** limits plain hands to self-draw and allows double discard wins.
+**JJ Three-Player Call Points** pays for actual chows and pons and private ready declarations,
+then settles wins at five points per payer.
+[Shiyan rules](deploy/play/rules/ShiyanKaWuXing.md), [JJ Call Points rules](deploy/play/rules/JJThreePlayer.md).
 
 The **112-tile wildcard family** offers two GameTea bonus modes and the Fangchenggang room with seven pairs and
 a four-tile reserve. Source rules and the room choices for unspecified boundaries are listed in the

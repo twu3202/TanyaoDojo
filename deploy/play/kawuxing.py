@@ -1,12 +1,11 @@
-"""Three-seat Suizhou and Xiangyang Ka Wu Xing profiles."""
+"""Three-seat Suizhou, Xiangyang and Shiyan Ka Wu Xing profiles."""
 
-from collections import Counter
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from functools import lru_cache
 from typing import ClassVar
 
 from .honors import (DRAGONS, PASS, RON, ZIMO, HonorsGame, KongPoints, TableOptions,
-                     middle_five, seven_pairs, standard_shapes)
+                     middle_five, ready_discards, seven_pairs, standard_shapes)
 
 
 TILE_KINDS = (*range(9, 27), *sorted(DRAGONS))
@@ -26,7 +25,7 @@ class Score:
         return 2 ** self.fan
 
 
-def _set_patterns(sets, melds, pair, winning_tile):
+def _set_patterns(sets, melds, pair, winning_tile, middle_five_fan):
     pungs = {meld.tile for meld in sets + melds if meld.kind != 'chi'}
     patterns = []
     if len(pungs) == 4:
@@ -36,7 +35,7 @@ def _set_patterns(sets, melds, pair, winning_tile):
     elif pair in DRAGONS and len(pungs & DRAGONS) == 2:
         patterns.append((2, '小三元'))
     if middle_five(sets, winning_tile):
-        patterns.append((2, '卡五星'))
+        patterns.append((middle_five_fan, '卡五星'))
     if len(melds) == 4 and all(meld.kind != 'gang_an' for meld in melds):
         patterns.append((2, '手抓一'))
     return patterns
@@ -51,7 +50,7 @@ def _four_copies(hand, melds, winning_tile, broad):
 
 
 @lru_cache(maxsize=16384)
-def _best_shape(hand, melds, winning_tile, broad_on_big):
+def _best_shape(hand, melds, winning_tile, broad_on_big, middle_five_fan):
     used = {tile for tile, count in enumerate(hand) if count}
     used.update(tile for meld in melds for tile in meld.tiles)
     flush = all(tile < 27 for tile in used) and len({tile // 9 for tile in used}) == 1
@@ -63,7 +62,7 @@ def _best_shape(hand, melds, winning_tile, broad_on_big):
         candidates.append(common + [(2 + quads, PAIR_PATTERNS[quads])])
     else:
         for pair, sets in standard_shapes(hand, len(melds)):
-            shape = _set_patterns(sets, melds, pair, winning_tile)
+            shape = _set_patterns(sets, melds, pair, winning_tile, middle_five_fan)
             extras = _four_copies(hand, melds, winning_tile, flush or (broad_on_big and bool(shape)))
             candidates.append(common + shape + extras)
     if not candidates:
@@ -75,7 +74,11 @@ def _best_shape(hand, melds, winning_tile, broad_on_big):
 class KaWuXingRules:
     VARIANT: str
     OPTIONS: TableOptions
-    xiangyang: bool
+    xiangyang: bool = False
+    open_ready: bool = True
+    rob_concealed: bool = False
+    min_ron_fan: int = 0
+    middle_five_fan: int = 2
     MIN_FAAN: ClassVar[int] = 0
     WALL_RESERVE: ClassVar[int] = 0
     MATCH_HANDS: ClassVar[None] = None
@@ -83,9 +86,9 @@ class KaWuXingRules:
     PASS_LOCK: ClassVar[bool] = False
 
     def faan(self, hand, melds, ctx):
-        if ctx.kind == 'rob_concealed' and self.xiangyang:
+        if ctx.kind == 'rob_concealed' and not self.rob_concealed:
             return None
-        shape = _best_shape(tuple(hand), tuple(melds), ctx.tile, self.xiangyang)
+        shape = _best_shape(tuple(hand), tuple(melds), ctx.tile, self.xiangyang, self.middle_five_fan)
         if shape is None:
             return None
         patterns = list(shape)
@@ -101,6 +104,8 @@ class KaWuXingRules:
         if not self.xiangyang and ctx.kind == 'ron' and ctx.kong_chain:
             patterns.append((1, '杠上炮'))
         fan = sum(fan for fan, _ in patterns)
+        if ctx.kind == 'ron' and fan < self.min_ron_fan:
+            return None
         if self.xiangyang and fan > 3:
             fan = 3
             patterns.append((0, '八倍封顶'))
@@ -137,23 +142,10 @@ def _options(*, xiangyang):
                         kong_points=KONG_POINTS, pass_win_all=xiangyang, pass_win_higher_all=not xiangyang)
 
 
-SUIZHOU = KaWuXingRules('suizhou-kawuxing', _options(xiangyang=False), xiangyang=False)
+SUIZHOU = KaWuXingRules('suizhou-kawuxing', _options(xiangyang=False), rob_concealed=True)
 XIANGYANG = KaWuXingRules('xiangyang-kawuxing', _options(xiangyang=True), xiangyang=True)
-
-
-@lru_cache(maxsize=8192)
-def ready_waits(hand, melds):
-    used = Counter(tile for meld in melds for tile in meld.tiles)
-    augmented = list(hand)
-    waits = []
-    for tile in TILE_KINDS:
-        if hand[tile] + used[tile] == 4:
-            continue
-        augmented[tile] += 1
-        if seven_pairs(augmented, melds) or next(standard_shapes(augmented, len(melds)), None) is not None:
-            waits.append(tile)
-        augmented[tile] -= 1
-    return tuple(waits)
+SHIYAN = KaWuXingRules('shiyan-kawuxing', replace(SUIZHOU.OPTIONS, pass_win_higher_all=False),
+                      open_ready=False, min_ron_fan=1, middle_five_fan=1)
 
 
 class KaWuXingGame(HonorsGame):
@@ -164,21 +156,12 @@ class KaWuXingGame(HonorsGame):
 
     def legal_actions(self):
         actor, actions = super().legal_actions()
-        if self.phase != 'action':
+        if self.phase != 'action' or not self.rules.open_ready:
             return actor, actions
         player = self.players[actor]
         if player.open_ready_hand is not None:
             return actor, [action for action in actions if action in (ZIMO, ('discard', self.drawn_tile))]
-        hand = player.hand.copy()
-        melds = tuple(player.melds)
-        declarations = []
-        for kind, tile in actions:
-            if kind == 'discard':
-                hand[tile] -= 1
-                if ready_waits(tuple(hand), melds):
-                    declarations.append(('declare_ready', tile))
-                hand[tile] += 1
-        return actor, actions + declarations
+        return actor, actions + list(ready_discards(player, actions, self.options))
 
     def _response_actions(self):
         actor, actions = super()._response_actions()

@@ -2,10 +2,10 @@ import random
 import unittest
 from dataclasses import replace
 
-from deploy.play.honors import Meld, Offer, PASS, RON, WinContext
+from deploy.play.honors import Meld, Offer, PASS, RON, WinContext, ready_waits
 from deploy.play.honors_game import HonorsSession
 from deploy.play.honors_policy import heuristic, policy_view
-from deploy.play.kawuxing import SUIZHOU, XIANGYANG, KaWuXingGame, ready_waits
+from deploy.play.kawuxing import SUIZHOU, XIANGYANG, KaWuXingGame
 from deploy.play.tests.test_games import wait
 from deploy.play.tests.test_hongkong import counts
 
@@ -42,7 +42,7 @@ class KaWuXingTests(unittest.TestCase):
         game.step(('declare_ready', 33))
         self.assertEqual(game.first_ready, 0)
         self.assertEqual(game.players[0].open_ready_hand, tuple(counts(READY_FIVE)))
-        self.assertIn(FIVE, ready_waits(game.players[0].open_ready_hand, ()))
+        self.assertIn(FIVE, ready_waits(game.players[0].open_ready_hand, (), game.options.tile_kinds))
         game.step(PASS)
         game.step(PASS)
         game.wall.append(32)

@@ -6,8 +6,9 @@ from .guiliu import VARIANT as GUILIU
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
+from .jj_three import VARIANT as JJ_THREE
 from .kaxinwu import VARIANT as KAXINWU
-from .kawuxing import SUIZHOU, XIANGYANG
+from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
 
@@ -1086,6 +1087,71 @@ VARIANTS[XIANGYANG.VARIANT] = {
     }},
 }
 
+VARIANTS[SHIYAN.VARIANT] = {
+    **_KA_WU_XING,
+    'id': SHIYAN.VARIANT,
+    'name': 'Shiyan Ka Wu Xing',
+    'aliases': ['十堰卡五星', '十堰麻将', 'Shiyan', '平胡自摸'],
+    'rule_version': 'shiyan-self-draw-plain-dojo-v1',
+    'subtitle': 'Three seats · Plain self-draw · Pattern discard wins',
+    'badge': 'Hubei · 84 tiles',
+    'description': 'Win a regular hand by self-draw, or score a pattern to win from a discard. One discard can pay both other seats.',
+    'rules': [
+        'Three players, 84 tiles: dots, bamboo and three dragons. Pon and kong are allowed without chow.',
+        'A plain hand pays one point per share and wins by self-draw only. Middle-five, trips and other supported '
+        'patterns can win on a discard. Middle-five means completing 4–5–6 on the winning five and adds one double.',
+        'Robbing an added kong and wins on the immediate post-kong discard are doubled. This room plays without '
+        'open ready. Pattern values multiply without a cap.',
+        'Self-draw bills both opponents, and a discard or robbery bills the supplier for each winner. '
+        'On two wins the supplier deals; otherwise the winner deals. After a draw the dealer repeats and kong points stand.',
+    ],
+    'sources': [{'title': 'Shiyan operator rules', 'url': 'https://m.tcy365.com/news/d30413.html'}],
+    'translations': {'zh-CN': {
+        'name': '十堰卡五星', 'family': '三人卡五星', 'subtitle': '三人 · 平胡自摸 · 有番可接炮',
+        'badge': '湖北 · 84 张', 'description': '平胡只可自摸，有番牌可接炮，支持一炮双响。',
+        'rules': [
+            '三人 84 张，筒条加中发白。不吃，可碰杠。',
+            '平胡一份一分，只可自摸。卡五星、碰碰胡等有番可接炮。卡五星按四六夹胡五，计两倍。',
+            '可抢补杠；抢杠和杠后首张点炮各翻倍。本桌无亮倒，牌型相乘不封顶。',
+            '自摸其他两家各付一份，点炮或被抢杠者向每位赢家付款。单胡者接庄，双响由供牌者接庄。荒庄连庄，杠分保留。',
+        ],
+    }},
+}
+
+VARIANTS[JJ_THREE] = {
+    'id': JJ_THREE, 'family_id': 'honors-and-chows', 'family': 'Honors and chows', 'seat_count': 3,
+    'name': 'JJ Three-Player · Call Points',
+    'aliases': ['JJ三人麻将', '口口香', '吃香', '碰香', 'JJ Sanren'],
+    'rule_version': 'jj-three-call-points-dojo-v1',
+    'subtitle': 'Three seats · Chows and pons pay · Private ready declaration',
+    'badge': 'JJ call points · 84 tiles',
+    'description': 'A three-seat room based on the 2017 JJ score table, with immediate chow, pon, kong and ready payments.',
+    'rules': [
+        '84 tiles: characters, dots and three dragons. Chow from the previous seat; pon or kong from either other seat.',
+        'An actual chow or pon pays one or two points from the tile supplier. Wins outrank other claims; '
+        'kong and pon outrank chow. Call points are paid only after the response window resolves.',
+        'A ready discard can declare tenpai without revealing your hand. Each opponent immediately pays two. '
+        'The hand stays locked to drawn-tile discards or wins. A direct kong bills its supplier five; an added or '
+        'concealed kong bills each opponent one or five.',
+        'Win with a standard shape or seven pairs. Every win is worth five per payer. Both opponents pay on self-draw, '
+        'and the supplier pays every winner on a discard or added-kong robbery. Draws keep all earned call points.',
+    ],
+    'default_policy': 'heuristic',
+    'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'sources': [{'title': 'JJ 2017 three-player call-points table', 'url': 'https://www.jj.cn/help/new_74327.shtml'}],
+    'translations': {'zh-CN': {
+        'name': 'JJ 三人麻将（口口香）', 'family': '字牌与吃牌家族', 'subtitle': '三人 · 吃碰计分 · 暗手报听',
+        'badge': 'JJ 口口香 · 84 张', 'description': '采用 JJ 2017 年计分表，吃碰杠和报听即时计分。',
+        'rules': [
+            '84 张，万筒加中发白。能吃上家，可碰或杠其他两家。',
+            '成功吃、碰由供牌者付一分、两分。胡优先，杠碰优先于吃，只给最终实际成立的副露计分。',
+            '听牌弃牌时可报听，暗手不亮，另两席立刻各付两分。报听后只可摸切或胡。'
+            '直杠供牌者付五分，补杠每家一分，暗杠每家五分。',
+            '标准形、七对均可胡。每份胡牌五分。自摸两家付，点炮或抢补杠可多响，由供牌者逐家付。荒庄保留已得分。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1100,4 +1166,6 @@ SESSION_OPTIONS = {
     KAXINWU: {'profile': KAXINWU},
     SUIZHOU.VARIANT: {'variant': SUIZHOU.VARIANT},
     XIANGYANG.VARIANT: {'variant': XIANGYANG.VARIANT},
+    SHIYAN.VARIANT: {'variant': SHIYAN.VARIANT},
+    JJ_THREE: {'variant': JJ_THREE},
 }

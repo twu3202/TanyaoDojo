@@ -4,19 +4,23 @@ from dataclasses import asdict
 import random
 import time
 
-from . import golden_guangdong, guangzhou, guiliu, hongkong, macau
+from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_three, macau
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
-from .kawuxing import SUIZHOU, XIANGYANG, KaWuXingGame
+from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 
 
 RULESETS = {rule.VARIANT: rule for rule in (
-    hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu, SUIZHOU, XIANGYANG,
+    hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
+    SUIZHOU, XIANGYANG, SHIYAN, jj_three,
 )}
-KA_WU_XING = (SUIZHOU.VARIANT, XIANGYANG.VARIANT)
+THREE_SEAT_ENGINES = {
+    **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
+    jj_three.VARIANT: jj_three.JJThreeGame,
+}
 
 
 class HonorsSession(GameSession):
@@ -40,7 +44,7 @@ class HonorsSession(GameSession):
             if self.status not in ('starting', 'round_end'):
                 raise ClientError('round_active')
             self.hand_number += 1
-            engine = KaWuXingGame if self.variant in KA_WU_XING else HonorsGame
+            engine = THREE_SEAT_ENGINES.get(self.variant, HonorsGame)
             self.game = engine(self.seed + self.hand_number, self.dealer,
                                27 + (self.dealer_advances // self.seat_count) % 4, rules=self.rules)
             self.result = None
@@ -69,6 +73,8 @@ class HonorsSession(GameSession):
             })
             if ready:
                 players[-1]['open_ready'] = True
+            if player.closed_ready:
+                players[-1]['ready'] = True
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
@@ -119,7 +125,8 @@ class HonorsSession(GameSession):
             if kind in ('discard', 'declare_ready'):
                 self.log_event('discard', {'actor': actor, 'tile': tile_name(tile)})
             if kind == 'declare_ready':
-                self.log_event('open_ready', {'actor': actor}, 'call')
+                code = 'paid_ready' if game.players[actor].closed_ready else 'open_ready'
+                self.log_event(code, {'actor': actor}, 'call')
             if game.last_call:
                 caller, meld = game.last_call
                 self.log_event('action', {'actor': caller, 'action': meld.kind}, 'call')
@@ -148,8 +155,10 @@ class HonorsSession(GameSession):
                 self.result['kong_deltas'] = game.kong_deltas.copy()
             if any(game.echo_deltas):
                 self.result['echo_deltas'] = game.echo_deltas.copy()
-            if self.variant in KA_WU_XING:
+            if self.variant in (SUIZHOU.VARIANT, XIANGYANG.VARIANT):
                 self.result['open_ready_deltas'] = game.ready_deltas.copy()
+            elif self.variant == jj_three.VARIANT:
+                self.result.update({key: values.copy() for key, values in game.side_deltas.items()})
             if game.horse_tiles:
                 self.result['bonus'] = [tile_name(tile) for tile in game.horse_tiles]
                 mode = getattr(self.rules, 'BONUS_MODE', None)
