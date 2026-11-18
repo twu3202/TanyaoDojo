@@ -4,7 +4,7 @@ from dataclasses import asdict
 import random
 import time
 
-from . import guangzhou, hongkong, macau
+from . import golden_guangdong, guangzhou, guiliu, hongkong, macau
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
@@ -12,7 +12,9 @@ from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 
 
-RULESETS = {rule.VARIANT: rule for rule in (hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU)}
+RULESETS = {rule.VARIANT: rule for rule in (
+    hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
+)}
 
 
 class HonorsSession(GameSession):
@@ -78,7 +80,9 @@ class HonorsSession(GameSession):
 
     def option(self, action):
         kind, tile = action
-        if kind == 'chi':
+        if kind == 'exchange':
+            tiles = [tile_name(index) for index in tile]
+        elif kind == 'chi':
             tiles = [tile_name(index) for index in range(tile, tile + 3)]
         elif kind in ('ron', 'peng', 'zhigang'):
             tiles = [tile_name(self.game.offer.tile)]
@@ -143,6 +147,11 @@ class HonorsSession(GameSession):
                     {'actor': actor, 'count': count, 'hits': hits, 'per_loser': points, 'extra': extra}
                     for actor, count, hits, points, extra in game.horse_details
                 ]
+                if game.bilateral_horses:
+                    self.result['horse_breakdown'] = game.bilateral_horses.copy()
+            if game.wake_tiles:
+                self.result['wake_tiles'] = [tile_name(tile) for tile in game.wake_tiles]
+                self.result['wake_details'] = game.wake_details.copy()
             if finished:
                 best = max(self.totals)
                 self.result['match_hands'] = match_hands

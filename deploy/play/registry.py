@@ -1,5 +1,7 @@
 """Versioned playable rules; English is the API default."""
 from .guangzhou import VARIANT as GUANGZHOU
+from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
+from .guiliu import VARIANT as GUILIU
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
@@ -818,11 +820,94 @@ VARIANTS[GUANGZHOU] = {
     }},
 }
 
+VARIANTS[GOLDEN_GUANGDONG] = {
+    **_HORSE_ROOMS,
+    'id': GOLDEN_GUANGDONG,
+    'name': 'Golden Island Guangdong Mahjong',
+    'aliases': ['Golden Island', 'Guangdong', '黄金岛', '广东麻将', '换三张', '雙邊馬'],
+    'rule_version': 'golden-island-guangdong-dojo-v1',
+    'subtitle': 'Guangdong · Exchange three · Bilateral horse payments',
+    'badge': 'Guangdong · 136 tiles',
+    'description': 'Start by exchanging three tiles. Each winner shares a four-tile horse reveal and scores separately against each payer.',
+    'rules': [
+        '136 tiles, no chow. The dealer receives 14 tiles. Choose any three tiles and pass them to the next seat. '
+        'All four exchanges resolve together, then the dealer plays.',
+        'Pon, kong, multiple discard wins and added-kong robbery are allowed. Only thirteen orphans may rob a concealed kong. '
+        'Chicken and all-sequence-only hands win by self-draw or robbery. Passing a win locks equal or lower offered scores until a draw or a successful call.',
+        'Add compatible hand patterns, including pure suit 12, all triplets 6, thirteen orphans 20 and seven pairs 8/16/24/36. '
+        'Opening win adds 20. A late self-draw, kong replacement self-draw, or robbery adds 1.',
+        'Reserve four horse tiles and disallow meld calls and kongs during the last four live draws. After a win, '
+        'reveal the reserve and count seat hits from each winner. Each payment is multiplied by one plus '
+        'the hits for that winner and that payer combined.',
+        'Direct-kong replacement or four-exposed-set self-draw may assign all three payments to the supplier. '
+        'Direct kong pays 3 from its supplier, added or concealed kong 1 or 2 from each opponent. '
+        'Draws refund the kong transfers. Matching the first four uninterrupted discards costs the dealer 1 per opponent.',
+    ],
+    'sources': [{'title': 'Golden Island Guangdong rules and payout example',
+                 'url': 'https://www.80166.com/guide/rule/gdmj.html'}],
+    'translations': {'zh-CN': {
+        'name': '黄金岛广东麻将', 'family': '字牌奖码家族', 'subtitle': '广东 · 换三张 · 双边中马',
+        'badge': '广东 · 136 张', 'description': '开局换三张。四马按每个赢家及对应付款人的中马数结算。',
+        'rules': [
+            '136 张，无吃。庄家起手 14 张。每家选任意三张给下家，四家一次交换，随后庄家行动。',
+            '可碰杠、一炮多响、抢补杠。暗杠只可由十三幺抢。鸡胡、纯平胡只可自摸或抢杠。'
+            '过胡后至自己摸牌或成功碰杠，只接更高分的牌。',
+            '能叠加的牌型相加。清一色 12，碰碰胡 6，十三幺 20，七对各档 8／16／24／36。'
+            '开局和加 20，末圈自摸、杠开或抢杠加 1。',
+            '留四张翻马，最后四张活牌不可碰杠。胡后每个赢家从自己起算马位；每笔付款乘以赢家和该付款人中马数之和加一。',
+            '直杠杠开或十二张落地自摸由供牌者包三笔。直杠供牌者付 3，补杠或暗杠其他每家付 1 或 2，流局退杠。'
+            '首圈无人叫牌且四张首打相同，庄家给其他三家各 1 分。',
+        ],
+    }},
+}
+
+VARIANTS[GUILIU] = {
+    **_HORSE_ROOMS,
+    'id': GUILIU,
+    'name': 'Guiliu Wake-Tile Mahjong',
+    'aliases': ['Guiliu', 'Wake tiles', '桂柳', '桂柳麻将', '天天爱桂柳', '上下醒'],
+    'rule_version': 'guiliu-wake-dojo-v1',
+    'subtitle': 'Guangxi · Repeat wake reveals · Reciprocal liability',
+    'badge': 'Guiliu · 136 tiles',
+    'description': 'Match adjacent same-suit tiles, reveal again after three hits, and settle reciprocal payments after three feeds.',
+    'rules': [
+        '136 tiles. Pon and kong, with no chow. Standard hands, seven pairs and distinct ragged hands may win. '
+        'An offered win must exceed the last passed win until a draw or a successful call. Multiple winners are allowed.',
+        'Each winner uses the shared reveal starting from the first indicator. Count same-suit adjacent ranks and '
+        'cycle within winds or dragons. Count concealed tiles and melds. Three hits on one indicator allow another reveal. '
+        'For a last-tile win, use the winning tile once as the indicator.',
+        'Regular and ragged hands use the dealer/non-dealer table. Bigger patterns start at 15 per opponent '
+        'on a self-draw or 35 on a discard, multiplied by 2 to the power of total fan minus one. '
+        'Wake hits add one per self-draw payer or three to the discard share before event multipliers.',
+        'After three exposed feeds from a seat, that pair has reciprocal liability. Each partner covers double '
+        'the entire self-draw bill. On discard wins, each partner adds one share, except equal-scoring co-winners '
+        'do not pay each other.',
+        'A direct or added kong bills its original supplier 3; each opponent pays 2 for a concealed kong. '
+        'An uninterrupted four-way opening discard match is settled at a win, when the first winner pays each other seat 2.',
+    ],
+    'sources': [{'title': 'Guiliu operator rules', 'url': 'https://www.hzbianqu.com/game/1121.html'}],
+    'translations': {'zh-CN': {
+        'name': '桂柳麻将（上下醒）', 'family': '字牌奖码家族', 'subtitle': '广西 · 可翻重醒 · 三笔互包',
+        'badge': '桂柳 · 136 张', 'description': '同花色数牌和字牌相邻中醒，单张指示中三张可继续翻，三笔互包。',
+        'rules': [
+            '136 张，无吃，可碰杠，可胡标准手牌、七对、烂牌。过胡只接更高分，自己摸牌或成功碰杠后解除。允许多响。',
+            '共用指示牌序列。数牌按同花色上下相邻，风牌和三元牌分别循环。手牌和副露都算，当张中三张可翻重醒。'
+            '海底胡用胡牌本身作醒，只看一张。',
+            '平胡及烂牌按庄闲表。大牌自摸每家从 15、点炮从 35 起，乘以 2 的总番减一次方。'
+            '每中一醒自摸各加 1、点炮加 3，再计门清及杠后翻倍。',
+            '同一供牌者三笔后互包，每个关联席对自摸分别包全份再翻倍。点炮每个关联席加付一份，同分的多响赢家互免。',
+            '直杠或补杠由原供牌者付 3，暗杠其他每家付 2。首圈四张同牌，胡牌结算时排第一的赢家另付其他每家 2 分。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
     **{profile.value: {'profile': profile.value} for profile in Profile},
     **{room.VARIANT: {'variant': room.VARIANT} for room in (SHANGSI, HUNDRED, HEZHOU, LIUZHOU)},
     GUANGZHOU: {'variant': GUANGZHOU},
+    GOLDEN_GUANGDONG: {'variant': GOLDEN_GUANGDONG},
+    GUILIU: {'variant': GUILIU},
     MACAU: {'variant': MACAU},
 }

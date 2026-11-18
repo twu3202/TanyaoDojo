@@ -185,6 +185,13 @@ def _ukeire(distance, rest, melds, live, view):
 
 def heuristic(view):
     actions = view.actions
+    if actions[0][0] == 'exchange':
+        def rank_exchange(action):
+            remaining = list(view.hand)
+            for tile in action[1]:
+                remaining[tile] -= 1
+            return _distance(tuple(remaining), (), view), -sum(count // 2 for count in remaining)
+        return min(actions, key=rank_exchange)
     if RON in actions:
         return RON
     if ZIMO in actions:

@@ -2,6 +2,7 @@
 const $=id=>document.getElementById(id);
 let catalog=[],variant='riichi',game=null,selected=null,loading=false,pollTimer=null,lastRevision=-1,lastStatus='',requestBusy=false;
 const CATALOG_PAGE_SIZE=8;
+const exchangeSelection=new Set();
 let visibleLimit=CATALOG_PAGE_SIZE;
 const img=t=>{const i=document.createElement('img');i.src=`/tiles/${encodeURIComponent(t)}.svg`;i.alt=tileText(t);i.draggable=false;return i;};
 function text(tag,value,cls=''){const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;}
@@ -84,7 +85,7 @@ async function leave(){if(game)await api(`/api/game/${game.id}/leave`,{}).catch(
 $('leave-button').onclick=leave;$('result-leave').onclick=leave;
 function schedulePoll(){clearTimeout(pollTimer);if(game&&!['closed','error','finished'].includes(game.status))pollTimer=setTimeout(poll,450);}
 async function poll(){if(!game)return;const sid=game.id;try{const s=await api(`/api/game/${sid}`);if(game?.id===sid){$('connection').textContent=tr('connected');render(s);}}catch(e){if(e.code==='table_missing'&&game?.id===sid){render({...game,status:'closed',error_code:'table_missing',choices:[],revision:lastRevision+1});}else $('connection').textContent=tr('reconnecting');}schedulePoll();}
-function render(s,force=false){if(game?.id===s.id&&s.revision<lastRevision)return;if(!force&&s.revision===lastRevision&&`${s.status}:${s.automatic}`===lastStatus)return;const changed=s.revision!==lastRevision;game=s;lastRevision=s.revision;lastStatus=`${s.status}:${s.automatic}`;if(changed)selected=null;const table=s.table;if(!table.players)return;
+function render(s,force=false){if(game?.id===s.id&&s.revision<lastRevision)return;if(!force&&s.revision===lastRevision&&`${s.status}:${s.automatic}`===lastStatus)return;const changed=s.revision!==lastRevision;game=s;lastRevision=s.revision;lastStatus=`${s.status}:${s.automatic}`;if(changed){selected=null;exchangeSelection.clear();}const table=s.table;if(!table.players)return;
 $('table-round').textContent=(table.hand_number?tr(table.match_hands?'matchHand':'hand',{number:table.hand_number,total:table.match_hands}):tr('round',{wind:I18N[LANGUAGE].wind[table.round_wind]||'East',number:table.round_number||1}))+(table.show_winds?' · '+tr('roundWindLabel',{wind:I18N[LANGUAGE].wind[table.round_wind]}):'')+(table.honba?' · '+tr('honba',{count:table.honba}):'');
 $('table-state').textContent=s.status==='your_turn'&&!s.automatic?tr('yourTurn'):s.status==='round_end'?tr('handEnd'):s.status==='finished'?tr(table.match_hands?'matchComplete':'matchEnd'):s.status==='error'?tr('tableError'):s.status==='closed'?tr('tableClosed'):s.automatic?tr('autoState'):tr('thinking');
 $('remaining').textContent=tr('wall',{count:table.remaining});$('pot').textContent=table.pot?tr('pot',{count:table.pot}):'';
@@ -96,8 +97,30 @@ $('auto-button').textContent=s.automatic?tr('cancelAuto'):tr('autoplay');$('auto
 if(s.error_code||s.status==='closed'){$('room-error').textContent=I18N[LANGUAGE].errors[s.error_code||'table_missing'];}else if(changed){$('room-error').textContent='';delete $('room-error').dataset.errorCode;}renderActions();
 if(s.result&&['round_end','finished'].includes(s.status))showResult(s.result);}
 function river(items){const r=document.createElement('div');r.className='river';for(const item of items){const e=img(item.tile);if(item.called)e.classList.add('called');if(item.riichi||item.ready)e.classList.add('reach-tile');r.append(e);}return r;}
+function exchangeTile(tile, index, snapshot) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'hand-tile legal';
+  button.dataset.exchangeIndex = index;
+  button.classList.toggle('selected', exchangeSelection.has(index));
+  button.disabled = snapshot.status !== 'your_turn' || snapshot.automatic || requestBusy;
+  button.setAttribute('aria-label', tr('selectTile', {tile: tileText(tile)}));
+  button.setAttribute('aria-pressed', exchangeSelection.has(index));
+  button.append(img(tile));
+  button.onclick = () => {
+    if (exchangeSelection.has(index)) exchangeSelection.delete(index);
+    else if (exchangeSelection.size < 3) exchangeSelection.add(index);
+    for (const tileButton of document.querySelectorAll('[data-exchange-index]')) {
+      const chosen = exchangeSelection.has(Number(tileButton.dataset.exchangeIndex));
+      tileButton.classList.toggle('selected', chosen);
+      tileButton.setAttribute('aria-pressed', chosen);
+    }
+    renderActions();
+  };
+  return button;
+}
 function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+4)%4]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
-if(p.id===0){const row=document.createElement('div');row.className='hand';const hand=p.hand.slice();if(table.drawn){const i=hand.lastIndexOf(table.drawn);if(i>=0)hand.push(...hand.splice(i,1));}hand.forEach((t,i)=>{const options=s.choices.filter(x=>['discard','dahai'].includes(x.kind)&&x.tiles[0]===t);const b=document.createElement('button');b.className='hand-tile'+(options.length?' legal':'')+(table.drawn&&i===hand.length-1?' drawn':'')+(options.length&&options[0].id===selected?' selected':'');b.disabled=!options.length||s.automatic||requestBusy;const canDeclare=s.choices.some(o=>o.kind==='declare_ready'&&o.tiles[0]===t);b.classList.toggle('ready-discard',canDeclare);b.setAttribute('aria-label',tr(canDeclare?'selectReadyTile':'selectTile',{tile:tileText(t)}));b.append(img(t));if(options.length){b.dataset.option=options[0].id;b.onclick=()=>{selected=options[0].id;for(const x of document.querySelectorAll('.hand-tile'))x.classList.toggle('selected',x.dataset.option===selected);renderActions();};}row.append(b);});seat.append(row);
+if(p.id===0){const row=document.createElement('div');row.className='hand';const hand=p.hand.slice();if(table.drawn){const i=hand.lastIndexOf(table.drawn);if(i>=0)hand.push(...hand.splice(i,1));}hand.forEach((t,i)=>{if(table.phase==='exchange'){row.append(exchangeTile(t,i,s));return;}const options=s.choices.filter(x=>['discard','dahai'].includes(x.kind)&&x.tiles[0]===t);const b=document.createElement('button');b.className='hand-tile'+(options.length?' legal':'')+(table.drawn&&i===hand.length-1?' drawn':'')+(options.length&&options[0].id===selected?' selected':'');b.disabled=!options.length||s.automatic||requestBusy;const canDeclare=s.choices.some(o=>o.kind==='declare_ready'&&o.tiles[0]===t);b.classList.toggle('ready-discard',canDeclare);b.setAttribute('aria-label',tr(canDeclare?'selectReadyTile':'selectTile',{tile:tileText(t)}));b.append(img(t));if(options.length){b.dataset.option=options[0].id;b.onclick=()=>{selected=options[0].id;for(const x of document.querySelectorAll('.hand-tile'))x.classList.toggle('selected',x.dataset.option===selected);renderActions();};}row.append(b);});seat.append(row);
 }else if(p.revealed){const h=document.createElement('div');h.className='melds';for(const t of p.hand){const el=img(t);el.style.width='19px';h.append(el);}seat.append(h);}else{const h=document.createElement('div');h.className='backs';h.setAttribute('aria-label',tr('concealed',{count:p.hand_count}));for(let i=0;i<p.hand_count;i++)h.append(text('span','','tile-back'));seat.append(h);}
 if(p.melds.length){const ms=document.createElement('div');ms.className='melds';for(const m of p.melds){const meld=document.createElement('div');meld.className='meld';meld.title=actionText(m.kind);for(const t of m.tiles)meld.append(t===null?text('span','','tile-back'):img(t));ms.append(meld);}seat.append(ms);}if(p.id!==0)seat.append(river(p.river));}
 function renderActions() {
@@ -106,9 +129,19 @@ function renderActions() {
   if (!game) return;
   const playable = game.status === 'your_turn' && !game.automatic && !requestBusy;
   for (const button of document.querySelectorAll('#seat-0 .hand-tile.legal')) button.disabled = !playable;
-  $('prompt').textContent=playable?tr(game.table.phase==='void'?'promptVoid':game.table.phase==='rob_kong'?'promptRob':'promptTurn'):game.status==='error'?tr('promptError'):game.status==='closed'?I18N[LANGUAGE].errors.table_missing:['round_end','finished'].includes(game.status)?tr('promptEnd'):game.automatic?tr('promptAuto'):tr('promptWait');
+  $('prompt').textContent=playable?tr(game.table.phase==='exchange'?'promptExchange':game.table.phase==='void'?'promptVoid':game.table.phase==='rob_kong'?'promptRob':'promptTurn'):game.status==='error'?tr('promptError'):game.status==='closed'?I18N[LANGUAGE].errors.table_missing:['round_end','finished'].includes(game.status)?tr('promptEnd'):game.automatic?tr('promptAuto'):tr('promptWait');
   $('chosen-tile').textContent = '';
   if (!playable) return;
+  if (game.table.phase === 'exchange') {
+    const tiles = [...exchangeSelection].map(index => game.table.players[0].hand[index]).sort().join(',');
+    const choice = game.choices.find(option => option.kind === 'exchange' && option.tiles.slice().sort().join(',') === tiles);
+    const button = text('button', tr('confirmExchange'), 'action primary-action');
+    button.disabled = !choice;
+    button.onclick = () => sendAction(choice.id);
+    box.append(button);
+    $('chosen-tile').textContent = tr('exchangeCount', {count: exchangeSelection.size});
+    return;
+  }
   const isDiscard = option => ['discard', 'dahai'].includes(option.kind);
   const discards = game.choices.filter(isDiscard);
   if (discards.length) {
@@ -170,6 +203,10 @@ function renderBonusTiles(result, container) {
   if (result.bonus?.length) {
     container.append(text('span', tr(mode === 'exploding_fish' ? 'fishTile' : 'bonusTileHeading')));
     for (const tile of result.bonus) container.append(img(tile));
+  }
+  for (const entry of result.horse_breakdown || []) {
+    const hits = entry.hits.map((count, seat) => `${playerName(seat)} ${count}`).join(' · ');
+    container.append(text('p', tr('bilateralHorses', {name: playerName(entry.actor), hits}), 'bonus-detail'));
   }
   const label = {one_ma: 'oneMaSummary', exploding_fish: 'fishSummary'}[mode] || 'bonusSummary';
   for (const item of result.bonus_details || []) {

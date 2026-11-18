@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play 22 Mahjong rulesets vs AI. English / 中文.
+short_description: Play 24 Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
@@ -15,7 +15,7 @@ Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hong
 **Fangchenggang Hongzhong**, **Wenzhou Fangpao**, **Changsha Zhuanzhuan**, **Taishun**, **Xuanhua**, **Shaanxi**,
 **Lishui Fangpao**, **Wenxi**, **Guilin Zhuanzhuan**, **Pook Dazhong**, **Shanxi Datang Tuidaohu**,
 **Hong Kong Old Style**, **Macau Tournament Mahjong**, **Shangsi**, **Hundred-Tile Mahjong**, **Hezhou**,
-**Liuzhou Exploding Fish**, or **Guangzhou Three-Faan Mahjong**
+**Liuzhou Exploding Fish**, **Guangzhou Three-Faan**, **Golden Island Guangdong**, or **Guiliu Wake-Tile Mahjong**
 and play with three AI opponents. Search in either language or
 filter by family. Riichi plays a complete East-South match, and Macau plays a 16-hand match over four winds.
 
@@ -55,12 +55,16 @@ The **Hong Kong Old Style** room adds 136 tiles with honors, chows, three faan t
 **Macau Tournament Mahjong** shares the 136-tile setup and adds zero-faan discard wins, two fixed special-hand
 tiers, a 14-tile reserve and fixed dealer rotation. [Rules and sources](deploy/play/rules/MacauTournament.md).
 
-Four rooms with **honors and bonus tiles** reveal bonuses from a reserve. Shangsi scores by seat,
+Several rooms with **honors and bonus tiles** reveal bonuses from a reserve. Shangsi scores by seat,
 Hundred-Tile removes the character suit, Hezhou adds three-feeds liability, and Liuzhou reveals one
 fish tile worth its rank or five for an honor. [Rules and sources](deploy/play/rules/HonorsHorseTiles.md).
 
 **Guangzhou Three-Faan Mahjong** caps ordinary hands at three faan and tracks who covers a
 self-draw after a fourth open meld or qualifying kong. [Rules and sources](deploy/play/rules/GuangzhouThreeFaan.md).
+
+**Golden Island Guangdong** opens with an exchange of three tiles and scores horses per payer.
+**Guiliu** reveals adjacent wake tiles after a win and supports repeated reveals.
+[Rules and sources](deploy/play/rules/GuangdongGuiliu.md).
 
 The catalog exposes only implemented, tested rulesets. More regional variants will be added
 by rule family. No training runs inside this Space; models are fixed CPU inference snapshots.

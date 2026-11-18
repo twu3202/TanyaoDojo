@@ -3,6 +3,7 @@
 from collections import Counter, deque
 from dataclasses import dataclass, field
 from functools import lru_cache
+from itertools import combinations
 import random
 
 TILE_COUNT = 34
@@ -42,14 +43,19 @@ class TableOptions:
     pass_pon_all: bool = False
     pass_pon_same: bool = False
     pass_win_higher_same: bool = False
+    pass_win_higher_all: bool = False
     kong_points: KongPoints | None = None
     horse_counts: tuple[int, int, int] = (0, 0, 0)  # discard, self-draw, rob added kong
     dealer_echo: bool = False
+    winner_echo: bool = False
+    echo_share: int = 1
     reciprocal_liability: bool = False
     chow_lock_extensions: bool = True
     pass_win_clear_by_call: bool = False
     kong_requires_live_tile: bool = False
     first_liability_only: frozenset[str] = frozenset()
+    exchange_count: int = 0
+    closed_live_tail: int = 0
 
 
 DEFAULT_OPTIONS = TableOptions()
@@ -80,6 +86,7 @@ class WinContext:
     kong_provider: int | None = None
     last_live_draw: bool = False
     winner_count: int = 0
+    late_wall: bool = False
 
 
 @dataclass(frozen=True)
@@ -98,6 +105,7 @@ class Player:
     declined_wins: set[int] = field(default_factory=set)
     declined_calls: set[int] = field(default_factory=set)
     declined_win_values: dict[int, int] = field(default_factory=dict)
+    declined_win_share: int = -1
     liabilities: list[tuple[str, int]] = field(default_factory=list)
     draws: int = 0
     score: int = 0
@@ -113,6 +121,14 @@ class Win:
     patterns: tuple[str, ...]
     payments: tuple[int, ...]
     tier: str | None = None
+
+
+@dataclass(frozen=True)
+class WinningHand:
+    actor: int
+    score: object
+    hand: list[int]
+    kind: str
 
 
 def chow_choices(hand, tile, *, swap_lock=True, lock_extensions=True):
@@ -203,6 +219,12 @@ class HonorsGame:
         self.win_details = []
         self.horse_tiles = []
         self.horse_details = []
+        self.wake_draws = []
+        self.wake_tiles = []
+        self.wake_details = []
+        self.bilateral_horses = []
+        self.echo_pending = False
+        self.exchanges = []
         self.kong_deltas = [0] * 4
         self.echo_deltas = [0] * 4
         self.related_seats = []
@@ -213,17 +235,22 @@ class HonorsGame:
             for step in range(4):
                 self.players[(dealer + step) % 4].hand[self.wall.pop()] += 1
         self._draw(dealer)
+        if self.options.exchange_count:
+            self.phase = 'exchange'
+            self.cur = 0
+            self.drawn_tile = None
 
     def scores(self):
         return [player.score for player in self.players]
 
     @property
     def remaining(self):
-        return len(self.wall) + len(self.horse_tiles) - self.rules.WALL_RESERVE
+        return len(self.wall) + len(self.horse_tiles) + len(self.wake_draws) - self.rules.WALL_RESERVE
 
     def physical_counts(self):
         counts = Counter(self.wall)
         counts.update(self.horse_tiles)
+        counts.update(self.wake_draws)
         for player, river in zip(self.players, self.discards):
             counts.update(river)
             counts.update({tile: count for tile, count in enumerate(player.hand) if count})
@@ -245,6 +272,7 @@ class HonorsGame:
         player.declined_calls.clear()
         player.declined_wins.clear()
         player.declined_win_values.clear()
+        player.declined_win_share = -1
         self.cur = actor
         self.phase = 'action'
         self.drawn_tile = tile
@@ -259,17 +287,23 @@ class HonorsGame:
             ctx = WinContext('zimo', self.drawn_tile, 27 + (actor - self.dealer) % 4,
                              self.round_wind, self.kong_chain, '天胡' if self.opening else None,
                              self.uninterrupted and actor != self.dealer and player.draws == 1,
-                             self.kong_provider, self.remaining == 0)
+                             self.kong_provider, self.remaining == 0,
+                             late_wall=self.remaining <= self.options.closed_live_tail)
         else:
             hand[offer.tile] += 1
             kind = {'discard': 'ron', 'gang_bu': 'rob_kong', 'gang_an': 'rob_concealed'}[offer.kind]
             ctx = WinContext(kind, offer.tile, 27 + (actor - self.dealer) % 4,
-                             self.round_wind, offer.kong_chain, offer.opening, winner_count=winner_count)
+                             self.round_wind, offer.kong_chain, offer.opening,
+                             last_live_draw=self.remaining == 0, winner_count=winner_count)
         return self.rules.faan(hand, tuple(player.melds), ctx), hand, ctx.kind
 
     def legal_actions(self):
         if self.phase == 'over':
             return None, []
+        if self.phase == 'exchange':
+            tiles = [tile for tile, count in enumerate(self.players[self.cur].hand) for _ in range(count)]
+            groups = sorted(set(combinations(tiles, self.options.exchange_count)))
+            return self.cur, [('exchange', group) for group in groups]
         if self.offer is not None:
             return self._response_actions()
 
@@ -279,7 +313,8 @@ class HonorsGame:
         if self.drawn_tile is not None:
             if self._win(self.cur)[0] is not None:
                 actions.append(ZIMO)
-            if self.remaining or not (self.rules.WALL_RESERVE or self.options.kong_requires_live_tile):
+            if (self.remaining > self.options.closed_live_tail
+                    or not (self.rules.WALL_RESERVE or self.options.kong_requires_live_tile)):
                 actions.extend(('ankan', tile) for tile, count in enumerate(player.hand) if count == 4)
                 actions.extend(('bugang', meld.tile) for meld in player.melds
                                if meld.kind == 'peng' and player.hand[meld.tile]
@@ -293,9 +328,10 @@ class HonorsGame:
         actions = [PASS]
         if offer.tile not in player.declined_wins and not (self.options.pass_win_all and player.declined_wins):
             score, _, _ = self._win(actor, offer)
-            if score is not None and score.share > player.declined_win_values.get(offer.tile, -1):
+            if score is not None and score.share > max(player.declined_win_share,
+                                                        player.declined_win_values.get(offer.tile, -1)):
                 actions.append(RON)
-        if (offer.kind == 'discard' and self.remaining
+        if (offer.kind == 'discard' and self.remaining > self.options.closed_live_tail
                 and (not self.rules.PASS_LOCK or offer.tile not in player.declined_calls)):
             pon_locked = offer.tile in player.declined_calls or (
                 self.options.pass_pon_all and bool(player.declined_calls)
@@ -318,15 +354,18 @@ class HonorsGame:
             raise ValueError('Illegal honors-room action')
         self.last_call = None
         kind, tile = action
-        if self.offer is not None:
+        if kind == 'exchange':
+            self._exchange(tile)
+        elif self.offer is not None:
             self._respond(actor, action, actions)
         elif kind == 'discard':
             self.players[actor].hand[tile] -= 1
             self.discards[actor].append(tile)
-            if self.options.dealer_echo and self.uninterrupted and all(river == [tile] for river in self.discards):
-                for seat in range(4):
-                    self.echo_deltas[seat] = -3 if seat == self.dealer else 1
-                    self.players[seat].score += self.echo_deltas[seat]
+            if self.uninterrupted and all(river == [tile] for river in self.discards):
+                if self.options.dealer_echo:
+                    self._pay_echo(self.dealer)
+                elif self.options.winner_echo:
+                    self.echo_pending = True
             self._open_offer(Offer(actor, tile, 'discard', self.kong_chain, '地胡' if self.opening else None))
         elif kind == 'zimo':
             self._settle([actor], None)
@@ -334,6 +373,27 @@ class HonorsGame:
             kong = 'gang_an' if kind == 'ankan' else 'gang_bu'
             self.uninterrupted = False
             self._open_offer(Offer(actor, tile, kong, self.kong_chain))
+
+    def _exchange(self, tiles):
+        self.exchanges.append(tiles)
+        if len(self.exchanges) < len(self.players):
+            self.cur += 1
+            return
+        for seat, player in enumerate(self.players):
+            for tile in self.exchanges[seat]:
+                player.hand[tile] -= 1
+            for tile in self.exchanges[seat - 1]:
+                player.hand[tile] += 1
+        self.drawn_tile = self.exchanges[self.dealer - 1][-1]
+        self.exchanges.clear()
+        self.cur = self.dealer
+        self.phase = 'action'
+
+    def _pay_echo(self, payer):
+        for seat in range(4):
+            delta = self.options.echo_share * (-3 if seat == payer else 1)
+            self.echo_deltas[seat] += delta
+            self.players[seat].score += delta
 
     def _open_offer(self, offer):
         self.offer = offer
@@ -356,6 +416,9 @@ class HonorsGame:
             elif self.options.pass_win_higher_same:
                 score, _, _ = self._win(actor, offer)
                 player.declined_win_values[offer.tile] = score.share
+            elif self.options.pass_win_higher_all:
+                score, _, _ = self._win(actor, offer)
+                player.declined_win_share = score.share
         if kind in CALL_PRIORITY:
             if self.claim is None or CALL_PRIORITY[kind] > CALL_PRIORITY[self.claim[1]]:
                 self.claim = actor, kind, argument
@@ -411,6 +474,7 @@ class HonorsGame:
         if self.options.pass_win_clear_by_call:
             player.declined_wins.clear()
             player.declined_win_values.clear()
+            player.declined_win_share = -1
         if kind == 'zhigang':
             self._pay_kong(actor, meld)
             self._draw(actor, kong_chain=1, provider=meld.provider)
@@ -473,14 +537,22 @@ class HonorsGame:
 
     def _settle(self, winners, offer):
         self.winners = list(winners)
+        if self.echo_pending:
+            self._pay_echo(self.winners[0])
         provider = None if offer is None else offer.actor
+        hands = []
         for actor in self.winners:
             score, hand, kind = self._win(actor, offer, winner_count=len(self.winners))
             self.revealed[actor] = hand
-            score = self._apply_horses(actor, kind, score)
-            payments = self.rules.settlement(score, kind, actor, provider, self._liabilities_for(actor))
-            self._transfer(actor, payments)
-            self.win_details.append(Win(actor, provider, kind, score.fan, score.share,
+            hands.append(WinningHand(actor, score, hand, kind))
+        settle_hand = getattr(self.rules, 'settle_hand', None)
+        if settle_hand is None:
+            outcomes = [self._settle_winner(winner, provider) for winner in hands]
+        else:
+            outcomes = settle_hand(self, hands, offer)
+        for winner, (score, payments) in zip(hands, outcomes, strict=True):
+            self._transfer(winner.actor, payments)
+            self.win_details.append(Win(winner.actor, provider, winner.kind, score.fan, score.share,
                                         score.patterns, payments, score.tier))
         if offer is not None:
             if offer.kind == 'discard':
@@ -491,6 +563,12 @@ class HonorsGame:
         reason = {'zimo': 'suited_self_draw', 'ron': 'suited_discard_win',
                   'rob_kong': 'rob_kong_win', 'rob_concealed': 'rob_concealed_win'}
         self._end(reason[self.win_details[0].kind])
+
+    def _settle_winner(self, winner, provider):
+        score = self._apply_horses(winner.actor, winner.kind, winner.score)
+        payments = self.rules.settlement(score, winner.kind, winner.actor, provider,
+                                         self._liabilities_for(winner.actor))
+        return score, payments
 
     def _end(self, reason):
         self.phase = 'over'
