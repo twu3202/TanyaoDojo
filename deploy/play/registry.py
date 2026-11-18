@@ -1,6 +1,7 @@
 """Versioned playable rules; English is the API default."""
 from .anji import ANJI, ANJI_TEA_HOUSE
 from .bengbu import BENGBU, BENGBU_FLOWER
+from .changchun import CHANGCHUN
 from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .chongji import CHONGJI, CHONGJI_SEVEN
 from .dongyang import DONGYANG
@@ -19,6 +20,7 @@ from .jj_three import VARIANT as JJ_THREE
 from .kaxinwu import VARIANT as KAXINWU
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
+from .northeast import HARBIN
 from .suited import Profile
 from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
 from .taizhou import TAIZHOU
@@ -2358,6 +2360,53 @@ VARIANTS[NINGDE_RANDOM_GOLD.VARIANT] = {
     }},
 }
 
+VARIANTS[CHANGCHUN.VARIANT] = {
+    'id': CHANGCHUN.VARIANT, 'family_id': 'northeast-bao', 'family': 'Northeastern Bao Mahjong', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Changchun Mahjong · Shared Bao', 'aliases': ['长春麻将', '波克长春', '长春换宝'],
+    'rule_version': 'changchun-shared-bao-dojo-v1', 'subtitle': 'Four seats · 136 tiles · Egg kongs and private bao',
+    'badge': 'Jilin · Rotating shared bao',
+    'description': 'Reveal opening egg kongs and declare ready to see the shared bao privately on your next draw.',
+    'rules': ['Win with all three numbered suits, a terminal or honor, and a pung or kong unless the eyes are dragons. '
+              'You can win naturally without declaring ready.',
+              'Wind, dragon, one and nine eggs can be formed from the initial rack. One Bamboo can fill a missing face. '
+              'Eggs can be extended and extensions can be robbed.',
+              'Declaring ready locks the wait. On your next draw, see the shared bao from the reserve. If it matches a wait, you may win before drawing. '
+              'A live self-drawn bao can fill any wait. Replace the bao after three matching copies become visible.'],
+    'sources': [{'title': 'Pook Changchun wall, egg kongs, bao and payments', 'url': 'https://www.pook.com/games/ccmj.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北宝牌麻将', 'name': '长春麻将（共用宝）', 'subtitle': '四人 · 136 张 · 开蛋与私看宝牌',
+        'badge': '吉林 · 共用宝可换', 'description': '起手可开旋风蛋等特殊杠，报听后下一次轮到自己摸牌时私看共用宝。',
+        'rules': ['胡牌要三门齐、有幺九或字牌、有刻杠或中发白作将。不报听也能正常胡牌。',
+                  '起手可开旋风蛋、喜蛋、幺蛋和九蛋。幺鸡可补一种缺牌。补蛋可能被抢胡或抢碰。',
+                  '报听锁定听口。下一次摸牌前私看共用宝。宝正好是听张可对宝，实际自摸宝可作任意听张。三张同面明示后换宝。'],
+    }},
+}
+
+VARIANTS[HARBIN.VARIANT] = {
+    **VARIANTS[CHANGCHUN.VARIANT], 'id': HARBIN.VARIANT,
+    'name': 'Harbin Mahjong · Four Bao Slots', 'aliases': ['哈尔滨麻将', '波克哈尔滨', '哈尔滨四宝'],
+    'rule_version': 'harbin-four-bao-dojo-v1', 'subtitle': 'Four seats · 112 tiles · Ready chows and four bao slots',
+    'badge': 'Heilongjiang · Open then declare ready',
+    'description': 'Open the hand and declare ready before winning. Each ready seat reveals one more fixed bao.',
+    'rules': ['Use the three suits and four Red Dragons. Ready requires an open hand, two numbered suits, and a terminal or Red Dragon. '
+              'Win with at least one chow and one pung or with Red Dragons as the eyes.',
+              'A discard that lets you declare ready can be taken as a ready chow or pon. Finish the call with a ready discard. '
+              'After declaring, the hand stays locked.',
+              'Only ready players see the revealed bao slots. A self-drawn bao can fill any wait. Owning that slot pays more. '
+              'A sole middle wait earns a bonus, with a larger award when the matching bao is itself the waiting tile.'],
+    'sources': [{'title': 'Pook Harbin ready conditions', 'url': 'https://mm.pook.com/hebmj/rule/rule-3.html'},
+                {'title': 'Four fixed bao slots and visibility', 'url': 'https://mm.pook.com/hebmj/rule/rule-4.html'},
+                {'title': 'Pook Harbin winning types', 'url': 'https://mm.pook.com/hebmj/rule/rule-5.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北宝牌麻将', 'name': '哈尔滨麻将（四宝）', 'subtitle': '四人 · 112 张 · 听吃听碰与四宝',
+        'badge': '黑龙江 · 开门后报听', 'description': '开门并报听后才可胡。每多一家报听，翻出一张固定宝。',
+        'rules': ['三门数牌加四张红中。开门、有两门数牌、有幺九或红中才能报听。胡牌要有顺子，且有刻杠或红中作将。',
+                  '吃或碰后能报听时，可听吃、听碰。须打出一张确认报听，之后锁手。',
+                  '只给报听者看已翻开的宝。自摸宝可作任意听张，自己翻的宝分更高。独听夹张计卡当，摸到正是听张的宝计宝中宝。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2405,4 +2454,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in XIANYOU_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
 }

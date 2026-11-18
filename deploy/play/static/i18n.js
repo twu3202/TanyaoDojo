@@ -197,6 +197,19 @@ I18N.en.reason.four_gold_win='{names} won with four gold tiles.';
 I18N['zh-CN'].reason.four_gold_win='{names} 四金倒胡牌';
 I18N.en.fixedGold='Fixed gold';
 I18N['zh-CN'].fixedGold='固定金';
+Object.assign(I18N.en, {privateBao:'Your revealed bao', playerBao:'{name}’s bao', promptBaoPeek:'Your bao completes the hand. Win now or take your draw.', extendEgg:'Extend {egg}'});
+Object.assign(I18N['zh-CN'], {privateBao:'你看到的宝牌', playerBao:'{name} 的宝牌', promptBaoPeek:'宝牌正好能胡。可对宝，也可继续摸牌。', extendEgg:'补{egg}'});
+Object.assign(I18N.en.action, {ready_chi:'Chow and declare ready', ready_pon:'Pon and declare ready', win_bao:'Win by matching bao',
+  egg_winds:'Wind egg', egg_dragons:'Dragon egg', egg_ones:'Ones egg', egg_nines:'Nines egg', rob_egg_pon:'Rob the egg extension with pon'});
+Object.assign(I18N['zh-CN'].action, {ready_chi:'听吃', ready_pon:'听碰', win_bao:'对宝',
+  egg_winds:'旋风蛋', egg_dragons:'喜蛋', egg_ones:'幺蛋', egg_nines:'九蛋', rob_egg_pon:'抢碰补蛋'});
+I18N.en.reason.bao_peek_win='{names} won by matching the revealed bao.';
+I18N['zh-CN'].reason.bao_peek_win='{names} 对宝胡牌';
+I18N.en.messages.declared_ready='{actor} declared ready.';
+I18N['zh-CN'].messages.declared_ready='{actor} 报听。';
+Object.assign(I18N.en.fans, {'摸宝':'Drawn bao', '对宝':'Matched bao', '摸大宝':'Own bao draw', '摸小宝':'Another player’s bao draw',
+  '大宝中宝':'Own bao matches the middle wait', '小宝中宝':'Another player’s bao matches the middle wait', '卡当':'Single middle wait',
+  '夹张':'Middle wait', '边张':'Edge wait', '飘胡':'All pungs'});
 I18N.en.reason.third_travel_win='{names} completed the third gold travel.';
 I18N['zh-CN'].reason.third_travel_win='{names} 三游胡牌';
 Object.assign(I18N.en, {tripletPoints:'Set points × {n}', countedKongs:'Kong points × {n}', waterCount:'Water points × {n}', dealerStreak:'Dealer repeats × {n}'});

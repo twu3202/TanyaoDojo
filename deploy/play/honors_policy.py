@@ -9,6 +9,7 @@ from common.suit_table import load_table
 
 from . import hongkong
 from .anji import AnjiRules
+from .changchun import BAO_WIN, EGG_GROUPS
 from .chongji import ChongjiRules
 from .dongyang import DongyangRules, white_assignments
 from .fujian_sixteen import FujianSixteenRules
@@ -22,11 +23,13 @@ from .tiantai import TiantaiWildcardRules
 from .taizhou import TaizhouRules
 from .linhai import LinhaiRules
 from .longyan import TRAVEL, LongyanRules, split_longyan
+from .northeast import READY_CALLS, HarbinRules, NortheastRules
 from .jinyun import JinyunClassicRules
 from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
 from .sixteen import SET_COUNT, SixteenRules
+from .wildcard_shapes import without_tile
 from .wuhu import WuhuRules, suit_counts
 from .xianyou import XianyouRules
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
@@ -397,6 +400,20 @@ def heuristic(view):
         return min(actions, key=rank_exchange)
     if RON in actions:
         return RON
+    if isinstance(view.rules, NortheastRules):
+        if BAO_WIN in actions:
+            return BAO_WIN
+        if ZIMO in actions:
+            return ZIMO
+        declarations = [a for a in actions if a[0] == 'declare_ready']
+        if declarations:
+            live = _live_tiles(view)
+            return max(declarations, key=lambda a: sum(live[tile] for tile in view.rules.waits(
+                without_tile(view.hand, a[1]), view.melds)))
+        call = next((a for a in actions if a[0] in READY_CALLS or a[0] in EGG_GROUPS
+                     or a[0] in ('extend_egg', 'rob_egg_pon')), None)
+        if call is not None:
+            return call
     winds = next((action for action in actions if action[0] in (TEN_WINDS, ELEVEN_WINDS)), None)
     if winds is not None:
         return winds
@@ -469,7 +486,8 @@ def heuristic(view):
             ranked = _discard_options(hand, melds, view, live,
                                       (tile for tile, count in enumerate(hand) if count and tile not in block))
             rank = min(row[0] for row in ranked)
-        if rank < best:
+        opens_harbin = isinstance(view.rules, HarbinRules) and view.rules.closed(view.melds) and preferred == PASS
+        if rank < best or (opens_harbin and rank == best):
             best = rank
             preferred = kind, argument
     return preferred

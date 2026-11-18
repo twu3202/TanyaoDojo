@@ -7,7 +7,7 @@ let visibleLimit=CATALOG_PAGE_SIZE;
 const img=t=>{if(/^F[1-8]$/.test(t))return text('span',tileText(t),'flower-face');const i=document.createElement('img');i.src=`/tiles/${encodeURIComponent(t)}.svg`;i.alt=tileText(t);i.draggable=false;return i;};
 function text(tag,value,cls=''){const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;}
 function showError(id,e){const node=$(id);node.dataset.errorCode=e.code||'server_error';node.textContent=I18N[LANGUAGE].errors[node.dataset.errorCode]||e.message||I18N[LANGUAGE].errors.server_error;}
-function optionText(o){if(o.kind==='liability_choice')return tr(o.value?'continueHand':'foldHand');if(o.kind==='buy_base')return tr(o.value?'buyBase':'skipBase');if(o.kind==='piao')return tr('piaoChoice',{value:o.value});if(o.win_type)return actionText(o.win_type);if(['discard','dahai'].includes(o.kind))return tr('discard',{tile:tileText(o.tiles[0])});if(o.kind==='void')return tr('voidAction',{suit:I18N[LANGUAGE].suits[o.suit]});return actionText(o.kind);}
+function optionText(o){if(o.kind==='liability_choice')return tr(o.value?'continueHand':'foldHand');if(o.kind==='buy_base')return tr(o.value?'buyBase':'skipBase');if(o.kind==='piao')return tr('piaoChoice',{value:o.value});if(o.win_type)return actionText(o.win_type);if(['discard','dahai'].includes(o.kind))return tr('discard',{tile:tileText(o.tiles[0])});if(o.kind==='void')return tr('voidAction',{suit:I18N[LANGUAGE].suits[o.suit]});if(o.kind==='extend_egg')return tr('extendEgg',{egg:actionText(o.egg_kind)});return actionText(o.kind);}
 function applyLanguage(){document.documentElement.lang=LANGUAGE;document.title='TanyaoDojo · '+tr('brand');for(const e of document.querySelectorAll('[data-language]'))e.value=LANGUAGE;for(const e of document.querySelectorAll('[data-i18n]'))e.textContent=tr(e.dataset.i18n);for(const e of document.querySelectorAll('[data-i18n-aria]'))e.setAttribute('aria-label',tr(e.dataset.i18nAria));for(const e of document.querySelectorAll('[data-wind]'))e.textContent=LANGUAGE==='en'?e.dataset.wind:I18N[LANGUAGE].wind[e.dataset.wind];$('policy').setAttribute('aria-label',tr('policyLabel'));$('close-rules').setAttribute('aria-label',tr('closeRules'));if(catalog.length)renderLobby();if(game){const v=currentVariant();$('room-title').textContent=v.name;$('room-subtitle').textContent=v.subtitle;render(game,true);}if($('rules-dialog').open)fillRules();for(const e of document.querySelectorAll('[data-error-code]'))if(e.textContent)e.textContent=I18N[LANGUAGE].errors[e.dataset.errorCode]||e.textContent;}
 for(const picker of document.querySelectorAll('[data-language]'))picker.onchange=()=>{LANGUAGE=picker.value;try{localStorage.setItem('tanyao_language',LANGUAGE);}catch{}applyLanguage();};
 applyLanguage();
@@ -92,6 +92,7 @@ $('table-round').textContent=(table.hand_number?tr(table.match_hands?'matchHand'
 $('table-state').textContent=s.status==='your_turn'&&!s.automatic?tr('yourTurn'):s.status==='round_end'?tr('handEnd'):s.status==='finished'?tr(table.match_hands?'matchComplete':'matchEnd'):s.status==='error'?tr('tableError'):s.status==='closed'?tr('tableClosed'):s.automatic?tr('autoState'):tr('thinking');
 $('remaining').textContent=tr('wall',{count:table.remaining});$('pot').textContent=table.pot?tr('pot',{count:table.pot}):'';
 $('dora').replaceChildren();if(table.dora.length){$('dora').append(text('span',tr('dora')));for(const t of table.dora)$('dora').append(img(t));}if(table.winning_tiles?.length){$('dora').append(text('span',tr('winningTiles'),'winning-tile-label'));for(const t of table.winning_tiles)$('dora').append(img(t));}
+for(const bao of table.bao_tiles||[]) $('dora').append(text('span',bao.owner===null?tr('privateBao'):tr('playerBao',{name:playerName(bao.owner)})),img(bao.tile));
 if(table.wildcard){
   if(table.wildcard_indicator) $('dora').append(text('span',tr('wildcardIndicatorTile')),img(table.wildcard_indicator));
   const label=table.gold_indicator?'goldIndicator':table.fixed_gold?'fixedGold':
@@ -181,7 +182,7 @@ function turnPrompt(snapshot) {
     if (player.ready && snapshot.variant === 'jj-three-player') return 'promptPaidReady';
   }
   return {void:'promptVoid',rob_kong:'promptRob',piao:'promptPiao',buy_base:'promptBuyBase',liability_choice:'liabilityPrompt',
-    gold_opening:'promptGold',flower_win:'promptFlowerWin'}[table.phase] || 'promptTurn';
+    gold_opening:'promptGold',flower_win:'promptFlowerWin',bao_peek:'promptBaoPeek'}[table.phase] || 'promptTurn';
 }
 function renderActions() {
   const box = $('actions');
@@ -240,9 +241,9 @@ function renderActions() {
     }
   }
   for (const option of game.choices) {
-    if (isDiscard(option) || ['declare_ready','declare_dark'].includes(option.kind)) continue;
+    if (isDiscard(option) || (discards.length && ['declare_ready','declare_dark'].includes(option.kind))) continue;
     const button = text('button', optionText(option), 'action' +
-      (['hora', 'ron', 'zimo', 'ten_winds', 'eleven_winds', 'claim_gold', 'three_gold', 'four_gold', 'flower_hu', 'opening_heaven'].includes(option.kind) ? ' primary-action' : ''));
+      (['hora', 'ron', 'zimo', 'ten_winds', 'eleven_winds', 'claim_gold', 'three_gold', 'four_gold', 'flower_hu', 'opening_heaven', 'win_bao'].includes(option.kind) ? ' primary-action' : ''));
     for (const tile of option.tiles.slice(0, 4)) button.append(img(tile));
     button.onclick = () => sendAction(option.id);
     box.append(button);

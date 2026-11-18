@@ -7,6 +7,7 @@ import time
 from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau, tiantai
 from .anji import ANJI, ANJI_TEA_HOUSE, AnjiGame, AnjiTeaHouseGame
 from .bengbu import BENGBU, BENGBU_FLOWER, BengbuFlowerGame, BengbuGame
+from .changchun import CHANGCHUN, EGG_GROUPS, ChangchunGame
 from .chongji import CHONGJI, CHONGJI_SEVEN, ChongjiGame
 from .daxi import DAXI, DaxiGame
 from .dongyang import DONGYANG, DongyangGame
@@ -26,6 +27,7 @@ from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .linhai import LINHAI, LinhaiGame
 from .lipu import LIPU, LipuGame
 from .longyan import LONGYAN, LONGYAN_HALF, TRAVEL, LongyanGame
+from .northeast import HARBIN, BaoGame, HarbinGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
 from .sixteen import SixteenGame
@@ -44,7 +46,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
-    NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS,
+    NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS, CHANGCHUN, HARBIN,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -84,6 +86,8 @@ GAME_ENGINES = {
     **{room.VARIANT: FujianSixteenGame for room in (NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE)},
     **{room.VARIANT: XianyouGame for room in XIANYOU_ROOMS},
     **{room.VARIANT: FujianTravelGame for room in FUJIAN_TRAVEL_ROOMS},
+    CHANGCHUN.VARIANT: ChangchunGame,
+    HARBIN.VARIANT: HarbinGame,
 }
 
 
@@ -151,6 +155,11 @@ class HonorsSession(GameSession):
                 players[-1]['open_ready'] = True
             if player.closed_ready:
                 players[-1]['ready'] = True
+            if isinstance(game, BaoGame) and game.declared_waits[actor]:
+                players[-1]['ready'] = True
+                mark = game.ready_river[actor]
+                if mark is not None and mark[0] < len(players[-1]['river']):
+                    players[-1]['river'][mark[0]]['ready'] = True
             if isinstance(game, jj_multiplier.JJMultiplierGame) and actor in game.dark_seats:
                 players[-1]['dark_ready'] = True
                 if not won and actor != 0:
@@ -170,7 +179,7 @@ class HonorsSession(GameSession):
             if isinstance(game, FlowerWall):
                 players[-1]['flowers'] = [self.display_tile(tile) for tile in game.flowers[actor]]
         current = game.cur if game.phase != 'over' else None
-        special_turn = game.phase in ('gold_opening', 'flower_win')
+        special_turn = game.phase in ('gold_opening', 'flower_win', 'bao_peek')
         if game.offer is not None and not special_turn:
             current = 0 if game.responses[0] == 0 else None
         if game.phase == 'liability_choice':
@@ -178,11 +187,16 @@ class HonorsSession(GameSession):
         drawn = self.display_tile(game.drawn_tile) if current == 0 and game.drawn_tile is not None else None
         if game.phase == 'liability_choice' or special_turn:
             drawn = None
+        if isinstance(game, ChangchunGame) and drawn and not game.players[0].hand[game.drawn_tile]:
+            drawn = None
+        phase = 'action' if game.phase == 'bao_peek' and game.cur != 0 else game.phase
         table = {'players': players, 'hand_number': self.hand_number, 'dealer': None if game.phase == 'piao' else game.dealer,
                 'round_wind': tile_name(game.round_wind), 'show_winds': game.options.show_winds,
                 'match_hands': self.rules.MATCH_HANDS,
                 'current': current, 'remaining': game.remaining, 'dora': [], 'honba': 0,
-                'pot': 0, 'phase': game.phase, 'drawn': drawn}
+                'pot': 0, 'phase': phase, 'drawn': drawn}
+        if isinstance(game, BaoGame):
+            table['bao_tiles'] = [{'owner': owner, 'tile': self.display_tile(tile)} for owner, tile in game.bao_view(0)]
         if isinstance(game, HangzhouGame):
             table.update(wildcard=self.display_tile(game.wildcard_tile), dealer_multiplier=game.dealer_multiplier,
                          float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())
@@ -257,10 +271,16 @@ class HonorsSession(GameSession):
             tiles = [self.display_tile(index) for index in tile]
         elif kind in ('piao', 'buy_base', 'liability_choice'):
             return {'action': action, 'kind': kind, 'label': kind, 'tiles': [], 'value': tile}
-        elif kind == 'chi':
+        elif kind in ('chi', 'ready_chi'):
             tiles = [self.display_tile(index) for index in range(tile, tile + 3)]
-        elif kind in ('ron', 'peng', 'zhigang'):
+        elif kind in ('ron', 'peng', 'zhigang', 'ready_pon', 'rob_egg_pon'):
             tiles = [self.display_tile(self.game.offer.tile)]
+        elif kind in EGG_GROUPS:
+            tiles = [self.display_tile(index) for index in self.game.egg_tiles(kind, tile)]
+        elif kind == 'extend_egg':
+            index, addition = tile
+            return {'action': action, 'kind': kind, 'label': kind, 'tiles': [self.display_tile(addition)],
+                    'egg_kind': self.game.players[self.game.cur].melds[index].kind}
         else:
             tiles = [] if tile is None else [self.display_tile(tile)]
         option = {'action': action, 'kind': kind, 'label': kind, 'tiles': tiles}
@@ -294,7 +314,10 @@ class HonorsSession(GameSession):
                 self.log_event('travel_gold', {'actor': actor, 'level': game.travel_level,
                                               'tile': self.display_tile(tile)}, 'call')
             if kind == 'declare_ready':
-                code = 'paid_ready' if game.players[actor].closed_ready else 'open_ready'
+                if isinstance(game, BaoGame):
+                    code = 'declared_ready'
+                else:
+                    code = 'paid_ready' if game.players[actor].closed_ready else 'open_ready'
                 self.log_event(code, {'actor': actor}, 'call')
             elif kind == 'declare_dark':
                 self.log_event('dark_ready', {'actor': actor}, 'call')
