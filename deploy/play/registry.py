@@ -21,6 +21,7 @@ from .kaxinwu import VARIANT as KAXINWU
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .northeast import HARBIN
+from .jilin_shuangliao import JILIN, SHUANGLIAO
 from .suited import Profile
 from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
 from .taizhou import TAIZHOU
@@ -2407,6 +2408,50 @@ VARIANTS[HARBIN.VARIANT] = {
     }},
 }
 
+VARIANTS[JILIN.VARIANT] = {
+    **VARIANTS[CHANGCHUN.VARIANT], 'id': JILIN.VARIANT,
+    'name': 'Jilin City Mahjong · Dice Bao', 'aliases': ['吉林市麻将', '吉林掷宝', '吉林夹胡'],
+    'rule_version': 'jilin-dice-bao-dojo-v1', 'subtitle': 'Four seats · 136 tiles · Capped payments',
+    'badge': 'Jilin · Private dice bao and seven pairs',
+    'description': 'Announce a qualifying wait, then roll for the private bao. Seven pairs reach the 16-point cap.',
+    'rules': ['Use all three suits or one suit with optional honors. Include a terminal or wind and a qualifying middle, edge, single tile, all-pung or seven-pair win.',
+              'Declare ready before a normal win. The first ready seat rolls for one of six tail positions on its next draw. '
+              'Matching the initial bao wins immediately. A self-drawn bao or One Bamboo can fill an announced wait after you see the bao.',
+              'Three different winds can form an egg. High-value kongs include Eight Characters and One Bamboo. Win bills cap at 16 per seat.'],
+    'sources': [{'title': 'Xinyue Jilin City capped points', 'url': 'https://xinyueyouxi.com/game/16-2?doc-innerlink-PvP=region&region='},
+                {'title': 'Zadi Jilin ready gates, egg kongs and roll', 'url': 'https://www.zadiqp.com/rules/jilinmajiang.html'},
+                {'title': 'Tiandu Jilin shared bao and matching win', 'url': 'https://www.tdqp8.com/Home/Info/5473.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北宝牌麻将', 'name': '吉林市麻将（骰子宝）', 'subtitle': '四人 · 136 张 · 每家封顶',
+        'badge': '吉林 · 暗宝与七小对', 'description': '夹胡起步，报听后掷宝。七小对按每家 16 分封顶。',
+        'rules': ['三门齐或单门数牌可带字牌。有幺九或风牌。支持夹胡、边胡、单贴、飘胡、手把一和七小对。',
+                  '普通胡须先报听。第一位报听者下次摸牌前掷骰开宝，初宝恰是听张可通宝。看宝后自摸宝或幺鸡可补听张。',
+                  '三种风可成三风蛋。八万、幺鸡等按杠表，胡牌每家最多付 16 分。'],
+    }},
+}
+
+VARIANTS[SHUANGLIAO.VARIANT] = {
+    **VARIANTS[CHANGCHUN.VARIANT], 'id': SHUANGLIAO.VARIANT,
+    'family_id': 'northeast-pung', 'family': 'Northeastern Pung Mahjong',
+    'name': 'Shuangliao Mahjong · Pung Multipliers', 'aliases': ['双辽麻将', '双辽飘胡', '双辽飘中飘'],
+    'rule_version': 'shuangliao-pung-multipliers-dojo-v1', 'subtitle': 'Four seats · 136 tiles · Standing and pung bonuses',
+    'badge': 'Jilin · Pung scoring and One Bamboo',
+    'description': 'Build pungs or stay closed for the highest pung award. One Bamboo and kong patterns multiply payment.',
+    'rules': ['This 136-tile room uses four sets and a pair with a single winner. No ready declaration is needed.',
+              'All pungs pay ×4. With the 123 rule, a 123 sequence can join the pung category if there is at least one real pung or kong. '
+              'A closed hand with four real pungs or kongs earns the ×16 highest pung award.',
+              'One Bamboo, a closed hand, a lone middle wait, kong replacement or four copies outside a kong can double the bill. '
+              'The dealer and the discard supplier have individual payment multipliers.'],
+    'sources': [{'title': 'Xinyue Shuangliao published kong and winning multipliers', 'url': 'https://mobile.xinyueyouxi.com/game/140-2?region=&version=2'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '双辽麻将（飘胡计分）', 'subtitle': '四人 · 136 张 · 站立与飘胡',
+        'badge': '吉林 · 刻子与幺鸡翻倍', 'description': '按飘胡、站立、带幺鸡和杠后胡计算倍数。',
+        'rules': ['本房用 136 张，四副一对，单响。直接胡牌，无须报听。',
+                  '飘胡 ×4，房规允许有真刻杠时把 123 计入飘胡。门清且四副都是真刻杠为飘中飘 ×16。',
+                  '带幺鸡、站立、独听夹张、杠翻或四归一可翻倍，庄家和供牌者倍数按座结算。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2455,4 +2500,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in XIANYOU_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
 }

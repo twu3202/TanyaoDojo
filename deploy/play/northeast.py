@@ -60,14 +60,17 @@ class NortheastRules:
             for tile in meld.tiles:
                 used[tile] += 1
         return tuple(tile for tile in self.OPTIONS.tile_kinds if hand[tile] + used[tile] < 4
-                     and self.shapes(hand[:tile] + (hand[tile] + 1,) + hand[tile + 1:], melds))
+                     and self.natural_win(hand[:tile] + (hand[tile] + 1,) + hand[tile + 1:], melds, tile))
 
     def ready_allowed(self, hand, melds):
         return True
 
+    def natural_win(self, hand, melds, tile):
+        return bool(self.shapes(hand, melds))
+
     def faan(self, hand, melds, ctx):
         # The heuristic can estimate a naturally winning wait from its own tiles.
-        return Score(1, ()) if self.shapes(tuple(hand), tuple(melds)) else None
+        return Score(1, ()) if self.natural_win(tuple(hand), tuple(melds), ctx.tile) else None
 
 
 class HarbinRules(NortheastRules):

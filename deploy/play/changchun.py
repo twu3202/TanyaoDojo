@@ -28,6 +28,17 @@ class Egg(Meld):
         return self.material
 
 
+def egg_rack_faces(hand, melds):
+    faces = {tile for tile, count in enumerate(hand) if count}
+    for meld in melds:
+        tiles = list(meld.tiles)
+        if isinstance(meld, Egg):
+            for _ in range(meld.substitutions):
+                tiles.remove(CHICKEN)
+        faces.update(tiles)
+    return faces
+
+
 @dataclass(frozen=True)
 class ChangchunScore:
     fan: int
@@ -48,13 +59,7 @@ class ChangchunRules(NortheastRules):
     def rack_allowed(hand, melds):
         if len(melds) == 4 and any(m.kind == 'chi' for m in melds):
             return False
-        faces = {tile for tile, count in enumerate(hand) if count}
-        for meld in melds:
-            tiles = list(meld.tiles)
-            if isinstance(meld, Egg):
-                for _ in range(meld.substitutions):
-                    tiles.remove(CHICKEN)
-            faces.update(tiles)
+        faces = egg_rack_faces(hand, melds)
         return len({tile // 9 for tile in faces if tile < 27}) == 3 and bool(faces & ORPHANS)
 
     @staticmethod
@@ -76,6 +81,8 @@ CHANGCHUN = ChangchunRules('changchun-shared-bao')
 
 
 class ChangchunGame(BaoGame):
+    BAO_SLOT_COUNT = 12
+
     def __init__(self, seed, dealer, round_wind, *, rules=CHANGCHUN):
         self.kong_count = 0
         self.egg_extension = None
@@ -109,13 +116,20 @@ class ChangchunGame(BaoGame):
         public.update(tile for p in self.players for m in p.melds if m.kind != 'gang_an' for tile in m.tiles)
         if self.bao_slot is not None and public[self.wall[self.bao_slot]] < 3:
             return
-        choices = [index for index, tile in enumerate(self.wall[:12]) if index not in self.bao_history and public[tile] < 3]
+        choices = [index for index, tile in enumerate(self.wall[:self.BAO_SLOT_COUNT])
+                   if index not in self.bao_history and public[tile] < 3]
         self.bao_slot = self.bao_rng.choice(choices) if choices else None
         if self.bao_slot is not None:
             self.bao_history.add(self.bao_slot)
 
+    def _can_open_bao(self, actor):
+        return True
+
+    def bao_match_reason(self):
+        return 'bao_peek_win'
+
     def _draw(self, actor, kong_chain=0, provider=None):
-        if self.declared_waits[actor] and self.remaining:
+        if self.declared_waits[actor] and self.remaining and self._can_open_bao(actor):
             self._refresh_bao()
             if self.bao_slot is not None and self.bao_seen[actor] != self.bao_slot:
                 self.bao_seen[actor] = self.bao_slot
@@ -130,6 +144,10 @@ class ChangchunGame(BaoGame):
     @staticmethod
     def egg_tiles(kind, missing):
         return tuple(CHICKEN if tile == missing else tile for tile in EGG_GROUPS[kind])
+
+    def _opening_egg(self, kind, arg):
+        tiles = self.egg_tiles(kind, arg)
+        return Egg(kind, tiles[0], material=tiles, substitutions=int(arg is not None))
 
     def _new_eggs(self, actor):
         p = self.players[actor]
@@ -201,19 +219,19 @@ class ChangchunGame(BaoGame):
                 hand = p.hand.copy()
                 hand[tile] += 1
                 score = self._natural_score(hand, tuple(p.melds), tile, 'bao_peek', '对宝')
-                self._settle_special(actor, None, 'bao_peek_win', score, hand)
+                self._settle_special(actor, None, self.bao_match_reason(), score, hand)
             return
         if kind == 'extend_egg':
             self.egg_extension, tile = arg
             self.uninterrupted = False
             self._open_offer(Offer(actor, tile, 'gang_bu', self.kong_chain))
             return
-        tiles = self.egg_tiles(kind, arg)
+        meld = self._opening_egg(kind, arg)
+        tiles = meld.tiles
         p = self.players[actor]
         for tile in tiles:
             p.hand[tile] -= 1
             self.egg_racks[actor][tile] -= 1
-        meld = Egg(kind, tiles[0], material=tiles, substitutions=int(arg is not None))
         p.melds.append(meld)
         self.uninterrupted = False
         self.last_call = actor, meld
@@ -291,10 +309,13 @@ class ChangchunGame(BaoGame):
         fan = sum(value for _, value in patterns)
         return ChangchunScore(fan, tuple(label for label, _ in patterns))
 
+    def _is_bao_draw(self, actor, tile):
+        return self.bao_view(actor) == ((None, tile),)
+
     def _score(self, actor, hand, melds, ctx):
         if ctx.kind == 'rob_concealed':
             return None
-        if ctx.kind == 'zimo' and self.bao_view(actor) == ((None, ctx.tile),):
+        if ctx.kind == 'zimo' and self._is_bao_draw(actor, ctx.tile):
             waiting = without_tile(tuple(hand), ctx.tile)
             scores = []
             for tile in self.declared_waits[actor]:

@@ -93,6 +93,7 @@ $('table-state').textContent=s.status==='your_turn'&&!s.automatic?tr('yourTurn')
 $('remaining').textContent=tr('wall',{count:table.remaining});$('pot').textContent=table.pot?tr('pot',{count:table.pot}):'';
 $('dora').replaceChildren();if(table.dora.length){$('dora').append(text('span',tr('dora')));for(const t of table.dora)$('dora').append(img(t));}if(table.winning_tiles?.length){$('dora').append(text('span',tr('winningTiles'),'winning-tile-label'));for(const t of table.winning_tiles)$('dora').append(img(t));}
 for(const bao of table.bao_tiles||[]) $('dora').append(text('span',bao.owner===null?tr('privateBao'):tr('playerBao',{name:playerName(bao.owner)})),img(bao.tile));
+if(table.bao_roll) $('dora').append(text('span',tr('baoRoll',{n:table.bao_roll}),'tag'));
 if(table.wildcard){
   if(table.wildcard_indicator) $('dora').append(text('span',tr('wildcardIndicatorTile')),img(table.wildcard_indicator));
   const label=table.gold_indicator?'goldIndicator':table.fixed_gold?'fixedGold':

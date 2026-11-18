@@ -22,6 +22,7 @@ from .hangzhou import FLOAT, HANGZHOU_ROOMS, WHITE, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .jinyun import JINYUN, JINYUN_CANTONESE, JinyunCantoneseGame, JinyunClassicGame
+from .jilin_shuangliao import JILIN, SHUANGLIAO, JilinGame, ShuangliaoGame
 from .jiaxing import JIAXING, JiaxingGame
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .linhai import LINHAI, LinhaiGame
@@ -47,6 +48,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
     NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS, CHANGCHUN, HARBIN,
+    JILIN, SHUANGLIAO,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -88,6 +90,8 @@ GAME_ENGINES = {
     **{room.VARIANT: FujianTravelGame for room in FUJIAN_TRAVEL_ROOMS},
     CHANGCHUN.VARIANT: ChangchunGame,
     HARBIN.VARIANT: HarbinGame,
+    JILIN.VARIANT: JilinGame,
+    SHUANGLIAO.VARIANT: ShuangliaoGame,
 }
 
 
@@ -197,6 +201,8 @@ class HonorsSession(GameSession):
                 'pot': 0, 'phase': phase, 'drawn': drawn}
         if isinstance(game, BaoGame):
             table['bao_tiles'] = [{'owner': owner, 'tile': self.display_tile(tile)} for owner, tile in game.bao_view(0)]
+            if isinstance(game, JilinGame) and table['bao_tiles']:
+                table['bao_roll'] = game.bao_slot + 1
         if isinstance(game, HangzhouGame):
             table.update(wildcard=self.display_tile(game.wildcard_tile), dealer_multiplier=game.dealer_multiplier,
                          float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())
@@ -284,6 +290,8 @@ class HonorsSession(GameSession):
         else:
             tiles = [] if tile is None else [self.display_tile(tile)]
         option = {'action': action, 'kind': kind, 'label': kind, 'tiles': tiles}
+        if kind == 'win_bao' and isinstance(self.game, JilinGame) and self.game.bao_match_reason() == 'tong_bao_win':
+            option['win_type'] = 'tong_bao'
         if kind == 'ron' and isinstance(self.game, HangzhouGame):
             option['win_type'] = 'rob_kong' if self.game.offer.kind == 'gang_bu' else 'fangchong_win'
         return option

@@ -205,11 +205,21 @@ Object.assign(I18N['zh-CN'].action, {ready_chi:'听吃', ready_pon:'听碰', win
   egg_winds:'旋风蛋', egg_dragons:'喜蛋', egg_ones:'幺蛋', egg_nines:'九蛋', rob_egg_pon:'抢碰补蛋'});
 I18N.en.reason.bao_peek_win='{names} won by matching the revealed bao.';
 I18N['zh-CN'].reason.bao_peek_win='{names} 对宝胡牌';
+I18N.en.reason.tong_bao_win='{names} won with the initial bao.';
+I18N['zh-CN'].reason.tong_bao_win='{names} 通宝胡牌';
+I18N.en.action.tong_bao='Win with initial bao';
+I18N['zh-CN'].action.tong_bao='通宝';
+I18N.en.baoRoll='Bao roll · {n}';
+I18N['zh-CN'].baoRoll='掷宝 · {n} 点';
 I18N.en.messages.declared_ready='{actor} declared ready.';
 I18N['zh-CN'].messages.declared_ready='{actor} 报听。';
 Object.assign(I18N.en.fans, {'摸宝':'Drawn bao', '对宝':'Matched bao', '摸大宝':'Own bao draw', '摸小宝':'Another player’s bao draw',
   '大宝中宝':'Own bao matches the middle wait', '小宝中宝':'Another player’s bao matches the middle wait', '卡当':'Single middle wait',
   '夹张':'Middle wait', '边张':'Edge wait', '飘胡':'All pungs'});
+Object.assign(I18N.en.fans, {'单贴':'Single tile for the eyes', '夹胡':'Middle wait', '边胡':'Edge wait', '七小对':'Seven pairs',
+  '通宝':'Initial bao matches the wait', '搂宝':'Drawn bao', '闭门':'Closed hand', '飘中飘':'Closed all pungs',
+  '带幺鸡':'Contains One Bamboo', '站立':'Standing hand', '杠翻':'After a kong draw', '手把一':'Four declared sets',
+  '四归一':'Four copies outside a kong'});
 I18N.en.reason.third_travel_win='{names} completed the third gold travel.';
 I18N['zh-CN'].reason.third_travel_win='{names} 三游胡牌';
 Object.assign(I18N.en, {tripletPoints:'Set points × {n}', countedKongs:'Kong points × {n}', waterCount:'Water points × {n}', dealerStreak:'Dealer repeats × {n}'});
