@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from sichuan.reference_impl import is_hu
+
 
 @dataclass(frozen=True)
 class WinContext:
@@ -15,6 +17,9 @@ class WinContext:
     tiles_left: int
     winner_count: int
     wake_hits: int = 0
+    ready: bool = False
+    provider_ready: bool = False
+    winners: tuple[int, ...] = ()
 
 
 def seven_pairs(hand, melds):
@@ -129,3 +134,65 @@ def guilin_payment(hand, melds, ctx):
     pattern = {'zimo': '自摸', 'ron': '平胡', 'rob_kong': '抢杠'}[ctx.kind]
     patterns = (pattern, '翻醒') if ctx.wake_hits else (pattern,)
     return patterns, points, _shares(ctx.actor, ctx.provider, points)
+
+
+def pook_payment(hand, melds, ctx):
+    pattern, points = {
+        'ron': ('平胡', 1), 'rob_kong': ('抢杠', 6), 'zimo': ('自摸', 2),
+    }[ctx.kind]
+    if ctx.opening == '天胡':
+        pattern, points = '天胡', 4
+    elif ctx.kind == 'zimo' and ctx.after_kong:
+        pattern, points = '杠上花', 4
+    patterns = [pattern]
+    if seven_pairs(hand, melds):
+        patterns.append('龙七对' if 4 in hand else '七对')
+        points += 2 if 4 in hand else 1
+    if len(melds) == 4:
+        patterns.append('单钓')
+        points += 2
+    elif all_triplets(hand, melds):
+        patterns.append('对对胡')
+        points += 1
+    suits = {tile // 9 for _, tile in melds} | {tile // 9 for tile, count in enumerate(hand) if count}
+    if len(suits) == 1:
+        patterns.append('清一色')
+        points += 4
+    if ctx.ready:
+        patterns.append('报听')
+        points += 1
+    return tuple(patterns), points, _shares(ctx.actor, ctx.provider, points)
+
+
+def _pure_straight(hand, melds):
+    # A suited meld is always a triplet/kong, so all three sequences must come from the hand.
+    if len(melds) > 1:
+        return False
+    for start in (0, 9, 18):
+        if all(hand[start:start + 9]):
+            remainder = hand.copy()
+            remainder[start:start + 9] = [count - 1 for count in hand[start:start + 9]]
+            if is_hu(remainder, len(melds) + 3, -1):
+                return True
+    return False
+
+
+def datang_payment(hand, melds, ctx):
+    suits = {tile // 9 for _, tile in melds} | {tile // 9 for tile, count in enumerate(hand) if count}
+    pairs = seven_pairs(hand, melds)
+    if pairs and 4 in hand:
+        pattern, discard, draw = '龙七对', 18, 18
+    elif len(suits) == 1:
+        pattern, discard, draw = '清一色', 9, 9
+    elif pairs:
+        pattern, discard, draw = '七对', 9, 9
+    elif _pure_straight(hand, melds):
+        pattern, discard, draw = '一条龙', 9, 9
+    else:
+        pattern, discard, draw = '平胡', 3, 2
+    if ctx.provider is None:
+        return (pattern,), draw, _shares(ctx.actor, None, draw)
+    if ctx.provider_ready:
+        return (pattern, '报听分摊'), discard // 3, tuple(
+            discard // 3 if seat != ctx.actor and seat not in ctx.winners else 0 for seat in range(4))
+    return (pattern,), discard, _shares(ctx.actor, ctx.provider, discard)

@@ -7,7 +7,7 @@ import time
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .sichuan_game import heuristic
-from .suited import PASS, Profile, SuitedGame
+from .suited import PASS, Profile, SuitedGame, _waits
 
 
 def policy_view(game, actor, acts):
@@ -27,6 +27,19 @@ def policy_view(game, actor, acts):
         'opponents': [{'void': None, 'finished': False, 'melds': len(other.melds)}
                       for seat, other in enumerate(game.players) if seat != actor],
     }
+
+
+def suited_policy(view):
+    move = heuristic(view)
+    ready = ('declare_ready', move[1])
+    if move[0] != 'discard' or ready not in view['actions']:
+        return move
+    hand = view['hand'].copy()
+    hand[move[1]] -= 1
+    waits = _waits(tuple(hand), tuple(view['melds']))
+    if any(view['hand'][tile] + view['public'].get(tile, 0) < 4 for tile in waits):
+        return ready
+    return move
 
 
 class SuitedSession(GameSession):
@@ -68,10 +81,13 @@ class SuitedSession(GameSession):
                 'hand': [tile_name(tile) for tile, count in enumerate(hand) for _ in range(count)]
                         if seat == 0 or revealed else [],
                 'revealed': seat == 0 or revealed, 'won': revealed, 'riichi': False, 'void_suit': None,
-                'river': [{'tile': tile_name(tile)} for tile in game.discards[seat]],
+                'river': [{'tile': tile_name(tile), **({'ready': True} if index == player.ready_discard else {})}
+                          for index, tile in enumerate(game.discards[seat])],
                 'melds': [{'kind': kind, 'tiles': [tile_name(tile)] * (3 if kind == 'peng' else 4)}
                           for kind, tile in player.melds],
             })
+            if game.rules.declare_ready:
+                players[-1]['ready'] = bool(player.ready_waits)
         actor, _ = game.legal_actions()
         if actor != 0 and game.offer is not None:
             actor = None
@@ -90,7 +106,7 @@ class SuitedSession(GameSession):
                 game.step(PASS)
                 self.log_call()
                 continue
-            preferred = heuristic(policy_view(game, actor, acts))
+            preferred = suited_policy(policy_view(game, actor, acts))
             if actor == 0:
                 options = []
                 for action in acts:
@@ -107,8 +123,10 @@ class SuitedSession(GameSession):
                 action = preferred
             game.step(action)
             kind, tile = action
-            if kind == 'discard':
+            if kind in ('discard', 'declare_ready'):
                 self.log_event('discard', {'actor': actor, 'tile': tile_name(tile)})
+            if kind == 'declare_ready':
+                self.log_event('action', {'actor': actor, 'action': kind}, 'call')
             self.log_call()
 
         view = self.view()

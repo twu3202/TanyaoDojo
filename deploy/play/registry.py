@@ -450,6 +450,86 @@ VARIANTS[_GUILIN] = {
     }},
 }
 
+VARIANTS[Profile.POOK.value] = {
+    **_SUITED,
+    'id': Profile.POOK.value,
+    'name': 'Pook Dazhong Mahjong',
+    'aliases': ['Pook', 'Dazhong', '波克', '大众麻将', '波克大众', '波克大眾'],
+    'rule_version': 'pook-dazhong-dojo-v1',
+    'subtitle': '108 tiles · Optional ready · Higher-value wins after a pass',
+    'badge': 'Dazhong · 108 tiles',
+    'description': 'An optional ready declaration adds a point to each win payment. Passing a win sets a points threshold.',
+    'rules': [
+        '108 suited tiles. Pon, kong and seven pairs are allowed. A discard or added kong may have several winners.',
+        'Choose a discard that leaves a ready hand to declare. Later discards must be the drawn tile. '
+        'A drawn-tile added or concealed kong is allowed if it preserves all your winning tiles.',
+        'After passing a win, only a larger per-payer amount can win until you draw or take a call. '
+        'Passing a pon locks that tile for pon until then; an otherwise legal direct kong is still available.',
+        'Discard pays 1, self-draw 2 per opponent, dealer opening and replacement self-draw 4 per opponent, '
+        'and robbing a kong 6 from the kong maker. A ready declaration adds 1 to each of those shares.',
+        'Add 1 for seven pairs or 2 for dragon seven pairs, 1 for all triplets or 2 for four melds and a single wait, '
+        'and 4 for a pure suit. Direct kong pays 3 from the supplier, added kong 1 each and concealed kong 2 each.',
+        'Keep kong transfers on a draw. A single winner or the multi-win provider deals next; the dealer repeats on a draw.',
+    ],
+    'sources': [{'title': 'Pook Dazhong official rules', 'url': 'https://www.pook.com/games/bkdzmj.html'}],
+    'translations': {'zh-CN': {
+        'name': '波克大众麻将', 'family': '数牌点炮家族', 'subtitle': '108 张 · 可报听 · 加分可越过胡',
+        'badge': '大众 · 108 张', 'description': '可以报听，胡牌时每份加 1。过胡后本轮只可胡更高分的牌。',
+        'rules': [
+            '108 张数牌，可碰杠，可胡七对，允许一炮多响、一杠多抢。',
+            '选中一张打出后能听牌的手牌即可报听，之后只能摸切；听口不变时，可以用刚摸的同张牌补杠或暗杠。',
+            '过胡后，再摸牌或成功碰杠前只可胡更高单份分数的牌；过碰锁同张，原本可直杠时仍可杠。',
+            '点炮 1，自摸其他每家 2，天胡及杠开其他每家 4，抢杠杠家付 6。报听胡每份再加 1。',
+            '七对加 1 或龙七对加 2，对对胡加 1 或单钓加 2，清一色另加 4。'
+            '直杠供牌者付 3，补杠其他每家付 1，暗杠其他每家付 2。',
+            '流局保留杠分。单胡赢家或多响供牌者接庄，流局连庄。',
+        ],
+    }},
+}
+
+VARIANTS[Profile.DATANG.value] = {
+    **_SUITED,
+    'id': Profile.DATANG.value,
+    'name': 'Shanxi Datang Tuidaohu',
+    'aliases': ['Shanxi', 'Datang', 'Tuidaohu', '山西', '山西推倒胡', '大唐推倒胡', '大唐麻将'],
+    'rule_version': 'shanxi-datang-tuidaohu-dojo-v2',
+    'subtitle': 'Shanxi · 108 tiles · Declared discarder shares payment',
+    'badge': 'Shanxi · 108 tiles',
+    'description': 'A Shanxi room where a declared-ready discarder shares their discard-win or direct-kong bill with the table.',
+    'rules': [
+        '108 suited tiles, with no joker or missing-suit requirement. Pon and kong are allowed; use the highest winning pattern.',
+        'Declare ready before winning by discarding to a ready hand. Discard only the tile you draw thereafter. '
+        'A kong is still allowed if it leaves all your winning tiles unchanged.',
+        'Passing a discard or robbed-kong win blocks those wins until your next discard. Self-draw remains available. '
+        'Several players can win from one discard or added kong.',
+        'Discard / self-draw share: regular 3 / 2, pure straight, pure suit or seven pairs 9 / 9, dragon seven pairs 18 / 18. '
+        'On self-draw each opponent pays. On a discard or added-kong robbery, the provider pays.',
+        'Once the provider declares ready, each non-winner pays a third of the discard bill, with no transfers between winners. '
+        'The provider pays 3 for a direct kong unless already ready, in which case all three pay 1 each. '
+        'Added kong pays 1 each; concealed kong pays 2 each. A draw refunds all kong points.',
+        'You start as dealer. The sole winner or the provider after multiple wins deals next. On a draw the last player to draw deals.',
+    ],
+    'sources': [
+        {'title': 'Datang Tuidaohu official rules', 'url': 'https://www.dtgames.cn/gonglue/30.html'},
+        {'title': 'Datang ready-room options', 'url': 'https://www.dtgames.cn/gonglue/136.html'},
+        {'title': 'Datang scoring examples', 'url': 'https://www.dtgames.cn/gonglue/1.html'},
+    ],
+    'translations': {'zh-CN': {
+        'name': '山西大唐推倒胡', 'family': '数牌点炮家族', 'subtitle': '山西 · 108 张 · 报听点炮三家分摊',
+        'badge': '山西 · 108 张', 'description': '报听者点炮或点杠后，其他输家也参与分摊。',
+        'rules': [
+            '108 张数牌版，不带耗子、不定缺，可碰杠，多个胡型取最高。',
+            '胡牌前必须先报听。打一张后能听牌时可报听，之后只能摸切；听口不变可开杠。',
+            '过点炮胡或抢杠胡后，下次打牌才解除，自摸仍可胡。允许一炮多响和一杠多抢。',
+            '点炮／自摸每份：平胡 3／2，一条龙、清一色、七对 9／9，龙七对 18／18。'
+            '自摸其他每家付，点炮或抢杠由供牌者付。',
+            '供牌者已报听时，非赢家各付点炮应付款的三分之一，赢家之间不转账。'
+            '直杠由点杠者付 3，若点杠者已报听则其他每家付 1。补杠其他每家付 1，暗杠其他每家付 2，流局返杠。',
+            '你首局坐庄。单胡赢家或多响供牌者接庄，流局由最后摸牌者接庄。',
+        ],
+    }},
+}
+
 VARIANTS[HONG_KONG] = {
     'id': HONG_KONG,
     'family_id': 'honors-and-chows',
@@ -533,13 +613,6 @@ VARIANTS[MACAU] = {
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
-    _WENZHOU: {'profile': _WENZHOU},
-    _CHANGSHA: {'profile': _CHANGSHA},
-    _TAISHUN: {'profile': _TAISHUN},
-    _XUANHUA: {'profile': _XUANHUA},
-    _SHAANXI: {'profile': _SHAANXI},
-    _LISHUI: {'profile': _LISHUI},
-    _WENXI: {'profile': _WENXI},
-    _GUILIN: {'profile': _GUILIN},
+    **{profile.value: {'profile': profile.value} for profile in Profile},
     MACAU: {'variant': MACAU},
 }

@@ -4,13 +4,15 @@ from collections import Counter, deque
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import lru_cache
 import random
 
 from sichuan.reference_impl import is_hu
 
 from .honors import standard_shapes
-from .suited_regional import (WinContext, all_triplets, guilin_payment, lishui_payment,
-                              seven_pairs, shaanxi_payment, wake_award, wenxi_payment)
+from .suited_regional import (WinContext, all_triplets, datang_payment, guilin_payment,
+                              lishui_payment, pook_payment, seven_pairs, shaanxi_payment,
+                              wake_award, wenxi_payment)
 
 TILE_COUNT = 27
 COPIES = Counter({tile: 4 for tile in range(TILE_COUNT)})
@@ -27,6 +29,8 @@ class Profile(Enum):
     LISHUI = 'lishui-fangpao'
     WENXI = 'wenxi'
     GUILIN = 'guilin-zhuanzhuan'
+    POOK = 'pook-dazhong'
+    DATANG = 'datang-tuidaohu'
 
 
 class PassLock(Enum):
@@ -36,6 +40,7 @@ class PassLock(Enum):
     UNTIL_DISCARD = 'until_discard'
     UNTIL_DRAW = 'until_draw'
     TILE_UNTIL_CONTROL = 'tile_until_control'
+    SCORE_UNTIL_DRAW = 'score_until_draw'
 
 
 @dataclass(frozen=True)
@@ -50,6 +55,10 @@ class Rules:
     allow_seven_pairs: bool = True
     award_wake_tiles: bool = False
     regional_payment: Callable | None = None
+    declare_ready: bool = False
+    require_ready_to_win: bool = False
+    ready_open_kong: bool = False
+    passed_pon: bool = False
 
 
 RULES = {
@@ -67,6 +76,11 @@ RULES = {
                           refund_kongs_on_draw=True, regional_payment=wenxi_payment),
     Profile.GUILIN: Rules(PassLock.UNTIL_DRAW, direct_kong_payers=1, direct_kong_share=3,
                            host_deals_first=True, award_wake_tiles=True, regional_payment=guilin_payment),
+    Profile.POOK: Rules(PassLock.SCORE_UNTIL_DRAW, direct_kong_payers=1, direct_kong_share=3,
+                         regional_payment=pook_payment, declare_ready=True, passed_pon=True),
+    Profile.DATANG: Rules(PassLock.UNTIL_DISCARD, direct_kong_payers=1, direct_kong_share=3,
+                           host_deals_first=True, refund_kongs_on_draw=True, regional_payment=datang_payment,
+                           declare_ready=True, require_ready_to_win=True, ready_open_kong=True),
 }
 
 
@@ -75,6 +89,10 @@ class Player:
     hand: list[int] = field(default_factory=lambda: [0] * TILE_COUNT)
     melds: list[tuple[str, int]] = field(default_factory=list)
     declined_tiles: set[int] = field(default_factory=set)
+    declined_win_points: int = 0
+    declined_pon_tiles: set[int] = field(default_factory=set)
+    ready_waits: frozenset[int] = field(default_factory=frozenset)
+    ready_discard: int | None = None
     draws: int = 0
     score: int = 0
 
@@ -97,6 +115,24 @@ class Win:
     patterns: tuple[str, ...]
     points: int
     payments: tuple[int, ...] | None = None
+
+
+@lru_cache(maxsize=16384)
+def _waits(tiles, melds):
+    """Structural waits, excluding fifth copies already in this player's hand and melds."""
+    hand = list(tiles)
+    owned = Counter()
+    for kind, tile in melds:
+        owned[tile] += 3 if kind == 'peng' else 4
+    waits = set()
+    for tile in range(TILE_COUNT):
+        if hand[tile] + owned[tile] >= 4:
+            continue
+        hand[tile] += 1
+        if is_hu(hand, len(melds), -1):
+            waits.add(tile)
+        hand[tile] -= 1
+    return frozenset(waits)
 
 
 def wenzhou_fan(hand, melds, kind, *, opening=None, after_kong=False):
@@ -178,6 +214,7 @@ class SuitedGame:
         self.players = [Player() for _ in range(4)]
         self.discards = [[] for _ in self.players]
         self.cur = self.dealer
+        self.last_drawer = self.dealer
         self.phase = 'action'
         self.drawn_tile = None
         self.post_pon_tile = None
@@ -225,10 +262,13 @@ class SuitedGame:
         player = self.players[actor]
         player.hand[tile] += 1
         player.draws += 1
+        player.declined_win_points = 0
+        player.declined_pon_tiles.clear()
         if self.rules.pass_lock in (PassLock.SUIT_UNTIL_DRAW, PassLock.UNTIL_CONTROL,
                                     PassLock.UNTIL_DRAW, PassLock.TILE_UNTIL_CONTROL):
             player.declined_tiles.clear()
         self.cur = actor
+        self.last_drawer = actor
         self.phase = 'action'
         self.drawn_tile = tile
         self.post_pon_tile = None
@@ -252,6 +292,48 @@ class SuitedGame:
             return next(standard_shapes(hand + [0] * 7, len(melds)), None) is not None
         return is_hu(hand, len(melds), -1)
 
+    def _ready_discards(self, player, discards):
+        melds = tuple(player.melds)
+        hand = player.hand.copy()
+        for _, tile in discards:
+            hand[tile] -= 1
+            if _waits(tuple(hand), melds):
+                yield 'declare_ready', tile
+            hand[tile] += 1
+
+    def _preserves_waits(self, player, kind, tile):
+        hand = player.hand.copy()
+        melds = player.melds.copy()
+        hand[tile] -= {'gang_an': 4, 'gang_bu': 1, 'gang_ming': 3}[kind]
+        if kind == 'gang_bu':
+            melds.remove(('peng', tile))
+        melds.append((kind, tile))
+        return _waits(tuple(hand), tuple(melds)) == player.ready_waits
+
+    def _win_context(self, actor, kind, after_kong, provider=None, *, tiles_left=None, hits=0):
+        player = self.players[actor]
+        opening = None
+        if self.opening and kind == 'zimo' and actor == self.dealer and player.draws == 1:
+            opening = '天胡'
+        elif self.opening and kind == 'ron' and self.discard_count == 1:
+            opening = '地胡'
+        return WinContext(
+            actor, provider, self.dealer, kind, opening, after_kong, self.kong_provider,
+            len(self.wall) if tiles_left is None else tiles_left, len(self.winners), hits,
+            bool(player.ready_waits), provider is not None and bool(self.players[provider].ready_waits),
+            tuple(self.winners),
+        )
+
+    def _offer_points(self, actor, offer=None):
+        player = self.players[actor]
+        if offer is None:
+            hand = player.hand
+            context = self._win_context(actor, 'zimo', self.replacement_draw)
+        else:
+            hand = self._response_hand(actor, offer.tile)
+            context = self._win_context(actor, offer.kind, offer.after_kong, offer.actor)
+        return self.rules.regional_payment(hand, player.melds, context)[1]
+
     def legal_actions(self):
         if self.phase == 'over':
             return None, []
@@ -260,24 +342,40 @@ class SuitedGame:
             player = self.players[actor]
             tile = self.offer.tile
             acts = [PASS]
-            locked = self.offer.kind == 'ron' and self._discard_win_locked(player, tile)
-            if not locked and self._can_win(self._response_hand(actor, tile), player.melds):
-                acts.append(RON)
+            hand = self._response_hand(actor, tile)
+            checks_pass = self.offer.kind == 'ron' or self.profile is Profile.DATANG
+            locked = checks_pass and self._discard_win_locked(player, tile)
+            if not locked and (not self.rules.require_ready_to_win or player.ready_waits) and (
+                self._can_win(hand, player.melds)
+            ):
+                if self.rules.pass_lock is not PassLock.SCORE_UNTIL_DRAW or (
+                    self._offer_points(actor, self.offer) > player.declined_win_points
+                ):
+                    acts.append(RON)
             if self.offer.kind == 'ron' and self.wall:
-                if player.hand[tile] >= 2:
+                if player.hand[tile] >= 2 and not player.ready_waits and tile not in player.declined_pon_tiles:
                     acts.append(('peng', None))
-                if player.hand[tile] == 3:
+                if player.hand[tile] == 3 and (not player.ready_waits or (
+                    self.rules.ready_open_kong and self._preserves_waits(player, 'gang_ming', tile)
+                )):
                     acts.append(('zhigang', None))
             return actor, acts
 
         player = self.players[self.cur]
-        acts = [('discard', tile) for tile, count in enumerate(player.hand) if count]
+        acts = [('discard', tile) for tile, count in enumerate(player.hand)
+                if count and (not player.ready_waits or tile == self.drawn_tile)]
+        if self.rules.declare_ready and not player.ready_waits:
+            acts.extend(list(self._ready_discards(player, acts)))
         if self.drawn_tile is not None:
-            if self._can_win(player.hand, player.melds):
+            if (not self.rules.require_ready_to_win or player.ready_waits) and self._can_win(player.hand, player.melds):
                 acts.append(('zimo', None))
             if self.wall:
-                acts.extend(('ankan', tile) for tile, count in enumerate(player.hand) if count == 4)
-                if ('peng', self.drawn_tile) in player.melds:
+                acts.extend(('ankan', tile) for tile, count in enumerate(player.hand) if count == 4 and (
+                    not player.ready_waits or (tile == self.drawn_tile and self._preserves_waits(player, 'gang_an', tile))
+                ))
+                if ('peng', self.drawn_tile) in player.melds and (
+                    not player.ready_waits or self._preserves_waits(player, 'gang_bu', self.drawn_tile)
+                ):
                     acts.append(('bugang', self.drawn_tile))
         elif self.profile is Profile.TAISHUN and self.post_pon_tile is not None and self.wall:
             if player.hand[self.post_pon_tile]:
@@ -291,10 +389,15 @@ class SuitedGame:
         self.last_call = None
         kind, tile = action
         if self.offer is not None:
-            self._respond(actor, kind, RON in acts)
-        elif kind == 'discard':
+            self._respond(actor, kind, acts)
+        elif kind in ('discard', 'declare_ready'):
             player = self.players[actor]
+            if self.rules.pass_lock is PassLock.SCORE_UNTIL_DRAW and ('zimo', None) in acts:
+                player.declined_win_points = self._offer_points(actor)
             player.hand[tile] -= 1
+            if kind == 'declare_ready':
+                player.ready_waits = _waits(tuple(player.hand), tuple(player.melds))
+                player.ready_discard = len(self.discards[actor])
             if self.rules.pass_lock is PassLock.UNTIL_DISCARD:
                 player.declined_tiles.clear()
             self.discard_count += 1
@@ -317,16 +420,24 @@ class SuitedGame:
         self.replacement_draw = False
         self.kong_provider = None
 
-    def _respond(self, actor, kind, could_win):
+    def _respond(self, actor, kind, acts):
         offer = self.offer
+        player = self.players[actor]
         self.responses.popleft()
         if kind == 'ron':
             self.winners.append(actor)
             nearest = self.rules.nearest_robber_only if offer.kind == 'rob_kong' else self.rules.nearest_discard_winner_only
             if nearest:
                 self.responses.clear()
-        elif could_win and offer.kind == 'ron' and self.rules.pass_lock is not PassLock.NONE:
-            self.players[actor].declined_tiles.add(offer.tile)
+        elif RON in acts:
+            if self.rules.pass_lock is PassLock.SCORE_UNTIL_DRAW:
+                player.declined_win_points = self._offer_points(actor, offer)
+            elif self.rules.pass_lock is not PassLock.NONE and (
+                offer.kind == 'ron' or self.profile is Profile.DATANG
+            ):
+                player.declined_tiles.add(offer.tile)
+        if self.rules.passed_pon and ('peng', None) in acts and kind not in ('peng', 'zhigang'):
+            player.declined_pon_tiles.add(offer.tile)
         if kind in ('peng', 'zhigang') and not self.winners:
             if self.claim is None or (self.claim[1] == 'peng' and kind == 'zhigang'):
                 self.claim = actor, kind
@@ -347,6 +458,8 @@ class SuitedGame:
                 player = self.players[caller]
                 player.hand[offer.tile] -= 2
                 player.melds.append(('peng', offer.tile))
+                player.declined_pon_tiles.clear()
+                player.declined_win_points = 0
                 if self.rules.pass_lock in (PassLock.UNTIL_CONTROL, PassLock.TILE_UNTIL_CONTROL):
                     player.declined_tiles.clear()
                 self.post_pon_tile = offer.tile
@@ -370,10 +483,13 @@ class SuitedGame:
         self.last_call = actor, kind
         self.opening = False
         if self.rules.direct_kong_payers and not unpaid:
-            payers = (provider,) if provider is not None and self.rules.direct_kong_payers == 1 else (
+            split_direct = (self.profile is Profile.DATANG and provider is not None
+                            and self.players[provider].ready_waits)
+            payers = (provider,) if provider is not None and self.rules.direct_kong_payers == 1 and not split_direct else (
                 seat for seat in range(4) if seat != actor
             )
-            points = {'gang_ming': self.rules.direct_kong_share, 'gang_an': 2, 'gang_bu': 1}[kind]
+            points = {'gang_ming': 1 if split_direct else self.rules.direct_kong_share,
+                      'gang_an': 2, 'gang_bu': 1}[kind]
             for payer in payers:
                 self._pay(payer, actor, points)
                 self.kong_deltas[payer] -= points
@@ -434,17 +550,11 @@ class SuitedGame:
 
     def _settle_regional(self, actor, hand, provider, kind, after_kong, tiles_left):
         player = self.players[actor]
-        opening = None
-        if self.opening and kind == 'zimo' and actor == self.dealer and player.draws == 1:
-            opening = '天胡'
-        elif self.opening and kind == 'ron' and self.discard_count == 1:
-            opening = '地胡'
         hits = 0
         if self.rules.award_wake_tiles:
             count, hits = wake_award(hand, player.melds, self.wall, self.wake_indicators)
             self.wake_results[actor] = count, hits
-        ctx = WinContext(actor, provider, self.dealer, kind, opening, after_kong, self.kong_provider,
-                         tiles_left, len(self.winners), hits)
+        ctx = self._win_context(actor, kind, after_kong, provider, tiles_left=tiles_left, hits=hits)
         patterns, points, shares = self.rules.regional_payment(hand, player.melds, ctx)
         for payer, amount in enumerate(shares):
             if amount:
@@ -463,3 +573,5 @@ class SuitedGame:
         elif self.win_details:
             last = self.win_details[0]
             self.next_dealer = last.actor if len(self.winners) == 1 else last.provider
+        elif self.profile is Profile.DATANG:
+            self.next_dealer = self.last_drawer

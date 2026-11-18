@@ -16,3 +16,5 @@
 @media (max-width: 420px) {
   .catalog-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
 }
+
+.hand-tile.ready-discard:not(.selected){outline:2px dashed #e9c47c;outline-offset:1px}

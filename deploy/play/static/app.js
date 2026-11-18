@@ -95,12 +95,49 @@ $('events').replaceChildren(...s.messages.map(x=>text('li',messageText(x),x.kind
 $('auto-button').textContent=s.automatic?tr('cancelAuto'):tr('autoplay');$('auto-button').disabled=['round_end','finished','error','closed'].includes(s.status);
 if(s.error_code||s.status==='closed'){$('room-error').textContent=I18N[LANGUAGE].errors[s.error_code||'table_missing'];}else if(changed){$('room-error').textContent='';delete $('room-error').dataset.errorCode;}renderActions();
 if(s.result&&['round_end','finished'].includes(s.status))showResult(s.result);}
-function river(items){const r=document.createElement('div');r.className='river';for(const item of items){const e=img(item.tile);if(item.called)e.classList.add('called');if(item.riichi)e.classList.add('reach-tile');r.append(e);}return r;}
-function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+4)%4]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));seat.append(title);
-if(p.id===0){const row=document.createElement('div');row.className='hand';const hand=p.hand.slice();if(table.drawn){const i=hand.lastIndexOf(table.drawn);if(i>=0)hand.push(...hand.splice(i,1));}hand.forEach((t,i)=>{const options=s.choices.filter(x=>['discard','dahai'].includes(x.kind)&&x.tiles[0]===t);const b=document.createElement('button');b.className='hand-tile'+(options.length?' legal':'')+(table.drawn&&i===hand.length-1?' drawn':'')+(options.length&&options[0].id===selected?' selected':'');b.disabled=!options.length||s.automatic||requestBusy;b.setAttribute('aria-label',tr('selectTile',{tile:tileText(t)}));b.append(img(t));if(options.length){b.dataset.option=options[0].id;b.onclick=()=>{selected=options[0].id;for(const x of document.querySelectorAll('.hand-tile'))x.classList.toggle('selected',x.dataset.option===selected);renderActions();};}row.append(b);});seat.append(row);
+function river(items){const r=document.createElement('div');r.className='river';for(const item of items){const e=img(item.tile);if(item.called)e.classList.add('called');if(item.riichi||item.ready)e.classList.add('reach-tile');r.append(e);}return r;}
+function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+4)%4]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
+if(p.id===0){const row=document.createElement('div');row.className='hand';const hand=p.hand.slice();if(table.drawn){const i=hand.lastIndexOf(table.drawn);if(i>=0)hand.push(...hand.splice(i,1));}hand.forEach((t,i)=>{const options=s.choices.filter(x=>['discard','dahai'].includes(x.kind)&&x.tiles[0]===t);const b=document.createElement('button');b.className='hand-tile'+(options.length?' legal':'')+(table.drawn&&i===hand.length-1?' drawn':'')+(options.length&&options[0].id===selected?' selected':'');b.disabled=!options.length||s.automatic||requestBusy;const canDeclare=s.choices.some(o=>o.kind==='declare_ready'&&o.tiles[0]===t);b.classList.toggle('ready-discard',canDeclare);b.setAttribute('aria-label',tr(canDeclare?'selectReadyTile':'selectTile',{tile:tileText(t)}));b.append(img(t));if(options.length){b.dataset.option=options[0].id;b.onclick=()=>{selected=options[0].id;for(const x of document.querySelectorAll('.hand-tile'))x.classList.toggle('selected',x.dataset.option===selected);renderActions();};}row.append(b);});seat.append(row);
 }else if(p.revealed){const h=document.createElement('div');h.className='melds';for(const t of p.hand){const el=img(t);el.style.width='19px';h.append(el);}seat.append(h);}else{const h=document.createElement('div');h.className='backs';h.setAttribute('aria-label',tr('concealed',{count:p.hand_count}));for(let i=0;i<p.hand_count;i++)h.append(text('span','','tile-back'));seat.append(h);}
 if(p.melds.length){const ms=document.createElement('div');ms.className='melds';for(const m of p.melds){const meld=document.createElement('div');meld.className='meld';meld.title=actionText(m.kind);for(const t of m.tiles)meld.append(img(t));ms.append(meld);}seat.append(ms);}if(p.id!==0)seat.append(river(p.river));}
-function renderActions(){const box=$('actions');box.replaceChildren();if(!game)return;const playable=game.status==='your_turn'&&!game.automatic&&!requestBusy;$('prompt').textContent=playable?tr(game.table.phase==='void'?'promptVoid':game.table.phase==='rob_kong'?'promptRob':'promptTurn'):game.status==='error'?tr('promptError'):game.status==='closed'?I18N[LANGUAGE].errors.table_missing:['round_end','finished'].includes(game.status)?tr('promptEnd'):game.automatic?tr('promptAuto'):tr('promptWait');$('chosen-tile').textContent='';if(!playable)return;const discards=game.choices.filter(x=>['discard','dahai'].includes(x.kind));if(discards.length){const choice=discards.find(x=>x.id===selected);const b=text('button',choice?optionText(choice):tr('pickTile'),'action primary-action');b.disabled=!choice;b.onclick=()=>sendAction(choice.id);box.append(b);$('chosen-tile').textContent=choice?tr('selected',{tile:tileText(choice.tiles[0])}):tr('clickTile');}for(const o of game.choices){if(['discard','dahai'].includes(o.kind))continue;const b=text('button',optionText(o),'action'+(['hora','ron','zimo'].includes(o.kind)?' primary-action':''));for(const t of o.tiles.slice(0,4))b.append(img(t));b.onclick=()=>sendAction(o.id);box.append(b);}}
+function renderActions() {
+  const box = $('actions');
+  box.replaceChildren();
+  if (!game) return;
+  const playable = game.status === 'your_turn' && !game.automatic && !requestBusy;
+  for (const button of document.querySelectorAll('#seat-0 .hand-tile.legal')) button.disabled = !playable;
+  $('prompt').textContent=playable?tr(game.table.phase==='void'?'promptVoid':game.table.phase==='rob_kong'?'promptRob':'promptTurn'):game.status==='error'?tr('promptError'):game.status==='closed'?I18N[LANGUAGE].errors.table_missing:['round_end','finished'].includes(game.status)?tr('promptEnd'):game.automatic?tr('promptAuto'):tr('promptWait');
+  $('chosen-tile').textContent = '';
+  if (!playable) return;
+  const isDiscard = option => ['discard', 'dahai'].includes(option.kind);
+  const discards = game.choices.filter(isDiscard);
+  if (discards.length) {
+    const choice = discards.find(option => option.id === selected);
+    const button = text('button', choice ? optionText(choice) : tr('pickTile'), 'action primary-action');
+    button.disabled = !choice;
+    button.onclick = () => sendAction(choice.id);
+    box.append(button);
+    $('chosen-tile').textContent = choice ? tr('selected', {tile: tileText(choice.tiles[0])}) : tr('clickTile');
+    const readyOptions = game.choices.filter(option => option.kind === 'declare_ready');
+    if (readyOptions.length) {
+      if (!choice) $('chosen-tile').textContent = tr('pickReadyTile');
+      const ready = choice && readyOptions.find(option => option.tiles[0] === choice.tiles[0]);
+      const label = ready ? tr('declareReady', {tile: tileText(ready.tiles[0])}) : actionText('declare_ready');
+      const readyButton = text('button', label, 'action');
+      readyButton.disabled = !ready;
+      readyButton.onclick = () => sendAction(ready.id);
+      box.append(readyButton);
+    }
+  }
+  for (const option of game.choices) {
+    if (isDiscard(option) || option.kind === 'declare_ready') continue;
+    const button = text('button', optionText(option), 'action' +
+      (['hora', 'ron', 'zimo'].includes(option.kind) ? ' primary-action' : ''));
+    for (const tile of option.tiles.slice(0, 4)) button.append(img(tile));
+    button.onclick = () => sendAction(option.id);
+    box.append(button);
+  }
+}
 async function sendAction(id){if(requestBusy||!game)return;requestBusy=true;$('room-error').textContent='';const sid=game.id;const rev=game.revision;renderActions();try{const s=await api(`/api/game/${sid}/action`,{revision:rev,choice:id});if(game?.id===sid)render(s);}catch(e){showError('room-error',e);}finally{requestBusy=false;renderActions();}}
 $('auto-button').onclick=async()=>{if(!game)return;try{const s=await api(`/api/game/${game.id}/auto`,{enabled:!game.automatic});render(s);}catch(e){showError('room-error',e);}};
 function winDetail(win) {

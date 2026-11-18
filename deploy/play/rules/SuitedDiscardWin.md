@@ -152,3 +152,47 @@ drawn from the far end. Wins take
 priority over pon and kong and may be declined. All kong tile identities are visible on the table. On the last
 discard, wins remain available and there are no further calls. The same physical tile is counted once on a
 multi-win, though each winning hand displays it. Only abstract, zero-sum points are used.
+
+## Pook Dazhong / 波克大众麻将
+
+Rule ID `pook-dazhong-dojo-v1`. [Pook official rules](https://www.pook.com/games/bkdzmj.html).
+
+- Four players, 108 suited tiles, no chi. Standard hands and concealed seven pairs are legal. A discard
+  or added kong can have multiple winners. A won added kong is cancelled before any kong payments.
+- Base per payer: discard 1, self-draw 2, dealer opening self-draw 4, replacement self-draw 4,
+  and adding-kong robbery 6. Add 1 for seven pairs or 2 for dragon seven pairs. Add 1 for all triplets
+  or 2 for four declared melds with a single-tile wait. Add 4 for a pure suit and 1 after declaring
+  ready. Each opponent pays on a self-draw. The provider alone pays for each win on a discard or robbed kong.
+- Passing a win bars a later win of equal or smaller per-payer value before the player draws or calls.
+  Passing pon locks pon on that tile for the same interval. Direct kong still has its own legality.
+- The source specifies the ready bonus but leaves the lock mechanics open. This room uses an optional
+  ready declaration with a legal discard, including after a pon. The player may then only discard
+  the drawn tile or take a win or a drawn-tile concealed/added kong that preserves the complete set
+  of waits. The waits are structural, including tiles exhausted on the public table, but exclude
+  tiles already owned in four copies. The table exposes the declaration, while the waits stay private.
+- Direct kong pays 3 from the discarder, added kong 1 each and concealed kong 2 each. Kong points
+  stand on a draw. Room dealing convention: random first dealer, single winner or multi-win provider
+  deals next, and the dealer stays on a draw.
+
+## Shanxi Datang Tuidaohu / 山西大唐推倒胡
+
+Rule ID `shanxi-datang-tuidaohu-dojo-v2`. [Tuidaohu game rules](https://www.dtgames.cn/gonglue/30.html),
+[Datang table options](https://www.dtgames.cn/gonglue/136.html),
+[Datang general rules and worked payments](https://www.dtgames.cn/gonglue/1.html).
+
+- Four players with the operator's 108-tile, high-pattern, required ready table. Winds, jokers
+  and the missing-suit option are off. Winning requires an earlier ready declaration, including
+  for an opening hand. Ready declarations lock the hand to draw-discard, but a
+  direct, added or concealed kong is allowed if the complete set of waits is unchanged. Added and
+  concealed kongs while ready use the tile just drawn. No pon after declaring.
+- A discard or robbed added kong may have several winners. After passing such a win, the next
+  own discard clears the block. Self-draw stays available. A single winner or the multi-win provider
+  deals next. You deal first and the final drawer deals after a draw.
+- Regular hand: discard pays 3, self-draw pays 2 per opponent. Pure suit, seven pairs and pure
+  straight (123, 456 and 789 must fit in a valid decomposition): discard 9 or self-draw 9 per opponent.
+  Dragon seven pairs: discard 18 or self-draw 18 per opponent. Use the highest single pattern.
+- If the discarder or robbed kong maker has declared, each non-winner pays one third of the discard
+  bill to each winner. Co-winners are exempt and their shares are not redistributed. Direct kong
+  pays 3 from the discarder unless the discarder has declared, in which case all opponents pay 1.
+  Added kong pays 1 per opponent, concealed kong 2; the room uses this standard split of the
+  operator's 3 and 6 point totals. A draw refunds all kong transfers.
