@@ -6,7 +6,8 @@ from deploy.play.honors import Meld, Offer, ORPHANS, PASS, RON, WinContext
 from deploy.play.honors_policy import heuristic, policy_view
 from deploy.play.tests.test_hangzhou import play_passes
 from deploy.play.tests.test_hongkong import counts
-from deploy.play.zhejiang_flipped import SONGYANG, TEN_WINDS, XIAOSHAN, SongyangGame, XiaoshanGame
+from deploy.play.zhejiang_flipped import (SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, SongyangGame,
+                                          SuichangGame, XiaoshanGame)
 
 
 class XiaoshanTests(unittest.TestCase):
@@ -129,9 +130,60 @@ class SongyangTests(unittest.TestCase):
         self.assertEqual(game.scores(), [0] * 4)
 
 
+class SuichangTests(unittest.TestCase):
+    def test_discard_win_charges_other_losers_and_stops_after_first_claim(self):
+        game = SuichangGame(6, 0, 27, rules=SUICHANG)
+        waiting = counts([0, 1, 9, 10, 11, 18, 19, 20, 27, 27, 27, 33, 33])
+        game.players[0].hand = waiting.copy()
+        game.players[1].hand = waiting.copy()
+        game.discards[3].append(2)
+        game._open_offer(Offer(3, 2, 'discard'))
+        self.assertIn(RON, game.legal_actions()[1])
+        game.step(RON)
+        self.assertNotIn(RON, game.legal_actions()[1])
+        play_passes(game)
+        self.assertEqual(game.reason_code, 'suited_discard_win')
+        self.assertEqual(game.scores(), [4, -1, -1, -2])
+        self.assertEqual(game.next_dealer, 0)
+
+    def test_added_kong_robbery_charges_its_supplier_and_keeps_reserve(self):
+        game = SuichangGame(6, 0, 27, rules=SUICHANG)
+        game.players[1].hand = counts([0, 1, 9, 10, 11, 18, 19, 20, 27, 27, 27, 33, 33])
+        game.players[0].hand = counts([2])
+        original = Meld('peng', 2, 2)
+        game.players[0].melds = [original]
+        before = game.remaining
+        game._open_offer(Offer(0, 2, 'gang_bu'))
+        game.step(RON)
+        play_passes(game)
+        self.assertEqual(game.scores(), [-8, 8, 0, 0])
+        self.assertEqual(game.players[0].melds, [original])
+        self.assertEqual(game.remaining, before)
+        self.assertEqual(game.payments(1, 3), (6, 0, 6, 6))
+
+    def test_completed_kong_releases_two_reserve_tiles_and_draws_one(self):
+        game = SuichangGame(14, 0, 27, rules=SUICHANG)
+        self.assertEqual(game.remaining, 48)
+        game.players[0].hand = counts([7] * 4)
+        game.wall = game.wall[:35]
+        expected = game.wall[32]
+        game._finish_own_kong(Offer(0, 7, 'gang_an'))
+        self.assertEqual(game.drawn_tile, expected)
+        self.assertEqual(game.remaining, 2)
+        self.assertEqual(game._replacement_index(), 32)
+
+    def test_seven_pairs_and_honor_tiers(self):
+        pairs = counts([0] * 4 + [9] * 4 + [18] * 4 + [27] * 2)
+        score = SUICHANG.faan(pairs, (), WinContext('zimo', 27, 27, 27))
+        self.assertEqual((score.share, score.patterns), (16, ('三豪华七对',)))
+        irregular = counts([27] * 4 + [28] * 4 + [29, 30, 32, 32, 33, 33])
+        score = SUICHANG.faan(irregular, (), WinContext('ron', 33, 27, 27))
+        self.assertEqual((score.share, score.patterns), (4, ('全字',)))
+
+
 class SharedFlipTests(unittest.TestCase):
     def test_complete_hands_keep_all_physical_tiles_and_points(self):
-        for rules, engine in ((XIAOSHAN, XiaoshanGame), (SONGYANG, SongyangGame)):
+        for rules, engine in ((XIAOSHAN, XiaoshanGame), (SONGYANG, SongyangGame), (SUICHANG, SuichangGame)):
             for seed in range(16):
                 rng = random.Random(seed)
                 game = engine(seed, seed % 4, 27, rules=rules, dealer_streak=seed % 3)

@@ -13,12 +13,13 @@ from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .xiaogan import XIAOGAN, XiaoganGame
-from .zhejiang_flipped import SONGYANG, TEN_WINDS, XIAOSHAN, SongyangGame, XiaoshanGame
+from .zhejiang_flipped import (SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, SongyangGame, SuichangGame,
+                               XiaoshanGame)
 
 
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
-    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG,
+    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -28,6 +29,7 @@ GAME_ENGINES = {
     **{rules.VARIANT: HangzhouGame for rules in HANGZHOU_ROOMS},
     XIAOSHAN.VARIANT: XiaoshanGame,
     SONGYANG.VARIANT: SongyangGame,
+    SUICHANG.VARIANT: SuichangGame,
 }
 
 

@@ -1,4 +1,4 @@
-"""Xiaoshan and Songyang rooms over the common flipped-wildcard game."""
+"""Xiaoshan, Songyang and Suichang rooms over the common flipped-wildcard game."""
 
 from dataclasses import replace
 from functools import lru_cache
@@ -176,20 +176,29 @@ def _seven_winds(physical, wild):
     return min(capacities) >= 0 and sum(capacities) >= 7
 
 
-def _songyang_specials(physical, wild):
+def _orphans_and_seven_winds(physical, wild, unit):
     if not any(n for tile, n in enumerate(physical) if tile not in ORPHANS):
         missing = sum(not physical[tile] for tile in ORPHANS)
         if missing <= wild and max(physical) <= 2:
-            yield ('不正规十三幺', 2) if wild else ('正规十三幺', 4)
+            yield ('不正规十三幺', unit) if wild else ('正规十三幺', 2 * unit)
     if _seven_winds(physical, wild):
-        yield ('不正规七风', 4) if wild else ('正规七风', 8)
+        yield ('不正规七风', 2 * unit) if wild else ('正规七风', 4 * unit)
 
 
 class SongyangRules(HangzhouRules):
     WALL_RESERVE = 20
+    WIN_KINDS = ('zimo', 'rob_kong')
+    ROB_MULTIPLIER = 4
+    SPECIAL_UNIT = 2
+    UNSTRUCTURED_HONORS = 8
+
+    @staticmethod
+    def _pairs_pattern(natural):
+        return '七对子', 2
 
     def faan(self, hand, melds, ctx, *, floats=0, kongs_before_float=0, indicator=None):
-        if ctx.kind not in ('zimo', 'rob_kong') or ctx.tile is None or not hand[ctx.tile] or sum(hand) != 14 - 3 * len(melds):
+        if (ctx.kind not in self.WIN_KINDS or ctx.tile is None or not hand[ctx.tile]
+                or sum(hand) != 14 - 3 * len(melds)):
             return None
         natural, wild = split_wild(hand)
         suits, honors = _filled_families(natural, melds)
@@ -198,9 +207,9 @@ class SongyangRules(HangzhouRules):
         color = [('全字', 8)] if not suits else ([('混一色', 2) if honors else ('清一色', 4)] if len(suits) == 1 else [])
         timing = [('杠上花', 2)] if ctx.kind == 'zimo' and ctx.kong_chain else []
         if ctx.kind == 'rob_kong':
-            timing.append(('抢杠', 4))
+            timing.append(('抢杠', self.ROB_MULTIPLIER))
         if ctx.opening:
-            timing.append(('天胡', 2))
+            timing.append((ctx.opening, 2))
 
         def candidate(form, burst=False):
             bonus = []
@@ -218,14 +227,15 @@ class SongyangRules(HangzhouRules):
                 pung_burst = standard_burst and can_form_pungs(before_natural, before_wild - 1)
                 scores.append(candidate([('大碰胡', 2), *single], pung_burst))
         elif not suits:
-            scores.append(candidate([]))
+            scores.append(_pattern_score([('全字', self.UNSTRUCTURED_HONORS), *timing]))
         if not melds:
             if can_form_pairs(natural, wild):
-                scores.append(candidate([('七对子', 2)], pairs_burst))
+                scores.append(candidate([self._pairs_pattern(natural)], pairs_burst))
             physical = list(natural)
             if indicator is not None and indicator != WHITE:
                 physical[WHITE], physical[indicator] = physical[indicator], 0
-            scores.extend(_pattern_score([special, *timing]) for special in _songyang_specials(physical, wild))
+            scores.extend(_pattern_score([special, *timing])
+                          for special in _orphans_and_seven_winds(physical, wild, self.SPECIAL_UNIT))
             if ctx.kind == 'zimo' and (ctx.opening or ctx.first_nondealer_draw) and wild == 3:
                 scores.append(HangzhouScore(2, ('三财神',)))
         return max(scores, key=lambda score: score.share, default=None)
@@ -258,3 +268,47 @@ class SongyangGame(HangzhouGame):
                 normal[liable] = total * factor
                 break
         return tuple(normal)
+
+
+class SuichangRules(SongyangRules):
+    WALL_RESERVE = 34
+    WIN_KINDS = ('zimo', 'ron', 'rob_kong')
+    ROB_MULTIPLIER = 2
+    SPECIAL_UNIT = 1
+    UNSTRUCTURED_HONORS = 4
+
+    @staticmethod
+    def _pairs_pattern(natural):
+        luxury = sum(count == 4 for count in natural)
+        return _pair_name(luxury, True), 2 << luxury
+
+    @staticmethod
+    def settle_hand(game, winners, offer):
+        provider = offer.actor if offer is not None else None
+        return [(winner.score, game.payments(winner.actor, winner.score.share, provider,
+                                             rob_kong=winner.kind == 'rob_kong')) for winner in winners]
+
+
+SUICHANG = SuichangRules('suichang-mahjong', FOUR_HANGZHOU.OPTIONS, fixed_dealer=1, flip_wildcard=True,
+                        floater_can_call=False, open_kong_after_float=True)
+
+
+class SuichangGame(SongyangGame):
+    def _completed_kongs(self):
+        return sum(meld.kind.startswith('gang_') for player in self.players for meld in player.melds)
+
+    @property
+    def remaining(self):
+        return super().remaining + 2 * self._completed_kongs()
+
+    def _replacement_index(self):
+        return self.rules.WALL_RESERVE - 2 * self._completed_kongs()
+
+    def _can_take_win(self, actor, offer):
+        return self.float_cycle_owner is None and offer.kind in ('discard', 'gang_bu')
+
+    def payments(self, actor, share, provider=None, *, rob_kong=False):
+        if rob_kong:
+            return tuple(4 * share if seat == provider else 0 for seat in range(self.seat_count))
+        return tuple(0 if seat == actor else share * (2 if provider in (None, seat) else 1)
+                     for seat in range(self.seat_count))

@@ -14,7 +14,7 @@ from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
 from .xiaogan import XIAOGAN
-from .zhejiang_flipped import SONGYANG, XIAOSHAN
+from .zhejiang_flipped import SONGYANG, SUICHANG, XIAOSHAN
 
 VARIANTS = {'riichi': {'id': 'riichi',
             'family_id': 'riichi',
@@ -1439,6 +1439,33 @@ VARIANTS[SONGYANG.VARIANT] = {
     }},
 }
 
+VARIANTS[SUICHANG.VARIANT] = {
+    **_HANGZHOU, 'id': SUICHANG.VARIANT,
+    'name': 'Suichang Mahjong · Shared Discard Bill',
+    'aliases': ['遂昌麻将', '地胡', '豪华七对', '十三幺'],
+    'rule_version': 'suichang-shared-discard-dojo-v1',
+    'subtitle': 'Four seats · Shared discard payments · Shrinking wall reserve',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'On a discard win, its supplier pays twice the other losers’ shares.',
+    'rules': [
+        '136 tiles, a flipped wildcard and White Dragon substitution. Win by self-draw, discard or robbing an added kong. '
+        'The nearest accepting seat wins. The hand ends with 34 tiles reserved, releasing two reserve tiles per completed kong.',
+        'Every loser pays two shares on a self-draw. On a discard win the supplier pays two and the other losers pay one each. '
+        'An added-kong robbery doubles the share and its supplier pays the entire discard bill.',
+        'Seven pairs pays twice the base, doubling for each natural quad in the hand. Qualifying hand and event multipliers combine. '
+        'Thirteen orphans and Seven Winds have natural and wildcard tiers.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Suichang rules and payments', 'url': 'https://www.hzbianqu.com/game/47.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '遂昌麻将（点炮分摊）', 'subtitle': '四人 · 点炮分摊 · 开杠减留尾',
+        'badge': '浙江 · 136 张', 'description': '点炮胡时，放炮者支付其他输家两倍的份额。',
+        'rules': ['136 张，翻财神，白板替原牌面。可自摸、接炮或抢补杠，按离出牌者最近的胡家截胡。'
+                  '留尾 34 张，每开一杠释放两张留尾牌。',
+                  '自摸三家各付两份。接炮时放炮者付两份，其余两家各付一份。抢补杠计双倍份额，被抢者付清整笔点炮账。',
+                  '七对子两番，每个天然四张组再翻倍。相容的牌型和胡法倍率相乘。十三幺和七风各分天然和财神代用。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1460,4 +1487,5 @@ SESSION_OPTIONS = {
     **{room.VARIANT: {'variant': room.VARIANT} for room in HANGZHOU_ROOMS},
     XIAOSHAN.VARIANT: {'variant': XIAOSHAN.VARIANT},
     SONGYANG.VARIANT: {'variant': SONGYANG.VARIANT},
+    SUICHANG.VARIANT: {'variant': SUICHANG.VARIANT},
 }

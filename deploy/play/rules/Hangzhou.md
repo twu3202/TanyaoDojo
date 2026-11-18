@@ -1,7 +1,7 @@
 # Hangzhou wildcard rooms
 
-The seven rooms play eight hands at base stake one with the 136-tile set and no flowers.
-The human hosts and deals the first hand. The wall is live to the last tile; a kong needs a replacement left.
+The eight rooms play eight hands at base stake one with the 136-tile set and no flowers.
+The human hosts and deals the first hand. A kong needs a live replacement tile.
 Kongs draw from the other end of the wall and have no immediate payment. The winner deals next and the dealer
 repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard wins and robbing an added kong.
 Songyang keeps 20 tiles in reserve and allows robbing an added kong from any seat.
@@ -15,6 +15,7 @@ Songyang keeps 20 tiles in reserve and allows robbing an added kong from any sea
 | Two-player, flip wildcard | Chow, pon and kong against a single opponent | One share | None |
 | Xiaoshan | Two calls per supplier, passed-pon lock and a restricted second chow | ×4, then ×8 | None |
 | Songyang | Chow, pon and kong, with a 20-tile reserve | Always ×2 | Three feeds between any pair of seats |
+| Suichang | Chow, pon and kong, with a shrinking reserve | Same as non-dealers | An added-kong robbery charges its supplier the entire bill |
 
 ## Wildcard and win multipliers
 
@@ -134,6 +135,24 @@ complete tile examples for those names. This room counts them by physical face a
 to fill missing members. Seven Winds means one of each honor plus seven distinct suited tiles, with at
 least three ranks between tiles of a suit. The public display shows the wildcard and the number of live tiles.
 
+## Suichang Shared Discard Bill
+
+This room uses the operator’s ordinary profile at base stake one. It uses the flipped wildcard and White
+Dragon substitution. Take the first accepting seat in order for a discard or an added-kong robbery. Use the
+winner as the next dealer, with no dealer multiplier. Ordinary self-draws charge each loser two shares.
+A discard win charges its supplier two shares and the other losers one each. For the operator’s ×2 robbery
+and sole-payer rule, this room combines all four discard shares into a single bill for the kong supplier.
+
+Start with 34 tiles reserved separately from the indicator. This room interprets the operator’s shorter-tail
+rule as releasing two reserve tiles per completed kong. The replacement comes from the edge of the adjusted
+reserve. A robbed kong releases no tiles. A draw settles at zero.
+
+Compatible hand and event multipliers combine. Each natural quad doubles the value of seven pairs. An
+unstructured all-honor hand pays four shares and a structured one starts at eight. Thirteen orphans and
+Seven Winds use the same physical-face interpretation as Songyang with Suichang’s own score table. This room
+uses the first dealer discard for Earth and allows three wildcards on the dealer’s opening hand or on an
+uninterrupted first draw. The operator documents the chip-based match as a separate profile.
+
 ## Sources
 
 - [Zhejiang Game Hall three-player rules and multiplier table](https://www.hzbianqu.com/game/581.html)
@@ -146,4 +165,5 @@ least three ranks between tiles of a suit. The public display shows the wildcard
 - [Zhejiang Game Hall Chun’an dealer link and guard seat](https://www.hzbianqu.com/game/1055.html)
 - [Zhejiang Game Hall Xiaoshan hand and payout table](https://www.hzbianqu.com/game/55.html)
 - [Zhejiang Game Hall Songyang scoring and reserve](https://www.hzbianqu.com/game/218.html)
+- [Zhejiang Game Hall Suichang hand and payment table](https://www.hzbianqu.com/game/47.html)
 - [Zhejiang Game Hall Seven Winds definition for the related Jinhua room](https://www.hzbianqu.com/game/74.html)
