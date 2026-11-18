@@ -16,13 +16,39 @@ RON = ('ron', None)
 class Profile(Enum):
     WENZHOU = 'wenzhou-fangpao'
     CHANGSHA = 'changsha-zhuanzhuan'
+    TAISHUN = 'taishun'
+    XUANHUA = 'xuanhua'
+
+
+class PassLock(Enum):
+    NONE = 'none'
+    SUIT_UNTIL_DRAW = 'suit_until_draw'
+    UNTIL_CONTROL = 'until_control'
+    UNTIL_DISCARD = 'until_discard'
+
+
+@dataclass(frozen=True)
+class Rules:
+    pass_lock: PassLock
+    direct_kong_payers: int
+    host_deals_first: bool = False
+    nearest_robber_only: bool = False
+
+
+RULES = {
+    Profile.WENZHOU: Rules(PassLock.SUIT_UNTIL_DRAW, direct_kong_payers=1),
+    Profile.CHANGSHA: Rules(PassLock.NONE, direct_kong_payers=0),
+    Profile.TAISHUN: Rules(PassLock.UNTIL_CONTROL, direct_kong_payers=1, host_deals_first=True),
+    Profile.XUANHUA: Rules(PassLock.UNTIL_DISCARD, direct_kong_payers=3, host_deals_first=True,
+                           nearest_robber_only=True),
+}
 
 
 @dataclass
 class Player:
     hand: list[int] = field(default_factory=lambda: [0] * TILE_COUNT)
     melds: list[tuple[str, int]] = field(default_factory=list)
-    declined_suits: set[int] = field(default_factory=set)
+    declined_tiles: set[int] = field(default_factory=set)
     draws: int = 0
     score: int = 0
 
@@ -33,6 +59,7 @@ class Offer:
     tile: int
     kind: str
     after_kong: bool = False
+    unpaid_kong: bool = False
 
 
 @dataclass(frozen=True)
@@ -40,7 +67,7 @@ class Win:
     actor: int
     provider: int | None
     kind: str
-    fan: int
+    fan: int | None
     patterns: tuple[str, ...]
     points: int
 
@@ -52,7 +79,7 @@ def wenzhou_fan(hand, melds, kind, *, opening=None, after_kong=False):
 
     meld_suits = {tile // 9 for _, tile in melds}
     flush = len(meld_suits | {tile // 9 for tile, count in enumerate(hand) if count}) == 1
-    if not melds and all(count % 2 == 0 for count in hand):
+    if seven_pairs(hand, melds):
         dragon = 4 in hand
         base = {(False, False): (3, '七对'), (False, True): (5, '清七对'),
                 (True, False): (5, '龙七对'), (True, True): (6, '清龙七对')}
@@ -60,7 +87,7 @@ def wenzhou_fan(hand, melds, kind, *, opening=None, after_kong=False):
     elif len(melds) == 4:
         fan, pattern = (5, '清金钩钩') if len(meld_suits) == 1 else (3, '金钩钩')
     else:
-        triplets = sorted(count for count in hand if count) == [2] + [3] * (4 - len(melds))
+        triplets = all_triplets(hand, melds)
         base = {(False, False): (1, '平胡'), (False, True): (3, '清一色'),
                 (True, False): (2, '对对胡'), (True, True): (4, '清对')}
         fan, pattern = base[triplets, flush]
@@ -70,11 +97,62 @@ def wenzhou_fan(hand, melds, kind, *, opening=None, after_kong=False):
     return (fan + 1, (pattern, bonus)) if bonus else (fan, (pattern,))
 
 
+def seven_pairs(hand, melds):
+    return not melds and all(count % 2 == 0 for count in hand)
+
+
+def all_triplets(hand, melds):
+    return sorted(count for count in hand if count) == [2] + [3] * (4 - len(melds))
+
+
+def taishun_points(hand, melds, kind, *, opening=None, after_kong=False):
+    if opening is not None:
+        return (opening,), 6
+    if kind == 'ron' and after_kong:
+        return ('杠上炮',), 3
+
+    suits = {tile // 9 for _, tile in melds} | {tile // 9 for tile, count in enumerate(hand) if count}
+    pairs = seven_pairs(hand, melds)
+    if pairs and 4 in hand:
+        base, pattern = 6, '龙七对'
+    elif pairs:
+        base, pattern = 3, '七对'
+    elif len(suits) == 1:
+        base, pattern = 3, '清一色'
+    elif all_triplets(hand, melds):
+        base, pattern = 2, '对对胡'
+    else:
+        base, pattern = 1, '平胡'
+    if kind == 'ron':
+        return (pattern,), base
+    if kind == 'rob_kong':
+        return (pattern, '抢杠'), 4 * base
+    if after_kong:
+        return (pattern, '杠上花'), 4 * base
+    return (pattern, '自摸'), 2 * base
+
+
+def xuanhua_points(melds, kind, *, heavenly=False):
+    if heavenly:
+        return ('天胡',), 6
+    points, patterns = 1, ['平胡']
+    if all(meld == 'gang_an' for meld, _ in melds):
+        points *= 2
+        patterns.append('门清')
+    if kind != 'ron':
+        points *= 2
+        patterns.append('抢杠' if kind == 'rob_kong' else '自摸')
+    return tuple(patterns), points
+
+
 class SuitedGame:
     def __init__(self, seed, dealer=None, *, profile):
         self.profile = profile
+        self.rules = RULES[profile]
         self.rng = random.Random(seed)
-        self.dealer = self.rng.randrange(4) if dealer is None else dealer
+        if dealer is None:
+            dealer = 0 if self.rules.host_deals_first else self.rng.randrange(4)
+        self.dealer = dealer
         self.next_dealer = self.dealer
         self.wall = list(COPIES.elements())
         self.rng.shuffle(self.wall)
@@ -83,8 +161,10 @@ class SuitedGame:
         self.cur = self.dealer
         self.phase = 'action'
         self.drawn_tile = None
+        self.post_pon_tile = None
         self.replacement_draw = False
         self.opening = True
+        self.discard_count = 0
         self.offer = None
         self.responses = deque()
         self.claim = None
@@ -121,16 +201,23 @@ class SuitedGame:
         player = self.players[actor]
         player.hand[tile] += 1
         player.draws += 1
-        player.declined_suits.clear()
+        if self.rules.pass_lock in (PassLock.SUIT_UNTIL_DRAW, PassLock.UNTIL_CONTROL):
+            player.declined_tiles.clear()
         self.cur = actor
         self.phase = 'action'
         self.drawn_tile = tile
+        self.post_pon_tile = None
         self.replacement_draw = replacement
 
     def _response_hand(self, actor, tile):
         hand = self.players[actor].hand.copy()
         hand[tile] += 1
         return hand
+
+    def _discard_win_locked(self, player, tile):
+        if self.rules.pass_lock is PassLock.SUIT_UNTIL_DRAW:
+            return any(previous // 9 == tile // 9 for previous in player.declined_tiles)
+        return bool(player.declined_tiles)
 
     def legal_actions(self):
         if self.phase == 'over':
@@ -140,7 +227,7 @@ class SuitedGame:
             player = self.players[actor]
             tile = self.offer.tile
             acts = [PASS]
-            locked = self.offer.kind == 'ron' and tile // 9 in player.declined_suits
+            locked = self.offer.kind == 'ron' and self._discard_win_locked(player, tile)
             if not locked and is_hu(self._response_hand(actor, tile), len(player.melds), -1):
                 acts.append(RON)
             if self.offer.kind == 'ron' and self.wall:
@@ -159,6 +246,9 @@ class SuitedGame:
                 acts.extend(('ankan', tile) for tile, count in enumerate(player.hand) if count == 4)
                 if ('peng', self.drawn_tile) in player.melds:
                     acts.append(('bugang', self.drawn_tile))
+        elif self.profile is Profile.TAISHUN and self.post_pon_tile is not None and self.wall:
+            if player.hand[self.post_pon_tile]:
+                acts.append(('bugang', self.post_pon_tile))
         return self.cur, acts
 
     def step(self, action):
@@ -170,7 +260,11 @@ class SuitedGame:
         if self.offer is not None:
             self._respond(actor, kind, RON in acts)
         elif kind == 'discard':
-            self.players[actor].hand[tile] -= 1
+            player = self.players[actor]
+            player.hand[tile] -= 1
+            if self.rules.pass_lock is PassLock.UNTIL_DISCARD:
+                player.declined_tiles.clear()
+            self.discard_count += 1
             self.discards[actor].append(tile)
             self._offer(Offer(actor, tile, 'ron', self.replacement_draw))
         elif kind == 'zimo':
@@ -178,7 +272,7 @@ class SuitedGame:
         elif kind == 'ankan':
             self._kong(actor, tile, 'gang_an')
         elif kind == 'bugang':
-            self._offer(Offer(actor, tile, 'rob_kong'))
+            self._offer(Offer(actor, tile, 'rob_kong', unpaid_kong=self.drawn_tile is None))
 
     def _offer(self, offer):
         self.offer = offer
@@ -186,6 +280,7 @@ class SuitedGame:
         self.claim = None
         self.phase = 'response' if offer.kind == 'ron' else 'rob_kong'
         self.drawn_tile = None
+        self.post_pon_tile = None
         self.replacement_draw = False
 
     def _respond(self, actor, kind, could_win):
@@ -193,8 +288,10 @@ class SuitedGame:
         self.responses.popleft()
         if kind == 'ron':
             self.winners.append(actor)
-        elif could_win and offer.kind == 'ron' and self.profile is Profile.WENZHOU:
-            self.players[actor].declined_suits.add(offer.tile // 9)
+            if offer.kind == 'rob_kong' and self.rules.nearest_robber_only:
+                self.responses.clear()
+        elif could_win and offer.kind == 'ron' and self.rules.pass_lock is not PassLock.NONE:
+            self.players[actor].declined_tiles.add(offer.tile)
         if kind in ('peng', 'zhigang') and not self.winners:
             if self.claim is None or (self.claim[1] == 'peng' and kind == 'zhigang'):
                 self.claim = actor, kind
@@ -205,7 +302,7 @@ class SuitedGame:
         if self.winners:
             self._settle(self.winners, offer, offer.kind, offer.after_kong)
         elif offer.kind == 'rob_kong':
-            self._kong(offer.actor, offer.tile, 'gang_bu')
+            self._kong(offer.actor, offer.tile, 'gang_bu', unpaid=offer.unpaid_kong)
         elif self.claim is None:
             self._draw((offer.actor + 1) % 4)
         else:
@@ -215,6 +312,9 @@ class SuitedGame:
                 player = self.players[caller]
                 player.hand[offer.tile] -= 2
                 player.melds.append(('peng', offer.tile))
+                if self.rules.pass_lock is PassLock.UNTIL_CONTROL:
+                    player.declined_tiles.clear()
+                self.post_pon_tile = offer.tile
                 self.last_call = caller, 'peng'
                 self.phase = 'action'
                 self.cur = caller
@@ -226,7 +326,7 @@ class SuitedGame:
         self.players[payer].score -= points
         self.players[winner].score += points
 
-    def _kong(self, actor, tile, kind, provider=None):
+    def _kong(self, actor, tile, kind, provider=None, *, unpaid=False):
         player = self.players[actor]
         if kind == 'gang_bu':
             player.melds.remove(('peng', tile))
@@ -234,27 +334,35 @@ class SuitedGame:
         player.melds.append((kind, tile))
         self.last_call = actor, kind
         self.opening = False
-        if self.profile is Profile.WENZHOU:
-            if provider is not None:
-                self._pay(provider, actor, 1)
-            else:
-                for payer in range(4):
-                    if payer != actor:
-                        self._pay(payer, actor, 2 if kind == 'gang_an' else 1)
+        if self.rules.direct_kong_payers and not unpaid:
+            payers = (provider,) if provider is not None and self.rules.direct_kong_payers == 1 else (
+                seat for seat in range(4) if seat != actor
+            )
+            for payer in payers:
+                self._pay(payer, actor, 2 if kind == 'gang_an' else 1)
         self._draw(actor, replacement=True)
 
     def _score_win(self, actor, hand, kind, after_kong):
         player = self.players[actor]
         if self.profile is Profile.CHANGSHA:
             kongs = sum(kind.startswith('gang') for kind, _ in player.melds)
-            return 1 + kongs, ('底分',) + ('带杠胡',) * bool(kongs), 1 + kongs
+            return None, ('底分',) + ('带杠胡',) * bool(kongs), 1 + kongs
 
         opening = None
         if self.opening and not self.discards[actor]:
             if actor == self.dealer and kind == 'zimo' and player.draws == 1:
                 opening = '天胡'
-            elif actor != self.dealer and kind != 'rob_kong' and player.draws == (1 if kind == 'zimo' else 0):
+            elif self.profile is Profile.TAISHUN and kind == 'ron' and self.discard_count == 1:
                 opening = '地胡'
+            elif (self.profile is Profile.WENZHOU and actor != self.dealer and kind != 'rob_kong'
+                  and player.draws == (1 if kind == 'zimo' else 0)):
+                opening = '地胡'
+        if self.profile is Profile.TAISHUN:
+            patterns, points = taishun_points(hand, player.melds, kind, opening=opening, after_kong=after_kong)
+            return None, patterns, points
+        if self.profile is Profile.XUANHUA:
+            patterns, points = xuanhua_points(player.melds, kind, heavenly=opening == '天胡')
+            return None, patterns, points
         fan, patterns = wenzhou_fan(hand, player.melds, kind, opening=opening, after_kong=after_kong)
         return fan, patterns, 2 ** (fan - 1)
 
@@ -265,9 +373,14 @@ class SuitedGame:
             self.revealed[actor] = hand
             fan, patterns, points = self._score_win(actor, hand, kind, after_kong)
             provider = None if offer is None else offer.actor
-            payers = [seat for seat in range(4) if seat != actor] if provider is None else [provider]
-            for payer in payers:
-                self._pay(payer, actor, points)
+            if kind == 'rob_kong' and self.profile is Profile.TAISHUN:
+                self._pay(provider, actor, 3 * points)
+            elif provider is None or (kind == 'rob_kong' and self.profile is Profile.XUANHUA):
+                for payer in range(4):
+                    if payer != actor:
+                        self._pay(payer, actor, points)
+            else:
+                self._pay(provider, actor, points)
             self.win_details.append(Win(actor, provider, kind, fan, patterns, points))
         if offer is not None:
             if offer.kind == 'ron':

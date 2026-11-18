@@ -23,10 +23,11 @@ from .sichuan_game import SichuanSession
 from .riichi_game import RiichiSession
 from .hongzhong_game import HongzhongSession
 from .suited_game import SuitedSession
+from .honors_game import HongKongSession
 
-VERSION='0.4.0'
+VERSION='0.6.0'
 FACTORIES={'riichi':RiichiSession,'sichuan':SichuanSession,'hongzhong':HongzhongSession,
-           'suited-discard-win':SuitedSession}
+           'suited-discard-win':SuitedSession,'honors-and-chows':HongKongSession}
 
 
 class Manager:

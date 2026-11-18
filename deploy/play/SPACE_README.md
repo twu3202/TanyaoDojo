@@ -6,15 +6,16 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play seven Mahjong rulesets vs AI. English / 中文.
+short_description: Play ten Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
 
 Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hongzhong One Ma**,
-**Fangchenggang Hongzhong**, **Wenzhou Fangpao**, or **Changsha Zhuanzhuan** and play with three AI opponents.
-Search for a ruleset using either language or filter by family. Riichi continues through a complete East-South match, including native dealer repeats and
-extensions. The other rooms offer complete hands with settlement and next-hand play.
+**Fangchenggang Hongzhong**, **Wenzhou Fangpao**, **Changsha Zhuanzhuan**, **Taishun**, **Xuanhua**, or **Hong Kong
+Old Style** and play with three AI opponents. Search in either language or filter by family. Riichi continues through a complete
+East-South match, including dealer repeats and extensions. The other rooms offer complete hands with settlement
+and next-hand play.
 
 - **Beginner:** a rule-aware tile-efficiency policy.
 - **Standard:** the TanyaoDojo tpt 408k riichi network or the corrected-rules Sichuan P2 adaptation.
@@ -41,9 +42,12 @@ The **112-tile wildcard family** offers two GameTea bonus modes and the Fangchen
 a four-tile reserve. Source rules and the room choices for unspecified boundaries are listed in the
 [rule specification](deploy/play/rules/Hongzhong.md) and the in-game rules dialog.
 
-Wenzhou Fangpao and the 91sui-style Changsha Zhuanzhuan share a **108-tile discard-win engine**. Both allow
-multiple winners; their scoring, passed-win restrictions, and dealer rules differ.
+Wenzhou Fangpao, 91sui-style Changsha Zhuanzhuan, Taishun and Xuanhua share a **108-tile discard-win engine**.
+The rooms differ in scoring, passed-win restrictions, kong robbery and dealer rules.
 [Rules and sources](deploy/play/rules/SuitedDiscardWin.md).
+
+The **Hong Kong Old Style** room adds 136 tiles with honors, chows, three faan to win, and liability payments.
+[Rules and sources](deploy/play/rules/HongKongOldStyle.md).
 
 The catalog exposes only implemented, tested rulesets. More regional variants will be added
 by rule family. No training runs inside this Space; models are fixed CPU inference snapshots.

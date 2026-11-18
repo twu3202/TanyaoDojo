@@ -1,9 +1,9 @@
 # Playable Mahjong MVP
 
-Human vs three AI players, with a responsive browser table and a CPU-only server. The seven playable rulesets
-are Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, and Fangchenggang
-Hongzhong, plus Wenzhou Fangpao and Changsha Zhuanzhuan. The regional rooms offer complete hands with settlement
-and a next-hand flow.
+Human vs three AI players, with a responsive browser table and a CPU-only server. The ten playable rulesets are
+Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
+Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua and no-flower Hong Kong Old Style. The regional
+rooms offer complete hands with settlement and a next-hand flow.
 
 ## Architecture
 
@@ -14,8 +14,11 @@ and a next-hand flow.
   Inter-hand continuation uses the first-hand scores/pot, not the truncated game's artificial final payout.
 - `sichuan_game.py`: corrected Python reference rules, rule-aware shanten/ukeire baseline and interactive
   robbing-a-kong responses. The training reference auto-accepts those wins; web users can explicitly pass.
-- `suited.py`, `suited_game.py`: shared 108-tile first-win engine and browser session, with separate Wenzhou and
-  Changsha settlements. [Rules and operator sources](rules/SuitedDiscardWin.md).
+- `suited.py`, `suited_game.py`: shared 108-tile first-win engine and browser session, with per-room passed-win,
+  robbery and settlement rules. [Rules and operator sources](rules/SuitedDiscardWin.md).
+- `honors.py`, `hongkong.py`, `honors_game.py`: 136-tile engine with chows, scoring over all hand decompositions,
+  and named payers. `honors_policy.py` ranks legal waits and routes to a three-faan hand using public tiles and the
+  existing suit table. [Rules and sources](rules/HongKongOldStyle.md).
 - `policies.py`, `sichuan_model.py`: existing tpt 408k and Sichuan P2 adaptation `seed201`, CPU inference only. The Sichuan Torch
   port and NumPy observation encoder are cross-checked against the original JAX network/encoder.
 - `server.py`: one HTTP port, session-capability IDs, server-side legal-choice validation, bounded request sizes.

@@ -117,7 +117,10 @@ class SuitedSession(GameSession):
         if not game.winners:
             self.log_event('draw', kind='round')
         for win in game.win_details:
-            self.log_event('win_fan', {'actor': win.actor, 'fan': win.fan, 'patterns': win.patterns}, 'win')
+            if win.fan is None:
+                self.log_event('win_points', {'actor': win.actor, 'points': win.points, 'patterns': win.patterns}, 'win')
+            else:
+                self.log_event('win_fan', {'actor': win.actor, 'fan': win.fan, 'patterns': win.patterns}, 'win')
         with self.cv:
             self.result = {'reason_code': game.reason_code, 'scores': self.totals.copy(),
                            'deltas': delta, 'winners': game.winners.copy(),

@@ -1,8 +1,8 @@
 # Suited discard-win rooms
 
-Wenzhou Fangpao and Changsha Zhuanzhuan share a four-player, 108-tile state machine. Both allow standard hands
-and concealed seven pairs (four identical tiles supply two pairs). The first self-draw, or the first winning
-discard or added-kong offer, ends the hand. Every eligible opponent in that response window can win.
+Four rooms share a four-player, 108-tile state machine. Each allows standard hands and concealed seven pairs
+(four identical tiles supply two pairs). The first self-draw or winning response window ends the hand. Ordinary
+discards can have multiple winners. Xuanhua limits kong robbery to the nearest player who accepts the offer.
 
 ## Wenzhou Fangpao
 
@@ -44,10 +44,52 @@ birds, or same-suit passed-win lock. The first dealer is random. The next dealer
 who did not win, with all four eligible after a draw. This profile uses the operator's explicit replacement-draw
 description for kongs, which takes precedence over a contradictory general bullet on the same page.
 
+## Taishun
+
+Rule ID `taishun-dojo-v1-20261118`. [Zhejiang Game Hall's Taishun rules](https://www.hzbianqu.com/game/63.html).
+
+| Best applicable shape | Discard share | Self-draw share |
+| --- | ---: | ---: |
+| Ordinary hand | 1 | 2 |
+| All triplets | 2 | 4 |
+| One suit or seven pairs | 3 | 6 |
+| Dragon seven pairs | 6 | 12 |
+
+The dealer's initial self-draw pays 6 from each opponent. A win on the dealer's first discard pays 6 from the
+dealer. An ordinary win on the discard after a kong replacement pays a fixed 3. A replacement self-draw doubles
+the shape's self-draw share. For an added-kong robbery, this room interprets the extra fan as doubling that same
+self-draw share. The kong maker pays three such shares to each winner. Robbery allows multiple winners in this room.
+
+Direct kongs earn 1 from the discarder, drawn-tile added kongs earn 1 from each other seat, and concealed kongs earn
+2 from each other seat. The immediate pon of a tile held three times may be upgraded using the held fourth copy.
+That upgrade opens a robbery window, requires a replacement draw, and earns no kong points. Finished kong transfers
+stand on a draw. Declining an ordinary discard win blocks all ordinary discard wins until the player draws or
+successfully claims a pon or kong. An unaccepted or superseded call leaves the lock in place.
+
+The human hosts and deals the first hand. A sole winner deals next. On a multi-win the provider deals next.
+On an exhaustive draw the dealer repeats, a room convention for an unspecified case.
+
+## Xuanhua
+
+Rule ID `xuanhua-dojo-v1-20261118`. [Zhejiang Game Hall's Xuanhua rules](https://www.hzbianqu.com/game/309.html).
+
+The published options for multiple discard wins and keeping kong points on a draw are enabled. The option assigning
+the entire direct-kong payment to one chair is off. Each opponent pays 1 for a direct or added kong or 2 for a
+concealed kong. Each winning hand has base 1 per payer. A closed hand and a self-draw each double the share.
+Concealed kongs preserve the closed-hand multiplier. The dealer's initial win pays a fixed 6 from each opponent.
+There is no earthly-win premium.
+
+The discarder pays each ordinary winner's share. Only the nearest accepting player can rob an added kong. All
+three opponents then pay the self-draw share, including the player who offered the kong. A pass on an ordinary
+discard win blocks further ordinary discard wins until that player's next discard. The lock applies only to discard
+wins, so the player can accept a later kong robbery. The human hosts and deals first. A sole winner or the discarder
+after multiple wins deals next. The dealer repeats on a draw.
+
 ## Shared room conventions
 
-No chi, wildcard or void-suit selection. The wall is uniformly shuffled. Pon must be followed by a discard.
-Added kong uses only the newly drawn fourth tile; a kong needs a replacement drawn from the far end. Wins take
+No chi, wildcard or void-suit selection. The wall is uniformly shuffled. Except for Taishun's unpaid upgrade,
+pon is followed by a discard and an added kong requires the newly drawn fourth tile. A kong needs a replacement
+drawn from the far end. Wins take
 priority over pon and kong and may be declined. All kong tile identities are visible on the table. On the last
 discard, wins remain available and there are no further calls. The same physical tile is counted once on a
 multi-win, though each winning hand displays it. Only abstract, zero-sum points are used.

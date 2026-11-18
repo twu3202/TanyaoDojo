@@ -1,5 +1,6 @@
 """Versioned playable rules; English is the API default."""
 from .hongzhong import FANGCHENGGANG, ONE_MA
+from .hongkong import VARIANT as HONG_KONG
 from .suited import Profile
 
 VARIANTS = {'riichi': {'id': 'riichi',
@@ -178,6 +179,8 @@ _SUITED = {
 }
 _WENZHOU = Profile.WENZHOU.value
 _CHANGSHA = Profile.CHANGSHA.value
+_TAISHUN = Profile.TAISHUN.value
+_XUANHUA = Profile.XUANHUA.value
 VARIANTS[_WENZHOU] = {
     **_SUITED,
     'id': _WENZHOU,
@@ -248,9 +251,129 @@ VARIANTS[_CHANGSHA] = {
     }},
 }
 
+VARIANTS[_TAISHUN] = {
+    **_SUITED,
+    'id': _TAISHUN,
+    'name': 'Taishun Mahjong',
+    'aliases': ['Taishun', 'Zhejiang', '泰顺', '泰顺麻將', '泰順', '浙江'],
+    'rule_version': 'taishun-dojo-v1-20261118',
+    'subtitle': 'Zhejiang · Multiple discard wins · Point scoring',
+    'badge': 'Taishun · 108 tiles',
+    'description': 'A Zhejiang room with distinct discard and self-draw payments, and an all-suit passed-win lock.',
+    'rules': [
+        '108 suited tiles. Pon and kong are allowed. A discard can have multiple winners.',
+        'Passing a discard win locks all discard wins until you draw or successfully take a pon or kong.',
+        'Highest base per payer, discard / self-draw: ordinary 1 / 2, all triplets 2 / 4, '
+        'one suit or seven pairs 3 / 6, dragon seven pairs 6 / 12.',
+        'The initial dealer win and a win on the dealer’s first discard each score 6 per liable player. '
+        'A win on the discard after a kong scores 3. A replacement self-draw doubles the self-draw share. '
+        'On robbery the kong maker pays three doubled self-draw shares.',
+        'Kong shares are 1 from the provider for a direct kong, 1 from each opponent for an added kong, '
+        'and 2 each for a concealed kong. Upgrading an immediate pon with a held fourth tile earns no kong points. '
+        'Kong points stand on a draw.',
+        'You deal the first hand. A sole winner or the provider after multiple wins deals next. '
+        'The dealer repeats on a draw.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Taishun rules', 'url': 'https://www.hzbianqu.com/game/63.html'}],
+    'translations': {'zh-CN': {
+        'name': '泰顺麻将', 'family': '数牌点炮家族',
+        'subtitle': '浙江 · 一炮多响 · 按牌型算分', 'badge': '泰顺 · 108 张',
+        'description': '支持一炮多响，胡牌按点炮、自摸分别算分，过胡覆盖所有花色。',
+        'rules': [
+            '108 张数牌，可碰杠，不吃，允许一炮多响。',
+            '过普通点炮胡后，所有花色不能接炮，直到自己摸牌或成功碰、杠。',
+            '点炮／自摸每份取最高：平胡 1／2，大对 2／4，清一色或七对 3／6，豪七对 6／12。',
+            '天胡、庄家首打的地胡每份 6 分。杠上炮 3 分，杠上开花按自摸分翻倍。'
+            '抢补杠按自摸分翻倍，由杠家包付三份。',
+            '直杠供牌者付 1，补杠其他每家付 1，暗杠其他每家付 2。选四张中的三张碰后，'
+            '立即用手里第四张补杠不计杠分。流局保留杠分。',
+            '首局你坐庄；单胡赢家接庄，多响供牌者接庄，流局连庄。',
+        ],
+    }},
+}
+VARIANTS[_XUANHUA] = {
+    **_SUITED,
+    'id': _XUANHUA,
+    'name': 'Xuanhua Mahjong',
+    'aliases': ['Xuanhua', 'Zhangjiakou', 'Hebei', '宣化', '张家口', '河北'],
+    'rule_version': 'xuanhua-dojo-v1-20261118',
+    'subtitle': 'Hebei · Closed-hand multiplier · Single kong robbery',
+    'badge': 'Xuanhua · 108 tiles',
+    'description': 'A Hebei room with multiple ordinary discard wins, nearest-first kong robbery, and closed-hand scoring.',
+    'rules': [
+        '108 suited tiles. Pon and kong are allowed. Regular hands and seven pairs can win without declaring ready.',
+        'Passing a discard win blocks all ordinary discard wins until your next discard.',
+        'The base is 1 per payer. A closed hand and self-draw each double it; concealed kongs keep the hand closed. '
+        'An initial dealer win pays 6 from each opponent. There is no earthly win bonus.',
+        'An ordinary discard may have multiple winners: the discarder pays each. Only the nearest accepting player '
+        'can rob an added kong; all three opponents pay as on a self-draw.',
+        'All three opponents pay each kong: 1 each for direct or added kongs, 2 each for concealed kongs. '
+        'Kong points stand on a draw.',
+        'You deal the first hand. A sole winner or the discarder after multiple wins deals next. '
+        'The dealer repeats on a draw.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Xuanhua rules', 'url': 'https://www.hzbianqu.com/game/309.html'}],
+    'translations': {'zh-CN': {
+        'name': '宣化麻将', 'family': '数牌点炮家族',
+        'subtitle': '河北 · 门清翻倍 · 抢杠截胡', 'badge': '宣化 · 108 张',
+        'description': '支持普通点炮多响，抢补杠截胡按自摸计分，门清翻倍。',
+        'rules': [
+            '108 张数牌，可碰杠，不吃。不报听即可胡标准型或七对。',
+            '过普通点炮胡后，在自己下次打牌前不能接炮。',
+            '每份底分 1，门清和自摸各翻倍。暗杠保持门清。天胡每家固定付 6，无地胡。',
+            '普通点炮允许多响，供牌者分别支付。抢补杠只由顺位最近且选择胡牌者胡，其他三家按自摸付分。',
+            '关闭「点杠包一家」，直杠和补杠由其他每家付 1，暗杠其他每家付 2。流局保留杠分。',
+            '首局你坐庄；单胡赢家接庄，多响点炮者接庄，流局连庄。',
+        ],
+    }},
+}
+
+VARIANTS[HONG_KONG] = {
+    'id': HONG_KONG,
+    'family_id': 'honors-and-chows',
+    'family': 'Honors and chows',
+    'name': 'Hong Kong Old Style',
+    'aliases': ['Hong Kong', 'HKOS', 'Cantonese', '香港', '港式', '港麻', '清章', '廣東牌', '广东牌'],
+    'rule_version': 'hong-kong-old-style-no-flower-dojo-v1-20261118',
+    'subtitle': 'Hong Kong · No flowers · Three faan to win',
+    'badge': 'Hong Kong · 136 tiles',
+    'description': 'No-flower Hong Kong Old Style. Chow from upstream, build a three-faan hand, and settle up to eight faan.',
+    'rules': [
+        '136 suited and honor tiles. Chow from the preceding seat only. Wins beat pong and kong, which beat chow. '
+        'A chow blocks discarding its called tile and the opposite extension immediately afterward.',
+        'A winning hand needs at least three faan and pays at most eight. Four sets and a pair or Thirteen Orphans '
+        'can qualify. Common patterns include all sequences (1), all triplets (3), half flush (3) and full flush (7).',
+        'Ordinary discard wins can be shared; the discarder pays each winner. Self-draw pays from all opponents. '
+        'The supplier of a fourth declared meld or third exposed dragon set may owe all three self-draw shares.',
+        'Added-kong robbery pays three self-draw shares from the kong maker. Only Thirteen Orphans can rob a '
+        'concealed kong. Declining a win or callable tile locks that same tile until your own draw.',
+        'The first dealer is random, retains the seat on a win, and passes the seat otherwise. A drawn hand scores zero. '
+        'Seat and prevailing wind triplets count separately in this room.',
+    ],
+    'sources': [{'title': 'CUHK alumni tournament, no-flower rules (PDF)',
+                 'url': 'https://home.culhk.org/files/ICUD/2016ICUD-Mahjong_Comp-Regulation.pdf'},
+                {'title': 'Hong Kong Mahjong Association rule index', 'url': 'https://www.hkmahjong.org/rules?lang=en'}],
+    'default_policy': 'heuristic',
+    'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'translations': {'zh-CN': {
+        'name': '港式清章（无花）', 'family': '字牌与吃牌家族',
+        'subtitle': '香港 · 无花牌 · 三番起胡', 'badge': '香港 · 136 张',
+        'description': '港式无花桌，可吃上家的牌，三番起胡，八番封顶。',
+        'rules': [
+            '136 张数牌和字牌，只能吃上家。胡优先于碰杠，碰杠优先于吃。吃后当手不能打出所吃同张或另一端可换的牌。',
+            '三番起胡，八番封顶。四组一对或十三幺可胡。常见番型包括平胡 1、对对胡 3、混一色 3、清一色 7。',
+            '普通点炮可多响，由点炮者分别支付。自摸时三家付分；供第四组副露或第三组明三元者可能包自摸三份。',
+            '抢补杠由开杠者包付三份。只有十三幺可抢暗杠。放弃可胡或可吃碰杠的牌后，同张锁至自己摸牌。',
+            '首庄随机，庄家胡则连庄，否则轮庄。流局零分。门风刻与圈风刻分别计番。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
     _WENZHOU: {'profile': _WENZHOU},
     _CHANGSHA: {'profile': _CHANGSHA},
+    _TAISHUN: {'profile': _TAISHUN},
+    _XUANHUA: {'profile': _XUANHUA},
 }
