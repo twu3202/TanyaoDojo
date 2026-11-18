@@ -5,6 +5,7 @@ import random
 import time
 
 from . import golden_guangdong, guangzhou, guiliu, hongkong, jj_multiplier, jj_three, macau
+from .anji import ANJI, FLOWER_TILES, AnjiGame
 from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
@@ -20,7 +21,7 @@ from .zhejiang_flipped import (DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, TEN_WI
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
-    DEQING, DEQING_XINSHI,
+    DEQING, DEQING_XINSHI, ANJI,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -33,6 +34,7 @@ GAME_ENGINES = {
     SUICHANG.VARIANT: SuichangGame,
     DEQING.VARIANT: DeqingGame,
     DEQING_XINSHI.VARIANT: DeqingXinshiGame,
+    ANJI.VARIANT: AnjiGame,
 }
 
 
@@ -103,6 +105,8 @@ class HonorsSession(GameSession):
                 players[-1]['wildcard_floats'] = game.float_streak[actor]
             if isinstance(game, XiaoshanGame) and actor == 0 and game.ten_winds[actor] >= 5:
                 players[-1]['ten_winds_run'] = game.ten_winds[actor]
+            if isinstance(game, AnjiGame):
+                players[-1]['flowers'] = [self.display_tile(tile) for tile in game.flowers[actor]]
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
@@ -118,12 +122,14 @@ class HonorsSession(GameSession):
             if game.wildcard_indicator is not None:
                 table['wildcard_indicated'] = True
                 if game.indicator_tile != game.wildcard_tile:
-                    table['wildcard_indicator'] = tile_name(game.wildcard_indicator)
+                    table['wildcard_indicator'] = self.display_tile(game.wildcard_indicator)
                 elif game.wildcard_indicator != game.wildcard_tile:
                     table['white_substitute'] = tile_name(game.wildcard_indicator)
         return table
 
     def display_tile(self, tile):
+        if tile in FLOWER_TILES:
+            return FLOWER_TILES[tile]
         if isinstance(self.game, HangzhouGame):
             tile = self.game.physical_tile(tile)
         return tile_name(tile)

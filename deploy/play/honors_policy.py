@@ -8,6 +8,7 @@ from types import ModuleType
 from common.suit_table import load_table
 
 from . import hongkong
+from .anji import AnjiRules
 from .hangzhou import FLOAT, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
@@ -28,6 +29,7 @@ class PolicyView:
     offered_by: int | None = None
     wildcard_indicator: int | None = None
     wildcard_tile: int | None = None
+    excluded_tiles: frozenset[int] = frozenset()
 
     @property
     def wildcard(self):
@@ -63,7 +65,7 @@ def policy_view(game, actor, actions):
                       tuple(actions), seat_wind, game.round_wind,
                       offered, game.remaining, game.rules,
                       None if offered is None else game.offer.actor, getattr(game, 'wildcard_indicator', None),
-                      getattr(game, 'wildcard_tile', None))
+                      getattr(game, 'wildcard_tile', None), getattr(game, 'excluded_tiles', frozenset()))
 
 
 @lru_cache(maxsize=1)
@@ -173,7 +175,7 @@ def _distance(hand, melds, view):
 
 
 def _live_tiles(view):
-    available = getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).tile_kinds
+    available = set(getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).tile_kinds) - view.excluded_tiles
     return tuple(max(0, 4 - view.hand[tile] - view.visible[tile]) if tile in available else 0
                  for tile in range(TILE_COUNT))
 
@@ -184,6 +186,8 @@ def _ready_waits(hand, melds, view, live):
     params = {}
     if isinstance(view.rules, SongyangRules):
         params['indicator'] = view.wildcard_indicator
+    elif isinstance(view.rules, AnjiRules):
+        params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
     elif isinstance(view.rules, DeqingRules):
         params['wildcard'] = view.wildcard
     for tile, count in enumerate(live):

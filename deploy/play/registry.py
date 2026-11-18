@@ -1,4 +1,5 @@
 """Versioned playable rules; English is the API default."""
+from .anji import ANJI
 from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
@@ -1519,6 +1520,32 @@ VARIANTS[DEQING_XINSHI.VARIANT] = {
     }},
 }
 
+VARIANTS[ANJI.VARIANT] = {
+    **_HANGZHOU, 'id': ANJI.VARIANT,
+    'name': 'Anji Mahjong · Fifteen Flowers',
+    'aliases': ['安吉麻将', '安吉15花', '十五花', '花牌替换'],
+    'rule_version': 'anji-fifteen-flowers-dojo-v1',
+    'subtitle': 'Four seats · 144 tiles · Automatic flower replacement',
+    'badge': 'Zhejiang · 144 tiles',
+    'description': 'The indicator turns regular faces into flowers. Reveal and replace each flower you draw.',
+    'rules': [
+        'Start with 144 tiles. White Dragons and copies of the indicator join the seasonal and plant flowers. '
+        'If the indicator is a White Dragon or a flower, North also becomes a flower and East is the wildcard.',
+        'Flowers are public and immediately replaced. Win by self-draw or an eligible first-circuit Earth win. '
+        'A winning hand with neither flowers nor wildcards collects 10 from each opponent.',
+        'You may chow, pon and kong, and upgrade an earlier pon right after a call. Kongs cannot be robbed. '
+        'A flower replacement can trigger Kong Burst. Heavenly and Earthly Hand pay 10 per opponent.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Anji flower banks and payouts', 'url': 'https://www.hzbianqu.com/game/886.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '安吉麻将（15 花）', 'subtitle': '四人 · 144 张 · 自动补花',
+        'badge': '浙江 · 144 张', 'description': '白板与翻牌同种的常规牌可变成花，摸到后亮出并补牌。',
+        'rules': ['144 张。春夏秋冬、梅兰竹菊、白板和翻牌同种的牌为花。翻白板或实体花时，北风改作花，东风为财神。',
+                  '花牌公开后立即补牌。可自摸或首圈地胡。无花无财神的和牌，每位对手付 10。',
+                  '可吃、碰、杠。吃碰后可以直接补原有的碰牌，杠牌不能被抢。补花可以杠爆，天地胡每位对手付 10。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1543,4 +1570,5 @@ SESSION_OPTIONS = {
     SUICHANG.VARIANT: {'variant': SUICHANG.VARIANT},
     DEQING.VARIANT: {'variant': DEQING.VARIANT},
     DEQING_XINSHI.VARIANT: {'variant': DEQING_XINSHI.VARIANT},
+    ANJI.VARIANT: {'variant': ANJI.VARIANT},
 }

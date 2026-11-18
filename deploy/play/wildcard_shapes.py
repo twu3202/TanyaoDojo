@@ -8,20 +8,24 @@ def without_tile(counts, tile, count=1):
 
 
 @lru_cache(maxsize=65536)
-def can_form_sets(counts, wild):
+def can_form_sets(counts, wild, excluded=frozenset()):
     """Every natural tile must be used, and honors never form sequences."""
     if (sum(counts) + wild) % 3:
         return False
     first = next((tile for tile, count in enumerate(counts) if count), None)
     if first is None:
         return True
+    if first in excluded:
+        return False
     triplet = min(3, counts[first])
-    if 3 - triplet <= wild and can_form_sets(without_tile(counts, first, triplet), wild - 3 + triplet):
+    if 3 - triplet <= wild and can_form_sets(without_tile(counts, first, triplet), wild - 3 + triplet, excluded):
         return True
     if first >= 27:
         return False
     suit = first // 9 * 9
     for start in range(max(suit, first - min(2, wild)), min(first, suit + 6) + 1):
+        if excluded and excluded.intersection(range(start, start + 3)):
+            continue
         rest = list(counts)
         missing = 0
         for tile in range(start, start + 3):
@@ -29,13 +33,17 @@ def can_form_sets(counts, wild):
                 rest[tile] -= 1
             else:
                 missing += 1
-        if missing <= wild and can_form_sets(tuple(rest), wild - missing):
+        if missing <= wild and can_form_sets(tuple(rest), wild - missing, excluded):
             return True
     return False
 
 
 @lru_cache(maxsize=32768)
-def can_form_standard(counts, wild):
+def can_form_standard(counts, wild, excluded=frozenset()):
+    if any(counts[tile] for tile in excluded):
+        return False
+    if excluded:
+        return _with_pair(counts, wild, lambda hand, jokers: can_form_sets(hand, jokers, excluded))
     return _with_pair(counts, wild, can_form_sets)
 
 

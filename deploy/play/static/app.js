@@ -4,7 +4,7 @@ let catalog=[],variant='riichi',game=null,selected=null,loading=false,pollTimer=
 const CATALOG_PAGE_SIZE=8;
 const exchangeSelection=new Set();
 let visibleLimit=CATALOG_PAGE_SIZE;
-const img=t=>{const i=document.createElement('img');i.src=`/tiles/${encodeURIComponent(t)}.svg`;i.alt=tileText(t);i.draggable=false;return i;};
+const img=t=>{if(/^F[1-8]$/.test(t))return text('span',tileText(t),'flower-face');const i=document.createElement('img');i.src=`/tiles/${encodeURIComponent(t)}.svg`;i.alt=tileText(t);i.draggable=false;return i;};
 function text(tag,value,cls=''){const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;}
 function showError(id,e){const node=$(id);node.dataset.errorCode=e.code||'server_error';node.textContent=I18N[LANGUAGE].errors[node.dataset.errorCode]||e.message||I18N[LANGUAGE].errors.server_error;}
 function optionText(o){if(o.kind==='piao')return tr('piaoChoice',{value:o.value});if(o.win_type)return actionText(o.win_type);if(['discard','dahai'].includes(o.kind))return tr('discard',{tile:tileText(o.tiles[0])});if(o.kind==='void')return tr('voidAction',{suit:I18N[LANGUAGE].suits[o.suit]});return actionText(o.kind);}
@@ -146,6 +146,12 @@ function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren
 if(p.id===table.dealer&&table.dealer_multiplier>1) title.append(text('span',`×${table.dealer_multiplier}`,'tag'));
 if(p.wildcard_floats) title.append(text('span',tr('wildcardFloatTag',{count:p.wildcard_floats}),'tag reach'));
 if(p.ten_winds_run) title.append(text('span',tr('tenWindsRun',{count:p.ten_winds_run}),'tag reach'));
+if(p.flowers?.length){
+  const flowers=text('div','','flower-row');
+  flowers.setAttribute('aria-label',tr('flowers'));
+  flowers.append(text('span',tr('flowers')),...p.flowers.map(img));
+  seat.append(flowers);
+}
 if(p.id===0){const row=document.createElement('div');row.className='hand';const hand=p.hand.slice();if(table.drawn){const i=hand.lastIndexOf(table.drawn);if(i>=0)hand.push(...hand.splice(i,1));}hand.forEach((t,i)=>{if(table.phase==='exchange'){row.append(exchangeTile(t,i,s));return;}const options=s.choices.filter(x=>['discard','dahai'].includes(x.kind)&&x.tiles[0]===t);const b=document.createElement('button');b.className='hand-tile'+(options.length?' legal':'')+(table.drawn&&i===hand.length-1?' drawn':'')+(options.length&&options[0].id===selected?' selected':'');b.disabled=!options.length||s.automatic||requestBusy;const canDeclare=s.choices.some(o=>o.kind==='declare_ready'&&o.tiles[0]===t);b.classList.toggle('ready-discard',canDeclare);const indicatedWild=table.wildcard_indicated&&t===table.wildcard;b.classList.toggle('is-wildcard',!!indicatedWild);b.setAttribute('aria-label',tr(indicatedWild?'selectWildcard':canDeclare?'selectReadyTile':'selectTile',{tile:tileText(t)}));b.append(img(t));if(options.length){b.dataset.option=options[0].id;b.onclick=()=>{selected=options[0].id;for(const x of document.querySelectorAll('.hand-tile'))x.classList.toggle('selected',x.dataset.option===selected);renderActions();};}row.append(b);});seat.append(row);
 }else if(p.revealed){const h=document.createElement('div');h.className='melds';for(const t of p.hand){const el=img(t);el.style.width='19px';h.append(el);}if(p.hidden_ready_tiles){const hidden=text('span','','ready-hidden');hidden.setAttribute('aria-label',tr('concealed',{count:p.hidden_ready_tiles}));for(let i=0;i<p.hidden_ready_tiles;i++)hidden.append(text('span','','tile-back'));h.append(hidden);}seat.append(h);}else{const h=document.createElement('div');h.className='backs';h.setAttribute('aria-label',tr('concealed',{count:p.hand_count}));for(let i=0;i<p.hand_count;i++)h.append(text('span','','tile-back'));seat.append(h);}
 if(p.melds.length){const ms=document.createElement('div');ms.className='melds';for(const m of p.melds){const meld=document.createElement('div');meld.className='meld';meld.title=actionText(m.kind);for(const t of m.tiles)meld.append(t===null?text('span','','tile-back'):img(t));ms.append(meld);}seat.append(ms);}if(p.win_tile){const claim=text('div','','melds');claim.title=tr('winningTile');claim.append(img(p.win_tile));seat.append(claim);}if(p.id!==0)seat.append(river(p.river));}

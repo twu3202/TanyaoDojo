@@ -1,6 +1,6 @@
 # Hangzhou wildcard rooms
 
-The ten rooms play eight hands at base stake one with the 136-tile set and no flowers.
+The eleven rooms play eight hands at base stake one. Anji uses 144 tiles with flowers. The other rooms use 136 tiles.
 The human hosts and deals the first hand. A kong needs a live replacement tile.
 Kongs draw from the other end of the wall and have no immediate payment. The winner deals next and the dealer
 repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard wins and robbing an added kong.
@@ -18,6 +18,7 @@ Songyang keeps 20 tiles in reserve and allows robbing an added kong from any sea
 | Suichang | Chow, pon and kong, with a shrinking reserve | Same as non-dealers | An added-kong robbery charges its supplier the entire bill |
 | Deqing Wukang | Chow, pon and kong with a successor wildcard | Dealer pays 10 for Earth | An added-kong robbery charges its supplier three shares per winner |
 | Deqing Xinshi | Chow, pon and kong, including an immediate pon upgrade | Dealer pays 10 for Earth or a non-dealer opening special | A later robbery charges its supplier six shares at each winner’s rate |
+| Anji Fifteen Flowers | Chow, pon and kong, including after a call | Same as non-dealers | None |
 
 ## Wildcard and win multipliers
 
@@ -198,6 +199,35 @@ replacement immediately, with no robbery window. An added kong in a later turn c
 players. For each winner the supplier pays six times that winner’s own share. Use at least their replacement
 win share, including the no-wildcard rate if it qualifies. Double for earlier kongs in the supplier’s chain.
 
+## Anji Fifteen Flowers
+
+Start with four copies of the 34 ordinary faces and one each of the four seasons and four plants. Set aside
+the indicator before dealing. White Dragons, the eight special tiles and the remaining copies of an ordinary
+indicator become flowers. For a White Dragon or special-tile indicator, substitute North as the extra flower
+face and use East as the wildcard. In every case exactly 15 flowers remain available to draw. For other
+indicators, the wildcard is the next suited rank or wind, or the other member of the Red–Green pair.
+
+Reveal every flower during the deal or a draw, then take a replacement from the opposite end. Repeat until
+an ordinary tile is drawn or the wall runs out. Wildcards cannot replace flower faces in a winning shape or
+join a meld. Every seat can see the indicator and all exposed flowers. The operator's shared list describes
+its thirteen-orphan special with all seven honor faces. That shape is unavailable in this room because White
+Dragons are always flowers and a wildcard cannot replace them.
+
+Use the choices that allow chow and pon, have no forced Burst, and score consecutive replacement events as
+one group. The dealer's opening win and a non-dealer's first-circuit Earth win pay ten per opponent. Earth
+may be won on a first draw or an eligible discard before the dealer's second draw, while no call or kong has
+interrupted play. Take the nearest eligible winner on the same discard. Ordinary later wins require self-draw.
+Kong or added kong never opens a robbery window. An existing pon can be upgraded immediately after a call.
+
+An ordinary win or seven pairs pays one with wildcards or two without them. Burst pays two, a kong draw
+pays three or five depending on whether the hand has wildcards, and a Burst after a kong or flower pays five.
+No flowers and no wildcards, a pure one-suit hand and four wildcards each pay ten. Four wildcards can win
+without a complete shape on the holder's draw. With exactly three wildcards, an ordinary Burst or discard win
+is unavailable. A kong draw, kong Burst or qualifying float can win. Between independent categories use the
+higher payout. A float pays ten per floated wildcard, plus five per uninterrupted kong or flower group before
+or after a float. Add ten when the floated wildcards plus those still held reach four. All other seats pay the
+winning share, with zero payments on a draw.
+
 ## Sources
 
 - [Zhejiang Game Hall three-player rules and multiplier table](https://www.hzbianqu.com/game/581.html)
@@ -212,4 +242,5 @@ win share, including the no-wildcard rate if it qualifies. Double for earlier ko
 - [Zhejiang Game Hall Songyang scoring and reserve](https://www.hzbianqu.com/game/218.html)
 - [Zhejiang Game Hall Suichang hand and payment table](https://www.hzbianqu.com/game/47.html)
 - [Zhejiang Game Hall Deqing Wukang and Xinshi scoring tables and multi-win rules](https://www.hzbianqu.com/game/919.html)
+- [Zhejiang Game Hall Anji flowers, replacements and scoring](https://www.hzbianqu.com/game/886.html)
 - [Zhejiang Game Hall Seven Winds definition for the related Jinhua room](https://www.hzbianqu.com/game/74.html)

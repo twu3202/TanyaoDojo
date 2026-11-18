@@ -78,12 +78,12 @@ def split_wild(hand, wildcard=WHITE):
 
 
 @lru_cache(maxsize=16384)
-def burst_wait(hand, meld_count, wildcard=WHITE):
+def burst_wait(hand, meld_count, wildcard=WHITE, excluded=frozenset()):
     """A 13-tile hand has a wildcard reserved to pair with the next draw."""
     natural, wild = split_wild(hand, wildcard)
     if not wild or sum(hand) != 13 - 3 * meld_count:
         return False, False
-    return can_form_sets(natural, wild - 1), not meld_count and can_form_pairs(natural, wild - 1)
+    return can_form_sets(natural, wild - 1, excluded), not meld_count and can_form_pairs(natural, wild - 1)
 
 
 def score_hand(hand, meld_count, ctx, floats=0, kongs_before_float=0, *, require_burst=False, allow_ron=False):
@@ -136,6 +136,8 @@ def _score_shape(base, patterns, burst, kong_chain, floats, kongs_before_float):
 
 
 class HangzhouGame(HonorsGame):
+    excluded_tiles = frozenset()
+
     def __init__(self, seed, dealer, round_wind, *, rules, dealer_streak=0):
         self.float_cycle_owner = None
         self.floated = set()
@@ -201,7 +203,7 @@ class HangzhouGame(HonorsGame):
         elif self.drawn_tile is not None and self.remaining and ('discard', wildcard) in actions:
             player = self.players[actor]
             before = without_tile(tuple(player.hand), wildcard)
-            if any(burst_wait(before, len(player.melds), wildcard)):
+            if any(burst_wait(before, len(player.melds), wildcard, self.excluded_tiles)):
                 actions[actions.index(('discard', wildcard))] = FLOAT[0], wildcard
         return actor, actions
 
@@ -214,9 +216,12 @@ class HangzhouGame(HonorsGame):
         self.last_call = None
         self.floated.add(actor)
         self.float_streak[actor] += 1
-        self.float_kongs[actor] += self.kong_chain
+        self.float_kongs[actor] += self._float_kong_count()
         self.float_cycle_owner = actor
         self._throw_tile(actor, self.wildcard_tile)
+
+    def _float_kong_count(self):
+        return self.kong_chain
 
     def _discard(self, actor, tile):
         self.float_streak[actor] = 0

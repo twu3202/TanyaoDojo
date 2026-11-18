@@ -41,3 +41,23 @@
 .table.two-player .dora{flex-wrap:wrap;max-width:none;min-width:155px}
 .white-substitute{flex-basis:100%;line-height:1.4}
 .hand-tile.is-wildcard{box-shadow:inset 0 -3px 0 #e9c47c}
+
+.flower-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin: 4px 0;
+  font-size: 0.7rem;
+}
+.flower-row img { width: 16px; }
+.flower-face {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.35em;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: #edf3e5;
+  color: #27493d;
+  font-size: 0.72rem;
+}

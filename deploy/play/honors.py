@@ -234,7 +234,7 @@ class HonorsGame:
         self.dealer = dealer
         self.round_wind = round_wind
         self.next_dealer = dealer
-        self.tile_supply = Counter({tile: COPIES[tile] for tile in self.options.tile_kinds})
+        self.tile_supply = self._tile_supply()
         self.wall = list(self.tile_supply.elements())
         random.Random(seed).shuffle(self.wall)
         self.players = [Player() for _ in range(self.seat_count)]
@@ -267,9 +267,11 @@ class HonorsGame:
         self.revealed = {}
         self.claimed_tile = None
         self.reason_code = None
+        self._prepare_wall()
         for _ in range(13):
             for step in range(self.seat_count):
-                self.players[(dealer + step) % self.seat_count].hand[self.wall.pop()] += 1
+                actor = (dealer + step) % self.seat_count
+                self.players[actor].hand[self._deal_tile(actor)] += 1
         self._draw(dealer)
         if self.options.exchange_count:
             self.phase = 'exchange'
@@ -278,6 +280,15 @@ class HonorsGame:
 
     def scores(self):
         return [player.score for player in self.players]
+
+    def _tile_supply(self):
+        return Counter({tile: COPIES[tile] for tile in self.options.tile_kinds})
+
+    def _prepare_wall(self):
+        pass
+
+    def _deal_tile(self, actor):
+        return self.wall.pop()
 
     @property
     def remaining(self):
@@ -297,10 +308,10 @@ class HonorsGame:
         return counts
 
     def _draw(self, actor, kong_chain=0, provider=None):
-        if not self.remaining:
+        tile = self._take_tile(actor, bool(kong_chain))
+        if tile is None:
             self._end('draw')
             return
-        tile = self.wall.pop(self._replacement_index() if kong_chain else -1)
         player = self.players[actor]
         player.hand[tile] += 1
         player.draws += 1
@@ -314,6 +325,11 @@ class HonorsGame:
         self.kong_chain = kong_chain
         self.kong_provider = provider
         self.forbidden_discards = frozenset()
+
+    def _take_tile(self, actor, replacement):
+        if self.remaining:
+            return self.wall.pop(self._replacement_index() if replacement else -1)
+        return None
 
     def _replacement_index(self):
         return self.rules.WALL_RESERVE if any(self.options.horse_counts) else 0
