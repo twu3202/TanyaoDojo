@@ -1,19 +1,23 @@
-"""Browser session adapter for the no-flower Hong Kong table."""
+"""Browser session adapter for the 136-tile honors and chows family."""
 
 from dataclasses import asdict
 import random
 import time
 
-from . import hongkong
+from . import hongkong, macau
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .honors import PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 
 
-class HongKongSession(GameSession):
-    def __init__(self, policy='heuristic', *, model=None, seed=None, pacing=.12):
-        super().__init__(hongkong.VARIANT, policy, seed=seed, pacing=pacing)
+RULESETS = {rule.VARIANT: rule for rule in (hongkong, macau)}
+
+
+class HonorsSession(GameSession):
+    def __init__(self, policy='heuristic', *, model=None, seed=None, pacing=.12, variant=hongkong.VARIANT):
+        super().__init__(variant, policy, seed=seed, pacing=pacing)
+        self.rules = RULESETS[variant]
         self.hand_number = 0
         self.totals = [0] * 4
         self.dealer = random.Random(self.seed).randrange(4)
@@ -30,7 +34,7 @@ class HongKongSession(GameSession):
                 raise ClientError('round_active')
             self.hand_number += 1
             self.game = HonorsGame(self.seed + self.hand_number, self.dealer,
-                                   27 + (self.dealer_advances // 4) % 4, rules=hongkong)
+                                   27 + (self.dealer_advances // 4) % 4, rules=self.rules)
             self.result = None
             self.options = []
             self.automatic = False
@@ -60,7 +64,8 @@ class HongKongSession(GameSession):
         drawn = tile_name(game.drawn_tile) if current == 0 and game.drawn_tile is not None else None
         return {'players': players, 'hand_number': self.hand_number, 'dealer': game.dealer,
                 'round_wind': tile_name(game.round_wind), 'show_winds': True,
-                'current': current, 'remaining': len(game.wall), 'dora': [], 'honba': 0,
+                'match_hands': self.rules.MATCH_HANDS,
+                'current': current, 'remaining': game.remaining, 'dora': [], 'honba': 0,
                 'pot': 0, 'phase': game.phase, 'drawn': drawn}
 
     def option(self, action):
@@ -105,9 +110,18 @@ class HongKongSession(GameSession):
         if not game.winners:
             self.log_event('draw', kind='round')
         for win in game.win_details:
-            self.log_event('win_fan', {'actor': win.actor, 'fan': win.fan, 'patterns': win.patterns}, 'win')
+            if win.tier:
+                self.log_event('win_tier', {'actor': win.actor, 'tier': win.tier, 'patterns': win.patterns}, 'win')
+            else:
+                self.log_event('win_fan', {'actor': win.actor, 'fan': win.fan, 'patterns': win.patterns}, 'win')
+        match_hands = self.rules.MATCH_HANDS
+        finished = self.hand_number == match_hands
         with self.cv:
             self.result = {'reason_code': game.reason_code, 'scores': self.totals.copy(),
                            'deltas': delta, 'winners': game.winners.copy(),
-                           'win_details': [asdict(win) for win in game.win_details], 'next': True}
-            self.publish(table, 'round_end')
+                           'win_details': [asdict(win) for win in game.win_details], 'next': not finished}
+            if finished:
+                best = max(self.totals)
+                self.result['match_hands'] = match_hands
+                self.result['match_winners'] = [seat for seat, points in enumerate(self.totals) if points == best]
+            self.publish(table, 'finished' if finished else 'round_end')

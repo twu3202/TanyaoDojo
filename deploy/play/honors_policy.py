@@ -3,6 +3,7 @@
 from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
+from types import ModuleType
 
 from common.suit_table import load_table
 
@@ -20,6 +21,7 @@ class PolicyView:
     round_wind: int
     offered: int | None
     remaining: int
+    rules: ModuleType = hongkong
 
 
 def policy_view(game, actor, actions):
@@ -32,7 +34,7 @@ def policy_view(game, actor, actions):
     player = game.players[actor]
     return PolicyView(tuple(player.hand), tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
                       tuple(actions), 27 + (actor - game.dealer) % 4, game.round_wind,
-                      None if game.offer is None else game.offer.tile, len(game.wall))
+                      None if game.offer is None else game.offer.tile, game.remaining, game.rules)
 
 
 @lru_cache(maxsize=1)
@@ -89,6 +91,12 @@ def _triplet_distance(hand, needed):
 
 
 def _distance(hand, melds, view):
+    if not view.rules.MIN_FAAN:
+        best = standard_distance(hand, len(melds))
+        if not melds:
+            orphans = 13 - sum(bool(hand[tile]) for tile in ORPHANS) - any(hand[tile] > 1 for tile in ORPHANS)
+            best = min(best, orphans)
+        return best
     open_melds = tuple(meld for meld in melds if meld.kind != 'gang_an')
     valued = {meld.tile for meld in melds if meld.kind != 'chi'}
     value_faan = len(valued & DRAGONS) + (view.seat_wind in valued) + (view.round_wind in valued)
@@ -119,9 +127,9 @@ def _ready_waits(hand, melds, view, live):
             continue
         augmented[tile] += 1
         ron = WinContext('ron', tile, view.seat_wind, view.round_wind)
-        if hongkong.faan(augmented, melds, ron) is not None:
+        if view.rules.faan(augmented, melds, ron) is not None:
             waits += 2 * count
-        elif hongkong.faan(augmented, melds, WinContext('zimo', tile, view.seat_wind, view.round_wind)) is not None:
+        elif view.rules.faan(augmented, melds, WinContext('zimo', tile, view.seat_wind, view.round_wind)) is not None:
             waits += count
         augmented[tile] -= 1
     return waits
@@ -202,7 +210,8 @@ def heuristic(view):
         if kind == 'pass':
             continue
         if kind == 'chi':
-            take, block = next((take, block) for start, take, block in chow_choices(view.hand, offered)
+            choices = chow_choices(view.hand, offered, swap_lock=view.rules.SWAP_LOCK)
+            take, block = next((take, block) for start, take, block in choices
                                if start == argument)
             meld = Meld('chi', argument)
         else:

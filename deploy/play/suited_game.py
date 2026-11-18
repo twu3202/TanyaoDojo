@@ -21,6 +21,7 @@ def policy_view(game, actor, acts):
     player = game.players[actor]
     return {
         'hand': player.hand.copy(), 'melds': player.melds.copy(), 'void': None,
+        'allow_seven_pairs': game.rules.allow_seven_pairs,
         'actions': acts.copy(), 'public': dict(visible),
         'pending_tile': None if offer is None else offer.tile,
         'opponents': [{'void': None, 'finished': False, 'melds': len(other.melds)}
@@ -125,6 +126,13 @@ class SuitedSession(GameSession):
             self.result = {'reason_code': game.reason_code, 'scores': self.totals.copy(),
                            'deltas': delta, 'winners': game.winners.copy(),
                            'win_details': [asdict(win) for win in game.win_details], 'next': True}
+            if game.rules.regional_payment:
+                refunded = game.reason_code == 'draw' and game.rules.refund_kongs_on_draw
+                self.result['kong_deltas'] = [0] * 4 if refunded else game.kong_deltas.copy()
+            if game.wake_results:
+                self.result['wake_tiles'] = [tile_name(tile) for tile in game.wake_indicators]
+                self.result['wake_details'] = [{'actor': actor, 'count': count, 'hits': hits}
+                                               for actor, (count, hits) in game.wake_results.items()]
             self.publish(view, 'round_end')
 
     def log_call(self):

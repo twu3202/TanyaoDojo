@@ -5,7 +5,7 @@ import unittest
 
 from deploy.play import hongkong
 from deploy.play.honors import COPIES, ORPHANS, PASS, RON, ZIMO, HonorsGame, Meld, WinContext, standard_shapes
-from deploy.play.honors_game import HongKongSession
+from deploy.play.honors_game import HonorsSession
 from deploy.play.honors_policy import heuristic, policy_view, standard_distance
 
 
@@ -18,8 +18,8 @@ def counts(tiles):
     return [tiles.count(tile) for tile in range(34)]
 
 
-def fixture(hands, melds=None, *, drawn=0, opening=False):
-    game = HonorsGame(0, 0, 27, rules=hongkong)
+def fixture(hands, melds=None, *, drawn=0, opening=False, rules=hongkong):
+    game = HonorsGame(0, 0, 27, rules=rules)
     used = Counter(tile for tiles in hands.values() for tile in tiles)
     for actor, player in enumerate(game.players):
         player.melds = (melds or {}).get(actor, []).copy()
@@ -77,9 +77,9 @@ class FaanRules(unittest.TestCase):
             self.assertEqual(hongkong.payments(fan, 'zimo', 1, liable=0), (3*share, 0, 0, 0))
             self.assertEqual(hongkong.payments(fan, 'rob_kong', 1, 3, liable=0), (0, 0, 0, 3*share))
         melds = [Meld('peng', 31, 1), Meld('gang_bu', 32, 2), Meld('peng', 33, 0)]
-        self.assertEqual(hongkong.liability(melds, melds[-1]), 0)
+        self.assertEqual(hongkong.liability(melds, melds[-1]), ('self_draw',))
         melds.append(Meld('chi', 0, 2))
-        self.assertEqual(hongkong.liability(melds, melds[-1]), 2)
+        self.assertEqual(hongkong.liability(melds, melds[-1]), ('self_draw',))
 
 
 class HonorsGameRules(unittest.TestCase):
@@ -200,7 +200,7 @@ class HongKongIntegration(unittest.TestCase):
         game.players[1].hand, game.players[2].hand = game.players[2].hand, game.players[1].hand
         self.assertEqual(before, policy_view(game, actor, actions))
         self.assertIn(heuristic(before), actions)
-        session = HongKongSession(seed=11, pacing=0)
+        session = HonorsSession(seed=11, pacing=0)
         self.addCleanup(session.close)
         session.begin()
         session.auto()

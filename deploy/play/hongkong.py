@@ -1,6 +1,7 @@
 """No-flower Hong Kong Old Style, based on the CUHK alumni tournament table."""
 
 from dataclasses import dataclass
+from typing import ClassVar
 
 from .honors import DRAGONS, ORPHANS, TERMINALS, WINDS, standard_shapes, thirteen_orphans
 
@@ -8,16 +9,25 @@ VARIANT = 'hong-kong-old-style'
 MIN_FAAN = 3
 CAP = 8
 SELF_DRAW_SHARE = (0, 0, 0, 16, 32, 48, 64, 96, 128)
+WALL_RESERVE = 0
+MATCH_HANDS = None
+SWAP_LOCK = True
+PASS_LOCK = True
 
 
 @dataclass(frozen=True)
 class Faan:
     raw: int
     patterns: tuple[str, ...]
+    tier: ClassVar[None] = None
 
     @property
     def fan(self):
         return min(self.raw, CAP)
+
+    @property
+    def share(self):
+        return SELF_DRAW_SHARE[self.fan]
 
 
 def faan(hand, melds, ctx):
@@ -103,18 +113,19 @@ def payments(fan, kind, winner, provider=None, liable=None):
     return tuple(0 if seat == winner else share for seat in range(4))
 
 
-def share(fan):
-    return SELF_DRAW_SHARE[fan]
+def settlement(score, kind, winner, provider, liabilities):
+    liable = liabilities[-1][1] if liabilities else None
+    return payments(score.fan, kind, winner, provider, liable)
 
 
 def liability(melds, last):
     if len(melds) == 4:
-        return last.provider
+        return ('self_draw',)
     if last.kind != 'chi' and last.tile in DRAGONS:
         exposed = {meld.tile for meld in melds if meld.kind in ('peng', 'gang_ming', 'gang_bu')}
         if DRAGONS <= exposed:
-            return last.provider
-    return None
+            return ('self_draw',)
+    return ()
 
 
 def next_dealer(dealer, winners):

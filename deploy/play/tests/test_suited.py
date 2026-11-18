@@ -292,6 +292,14 @@ class SuitedIntegration(unittest.TestCase):
             snap = session.snapshot()
             self.assertEqual(snap['variant'], profile.value)
             self.assertEqual(sum(snap['result']['scores']), 0)
+            if game.rules.regional_payment is not None:
+                result = snap['result']
+                expected = result['kong_deltas'].copy()
+                for win in result['win_details']:
+                    for payer, points in enumerate(win['payments']):
+                        expected[payer] -= points
+                        expected[win['actor']] += points
+                self.assertEqual(result['deltas'], expected)
             self.assertTrue(all(not player['hand'] or player['won'] for player in snap['table']['players'][1:]))
             expected_dealer = session.next_dealer
             session.begin()

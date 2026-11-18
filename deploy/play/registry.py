@@ -1,6 +1,7 @@
 """Versioned playable rules; English is the API default."""
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
+from .macau import VARIANT as MACAU
 from .suited import Profile
 
 VARIANTS = {'riichi': {'id': 'riichi',
@@ -328,6 +329,127 @@ VARIANTS[_XUANHUA] = {
     }},
 }
 
+_SHAANXI = Profile.SHAANXI.value
+_LISHUI = Profile.LISHUI.value
+_WENXI = Profile.WENXI.value
+_GUILIN = Profile.GUILIN.value
+
+VARIANTS[_SHAANXI] = {
+    **_SUITED,
+    'id': _SHAANXI, 'name': 'Shaanxi Mahjong',
+    'aliases': ['Shaanxi', '陕西', '陝西', '边锋陕西'],
+    'rule_version': 'shaanxi-bianfeng-dojo-v1',
+    'subtitle': 'Shaanxi · Nearest winner · Dealer doubles', 'badge': 'Shaanxi · 108 tiles',
+    'description': 'The 108-tile Bianfeng room with nearest-first wins and dealer-relative payments.',
+    'rules': [
+        '108 suited tiles. Pon and kong are allowed. Four sets and one pair can win; the seven-pairs option is off.',
+        'A discard or added kong has at most one winner, the nearest seat in play order that accepts.',
+        'Passing a discard win prevents winning on that same tile until you next draw or successfully call pon or kong.',
+        'A discard or robbed kong pays 1; self-draw pays 2 from each opponent. Double each win payment involving '
+        'the dealer. Paozi is fixed at zero. Direct kong pays 1 from the provider; added and concealed kongs pay 1 and 2 '
+        'from each opponent, respectively. Keep kong points on a draw.',
+        'First dealer is random. The winner deals next; on a draw the dealer stays.',
+    ],
+    'sources': [{'title': 'Bianfeng Shaanxi rules', 'url': 'https://www.hzbianqu.com/game/360.html'}],
+    'translations': {'zh-CN': {
+        'name': '陕西麻将', 'family': '数牌点炮家族', 'subtitle': '陕西 · 截胡 · 庄家翻倍',
+        'badge': '陕西 · 108 张', 'description': '边锋陕西数牌房，支持截胡、同张过胡和庄家翻倍。',
+        'rules': ['108 张，只碰杠、不吃。可胡四组一对，本桌关闭七对。',
+                  '点炮和抢补杠均截胡，由顺位最近且接受胡牌的一家胡。',
+                  '过胡同张锁至自己摸牌或成功碰杠，其他胡张不受影响。',
+                  '点炮或抢杠供牌者付 1，自摸其他每家付 2。胡分涉及庄家时加倍。本桌炮子固定 0。'
+                  '直杠供牌者付 1，补杠其他每家付 1，暗杠其他每家付 2。流局保留杠分。',
+                  '首庄随机，赢家接庄，流局连庄。'],
+    }},
+}
+VARIANTS[_LISHUI] = {
+    **_SUITED,
+    'id': _LISHUI, 'name': 'Lishui Fangpao Mahjong',
+    'aliases': ['Lishui', 'Qingtian Fangpao', '丽水', '麗水', '青田放炮'],
+    'rule_version': 'lishui-fangpao-dojo-v1',
+    'subtitle': 'Zhejiang · Last four tiles · Three-winner bonus', 'badge': 'Lishui · 108 tiles',
+    'description': 'A Qingtian-area room with separate discard and self-draw schedules and end-of-wall payments.',
+    'rules': [
+        '108 suited tiles. Pon, kong, seven pairs and multiple discard winners are allowed.',
+        'Base share, self-draw / discard: ordinary 2 / 1, all triplets 4 / 6, four concealed sets 12 / 18, '
+        'one suit 8 / 12, seven pairs 6 / 9, one-suit seven pairs 12 / 18, four exposed sets 8 / 12. '
+        'Opening dealer self-draw is 16; a win on the first discard is 20.',
+        'A kong replacement and a final-tile self-draw each double the self-draw share. The provider of a direct '
+        'kong covers three shares on its replacement win. The provider also covers three self-draw shares on '
+        'a robbed kong or a discard from any of the last four draws. Three simultaneous discard wins double the bills.',
+        'Direct kong pays 3 from the provider, added kong pays 1 each and concealed kong pays 2 each. '
+        'Kong transfers are reversed on a draw.',
+    ],
+    'sources': [{'title': 'Lishui Fangpao room rules', 'url': 'https://www.hzbianqu.com/game/1066.html'},
+                {'title': 'Qingtian scoring table', 'url': 'https://www.hzbianqu.com/article/1519.html'}],
+    'translations': {'zh-CN': {
+        'name': '丽水放炮麻将', 'family': '数牌点炮家族', 'subtitle': '浙江 · 尾四牌包三 · 三响翻倍',
+        'badge': '丽水 · 108 张', 'description': '青田一带的放炮玩法，点炮与自摸有不同分表。',
+        'rules': ['108 张数牌，可碰杠、七对和一炮多响。',
+                  '每份自摸／点炮分别为平胡 2／1、对对胡 4／6、豪华大对 12／18、清一色 8／12、七对 6／9、'
+                  '清七对 12／18、单钓 8／12。天胡每家 16，庄家首打的地胡付 20。',
+                  '杠开和海底自摸各翻倍，直杠补牌胡由点杠者包三。抢杠或最后四次摸牌后点炮，'
+                  '供牌者按自摸分包三份。一炮三响再翻倍。',
+                  '直杠供牌者付 3，补杠其他每家付 1，暗杠其他每家付 2。流局返还所有杠分。'],
+    }},
+}
+VARIANTS[_WENXI] = {
+    **_SUITED,
+    'id': _WENXI, 'name': 'Wenxi Mahjong',
+    'aliases': ['Wenxi', 'Qingtian Wenxi', '温溪', '溫溪'],
+    'rule_version': 'wenxi-dojo-v1',
+    'subtitle': 'Zhejiang · Direct-kong liability · Draw refunds', 'badge': 'Wenxi · 108 tiles',
+    'description': 'A separate Qingtian ruleset with its own base scores and direct-kong replacement payments.',
+    'rules': [
+        '108 suited tiles. Pon and kong are allowed. Standard hands and seven pairs can win.',
+        'Base share, self-draw / discard: ordinary 2 / 1, all triplets 4 / 2, four concealed sets 6 / 3, '
+        'one suit 6 / 3, seven pairs 6 / 3, one-suit seven pairs 8 / 4, four exposed sets 4 / 2. '
+        'Opening dealer self-draw is 8; a win on the first discard is 4.',
+        'Replacement wins use the self-draw share. A direct kong provider covers all three shares on the '
+        'replacement win. This room also allows multiple wins and treats an added-kong robbery as a covered self-draw.',
+        'Direct kong pays 1 from the provider, added kong pays 1 each and concealed kong pays 2 each. '
+        'Kong transfers are reversed on a draw.',
+    ],
+    'sources': [{'title': 'Wenxi room rules', 'url': 'https://www.hzbianqu.com/game/60.html'}],
+    'translations': {'zh-CN': {
+        'name': '温溪麻将', 'family': '数牌点炮家族', 'subtitle': '浙江 · 直杠杠开包三 · 流局退杠',
+        'badge': '温溪 · 108 张', 'description': '青田温溪数牌玩法，按本地分表结算，直杠杠开由供牌者承包。',
+        'rules': ['108 张数牌，可碰杠，能胡标准型或七对。',
+                  '每份自摸／点炮分别为平胡 2／1、对对胡 4／2、豪华大对 6／3、清一色 6／3、七对 6／3、'
+                  '清七对 8／4、单钓 4／2。天胡每家 8，庄家首打的地胡付 4。',
+                  '杠开按自摸分。直杠补牌胡由点杠者包三。本桌采用一炮多响，抢补杠按自摸包三。',
+                  '直杠供牌者付 1，补杠其他每家付 1，暗杠其他每家付 2。流局返还所有杠分。'],
+    }},
+}
+VARIANTS[_GUILIN] = {
+    **_SUITED,
+    'id': _GUILIN, 'name': 'Guilin Zhuanzhuan Mahjong',
+    'aliases': ['Guilin', 'Guangxi', '桂林', '桂林转转', '桂林轉轉', '广西'],
+    'rule_version': 'guilin-zhuanzhuan-classic-dojo-v1',
+    'subtitle': 'Guangxi · Classic room · Wake tiles', 'badge': 'Guilin · 108 tiles',
+    'description': 'The classic suited room where winners reveal wake indicators after a win.',
+    'rules': [
+        '108 suited tiles. Pon, kong and seven pairs are allowed. Passing an ordinary discard win blocks '
+        'further ordinary discard wins until your next draw. Multiple wins are allowed.',
+        'Discard win or added-kong robbery pays 1 from the provider; self-draw pays 2 from each opponent. '
+        'Direct kong pays 3 from the provider, added kong pays 1 each and concealed kong pays 2 each. Keep kong points on a draw.',
+        'Reveal a wake indicator after winning. Its same-suit neighbors, wrapping between 1 and 9, each add '
+        '1 per matching tile in the winning hand and melds. A matching kong extends the shared sequence for that winner.',
+        'You deal first. The sole winner, or the provider after a multiple win, deals next. The dealer repeats on a draw.',
+    ],
+    'sources': [{'title': 'Guilin Zhuanzhuan classic rules', 'url': 'https://www.hzbianqu.com/game/1042.html'}],
+    'translations': {'zh-CN': {
+        'name': '桂林转转（经典）', 'family': '数牌点炮家族', 'subtitle': '广西 · 经典场 · 上下醒',
+        'badge': '桂林 · 108 张', 'description': '经典数牌房，胡后翻醒牌，醒牌命中杠可续翻。',
+        'rules': ['108 张数牌，可碰杠，可胡七对，允许一炮多响。过普通点炮胡后，自己再摸牌前不能接炮。',
+                  '点炮或抢杠供牌者付 1，自摸其他每家付 2。直杠供牌者付 3，补杠其他每家付 1，'
+                  '暗杠其他每家付 2。流局保留杠分。',
+                  '胡后翻醒。同花色前后各一张为醒牌，1 与 9 循环。手牌和副露每命中一张每份加 1。'
+                  '某次翻醒命中赢家的杠，该赢家继续看下一张醒牌，多响共用翻出的序列。',
+                  '首局你坐庄，单胡赢家或多响供牌者接庄，流局连庄。'],
+    }},
+}
+
 VARIANTS[HONG_KONG] = {
     'id': HONG_KONG,
     'family_id': 'honors-and-chows',
@@ -369,6 +491,45 @@ VARIANTS[HONG_KONG] = {
     }},
 }
 
+VARIANTS[MACAU] = {
+    'id': MACAU,
+    'family_id': 'honors-and-chows',
+    'family': 'Honors and chows',
+    'name': 'Macau Tournament Mahjong',
+    'aliases': ['Macau', 'Macao', '澳门', '澳門', '澳门竞技', '澳大校友会'],
+    'rule_version': 'macau-alumni-2011-dojo-v1-20261118',
+    'subtitle': 'Macau · No minimum faan · Four winds',
+    'badge': 'Macau · 136 tiles',
+    'description': 'A sixteen-hand match based on the Macau University alumni tournament rules.',
+    'rules': [
+        '136 tiles and no flowers. Four sets and a pair or Thirteen Orphans can win. '
+        'Chow only from the preceding seat; wins beat pong and kong, which beat chow.',
+        'There is no minimum faan. A zero-faan discard win pays 5. At 1–6 faan, a discard win pays '
+        '20 per faan; for self-draw each opponent pays 10 per faan. Two special tiers use separate fixed payments.',
+        'Robbing an added kong pays as a discard win. Only Thirteen Orphans can rob a concealed kong. '
+        'A qualifying self-draw may charge all three shares to the player who supplied the decisive meld.',
+        'Keep 14 tiles in reserve. No kong on the last live draw. The last discard can only be claimed to win.',
+        'Four hands in each of the East, South, West and North rounds. The dealer advances after every hand, '
+        'and the match ends after 16 hands. The highest cumulative score wins.',
+    ],
+    'sources': [{'title': 'University of Macau Alumni Association tournament rules (PDF)',
+                 'url': 'https://www.aaaum.org.mo/wp-content/uploads/2011/06/mahjong_rules_2011.pdf'}],
+    'default_policy': 'heuristic',
+    'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'translations': {'zh-CN': {
+        'name': '澳门竞技麻将', 'family': '字牌与吃牌家族',
+        'subtitle': '澳门 · 零番可胡 · 四圈轮庄', 'badge': '澳门 · 136 张',
+        'description': '以澳门大学校友会 2011 年赛例为依据，完整打 16 局。',
+        'rules': [
+            '136 张，无花。四组一对或十三幺可胡。只吃上家，胡优先于碰杠，碰杠优先于吃。',
+            '不限起胡番数。零番出铳付 5 分。普通 1–6 番，出铳每番 20，自摸其他每家每番 10。A、B 类奇牌另定分。',
+            '抢补杠按出铳算；只有十三幺可抢暗杠。符合清一色十二章、大三元、大四喜或四杠的包牌条件时，由供牌者包自摸。',
+            '留 14 张王牌。最后一张摸牌不能杠，最后一张弃牌只能胡。',
+            '东南西北各四局，每局必轮庄。16 局打完结束，累计得分最高者获胜。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -376,4 +537,9 @@ SESSION_OPTIONS = {
     _CHANGSHA: {'profile': _CHANGSHA},
     _TAISHUN: {'profile': _TAISHUN},
     _XUANHUA: {'profile': _XUANHUA},
+    _SHAANXI: {'profile': _SHAANXI},
+    _LISHUI: {'profile': _LISHUI},
+    _WENXI: {'profile': _WENXI},
+    _GUILIN: {'profile': _GUILIN},
+    MACAU: {'variant': MACAU},
 }

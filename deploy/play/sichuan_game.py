@@ -5,18 +5,21 @@ from collections import Counter
 import copy
 import time
 import numpy as np
-from common.suit_table import load_table, shanten_np
+from common.suit_table import load_table, query_np, shanten_np
 from sichuan.reference_impl import SichuanGame, is_hu
 from .core import GameSession, NAMES, SUITS, tile_name, tile_label, Closed
 
 _TABLE = None
 
 
-def distance(hand, melds, void):
+def distance(hand, melds, void, *, allow_seven_pairs=True):
     global _TABLE
     if _TABLE is None:
         _TABLE = load_table()
-    return shanten_np(_TABLE, hand, melds, -1 if void is None else void)
+    void_suit = -1 if void is None else void
+    if allow_seven_pairs:
+        return shanten_np(_TABLE, hand, melds, void_suit)
+    return query_np(_TABLE, hand, melds, void_suit)[0]
 
 
 class WebGame(SichuanGame):
@@ -83,6 +86,7 @@ def public_features(g, me, acts):
 
 def heuristic(view):
     hand, melds, void, acts = view['hand'], view['melds'], view['void'], view['actions']
+    allow_pairs = view.get('allow_seven_pairs', True)
     for a in acts:
         if a[0] in ('ron','zimo'):
             return a
@@ -93,7 +97,7 @@ def heuristic(view):
         scores = []
         for a in discards:
             h = hand[:];h[a[1]]-=1
-            scores.append((distance(h,len(melds),void),a,h))
+            scores.append((distance(h,len(melds),void,allow_seven_pairs=allow_pairs),a,h))
         best=min(x[0] for x in scores)
         finalists=[x for x in scores if x[0]==best]
         out=[]
@@ -103,7 +107,7 @@ def heuristic(view):
             for t in range(27):
                 if t//9 == void or seen[t]>=4:continue
                 after=h[:];after[t]+=1
-                if distance(after,len(melds),void)<sh:
+                if distance(after,len(melds),void,allow_seven_pairs=allow_pairs)<sh:
                     effective+=max(0,4-seen[t])
             # Only a tie-break: don't import riichi-style folding into this ruleset.
             danger=sum(0 if q['finished'] or q['void']==a[1]//9 else 1+q['melds']*.15 for q in view['opponents'])
@@ -115,7 +119,9 @@ def heuristic(view):
     if ('peng',None) in acts:
         # Identify the offered tile via the immutable action context supplied by the adapter.
         t=view['pending_tile'];h=hand[:];h[t]-=2
-        if distance(h,len(melds)+1,void)<=distance(hand,len(melds),void):
+        after_call = distance(h, len(melds) + 1, void, allow_seven_pairs=allow_pairs)
+        without_call = distance(hand, len(melds), void, allow_seven_pairs=allow_pairs)
+        if after_call <= without_call:
             return ('peng',None)
     return ('pass',None)
 

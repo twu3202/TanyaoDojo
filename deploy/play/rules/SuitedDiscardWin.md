@@ -1,8 +1,7 @@
 # Suited discard-win rooms
 
-Four rooms share a four-player, 108-tile state machine. Each allows standard hands and concealed seven pairs
-(four identical tiles supply two pairs). The first self-draw or winning response window ends the hand. Ordinary
-discards can have multiple winners. Xuanhua limits kong robbery to the nearest player who accepts the offer.
+These rooms share a four-player, 108-tile state machine. Concealed seven pairs is enabled where listed; four
+identical tiles supply two pairs. The first self-draw or winning response window ends the hand.
 
 ## Wenzhou Fangpao
 
@@ -84,6 +83,66 @@ three opponents then pay the self-draw share, including the player who offered t
 discard win blocks further ordinary discard wins until that player's next discard. The lock applies only to discard
 wins, so the player can accept a later kong robbery. The human hosts and deals first. A sole winner or the discarder
 after multiple wins deals next. The dealer repeats on a draw.
+
+## Shaanxi
+
+Rule ID `shaanxi-bianfeng-dojo-v1`. [Bianfeng Shaanxi rules](https://www.hzbianqu.com/game/360.html).
+
+The selected room sets paozi to zero and disables seven pairs. A hand also recognizable as seven pairs may win
+if it forms four sets and a pair. Discards and added-kong offers go to the nearest accepting winner. Passing a
+discard win locks the same tile only, until drawing, pon or kong. A discard or robbed kong pays 1 from the
+provider, and self-draw pays 2 from each opponent. Each win payment involving the dealer doubles. Direct kong
+pays 1 from the provider, added kong pays 1 each, and concealed kong pays 2 each. Keep kong points on a draw.
+The first dealer is random, the winner deals next following the source's final dealer instruction, and the
+dealer repeats on a draw.
+
+## Lishui Fangpao and Wenxi
+
+Rule IDs `lishui-fangpao-dojo-v1` and `wenxi-dojo-v1`. [Lishui room rules](https://www.hzbianqu.com/game/1066.html),
+[Wenxi room rules](https://www.hzbianqu.com/game/60.html), [Qingtian scoring comparison](https://www.hzbianqu.com/article/1519.html).
+
+Both allow standard hands and seven pairs and use the highest applicable base share. The single-wait row means
+four declared melds and one tile waiting to pair. Four concealed sets includes concealed kongs, following the
+[operator's related Lishui definition](https://www.hzbianqu.com/game/1110.html).
+
+| Shape | Lishui self-draw / discard | Wenxi self-draw / discard |
+| --- | ---: | ---: |
+| Regular | 2 / 1 | 2 / 1 |
+| All triplets | 4 / 6 | 4 / 2 |
+| Four concealed sets | 12 / 18 | 6 / 3 |
+| One suit | 8 / 12 | 6 / 3 |
+| Seven pairs | 6 / 9 | 6 / 3 |
+| One-suit seven pairs | 12 / 18 | 8 / 4 |
+| Dealer initial hand | 16 / — | 8 / — |
+| Win on dealer's first discard | — / 20 | — / 4 |
+| Four declared melds, single wait | 8 / 12 | 4 / 2 |
+
+An ordinary discard provider pays one share. Each opponent pays a self-draw share. A direct-kong provider
+covers three shares on that kong's replacement win. A robbed added kong uses three self-draw shares from its
+provider. Wenxi uses the same robbery convention as Lishui, and both allow multiple winners. These rooms
+randomize the first dealer, then pass to the winner or the provider after a multi-win, and repeat on draws.
+
+Lishui doubles the share on a replacement win and doubles it on a last-wall self-draw. Wenxi uses the ordinary
+self-draw share. A Lishui discard with fewer than four tiles left costs the discarder three self-draw shares.
+Three winners on one discard double the final bill, including a last-four bill. Lishui uses the listed table
+with the all-flat room and score overrides off. Direct kong pays 3 in Lishui and 1 in Wenxi, from the provider.
+Added and concealed kongs pay 1 and 2 respectively from each opponent. Draws reverse all kong transfers.
+
+## Guilin Zhuanzhuan, classic
+
+Rule ID `guilin-zhuanzhuan-classic-dojo-v1`. [Guilin classic rules](https://www.hzbianqu.com/game/1042.html).
+
+This room uses 108 tiles with seven pairs, the upper/lower wake option and base scores without dealer adjustments.
+A discard or robbed kong pays 1 from the provider, and self-draw pays 2 from each opponent. Direct kong pays
+3 from the provider, added kong pays 1 each and concealed kong pays 2 each. Keep kong transfers on a draw.
+A passed ordinary win locks all ordinary discard wins until the player's next draw. You deal first. The winner
+deals next, or the provider on multiple wins. Draws keep the dealer.
+
+After a win, reveal an indicator in normal draw order. Its same-suit neighbors, wrapping between 1 and 9,
+are the wake tiles. Each matching physical tile in the winner's hand or melds adds 1 to each win share. If a
+wake tile matches a kong declared by that winner, extend the reveal. Multiple winners independently use
+prefixes of the same indicator sequence. Stop when the current winner no longer extends or the wall is empty.
+The results show the shared indicators and each winner's hits.
 
 ## Shared room conventions
 
