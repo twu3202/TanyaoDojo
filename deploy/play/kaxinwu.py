@@ -4,7 +4,7 @@ from collections import Counter
 from dataclasses import dataclass
 from functools import lru_cache
 
-from .honors import Meld, seven_pairs, standard_shapes
+from .honors import middle_five, seven_pairs, standard_shapes
 from .suited import PASS, RON, PassLock, Rules, SuitedGame, Win, _waits
 
 
@@ -29,9 +29,8 @@ def _base_score(hand, melds, winning_tile):
         roots = 0
     else:
         fan, pattern = 1, '平胡'
-        middle_five = Meld('chi', winning_tile - 1) if winning_tile % 9 == 4 else None
         for _, sets in standard_shapes(hand, len(melds)):
-            if middle_five is not None and middle_five in sets:
+            if middle_five(sets, winning_tile):
                 fan, pattern = 2, '卡心五'
                 break
             if all(group.kind == 'triplet' for group in sets):

@@ -27,14 +27,16 @@ class PolicyView:
 
 def policy_view(game, actor, actions):
     visible = Counter(tile for river in game.discards for tile in river)
-    for player in game.players:
+    for seat, player in enumerate(game.players):
         for meld in player.melds:
             visible.update(meld.tiles)
+        if seat != actor and player.open_ready_hand is not None:
+            visible.update(dict(enumerate(player.open_ready_hand)))
     if game.offer is not None and game.offer.kind != 'discard':
         visible[game.offer.tile] += 1
     player = game.players[actor]
     return PolicyView(tuple(player.hand), tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
-                      tuple(actions), 27 + (actor - game.dealer) % 4, game.round_wind,
+                      tuple(actions), 27 + (actor - game.dealer) % game.seat_count, game.round_wind,
                       None if game.offer is None else game.offer.tile, game.remaining, game.rules)
 
 
@@ -219,6 +221,8 @@ def heuristic(view):
         choices = [(tile, rest) for rank, tile, rest in ranked if rank == best]
         tile, _ = max(choices, key=lambda item: (_ukeire(best[0], item[1], view.melds, live, view),
                                                 -view.hand[item[0]], item[0]))
+        if best[0] == 0 and view.remaining > 0 and ('declare_ready', tile) in actions:
+            return 'declare_ready', tile
         return 'discard', tile
 
     best = _rank(view.hand, view.melds, view, live)

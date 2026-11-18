@@ -1,11 +1,12 @@
 # Playable Mahjong MVP
 
-Human vs three AI players, with a responsive browser table and a CPU-only server. The twenty-seven playable rulesets are
+Human vs two or three AI players, with a responsive browser table and a CPU-only server. The twenty-nine playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
 Shangsi, Hundred-Tile Mahjong, Hezhou, Liuzhou Exploding Fish, Guangzhou Three-Faan, Golden Island Guangdong,
-Guiliu Wake-Tile Mahjong, Sichuan Xuezhan Exchange Three, Yunnan Xuezhan Flower Pig, and Kaxinwu Continuous Wins.
+Guiliu Wake-Tile Mahjong, Sichuan Xuezhan Exchange Three, Yunnan Xuezhan Flower Pig, Kaxinwu Continuous Wins,
+Suizhou Ka Wu Xing and Xiangyang Ka Wu Xing.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
@@ -29,6 +30,8 @@ The Macau room plays a complete 16-hand match.
   and named payers. `honors_policy.py` ranks legal waits and routes to a three-faan hand using public tiles and the
   existing suit table. Rules for [Hong Kong](rules/HongKongOldStyle.md), [Macau](rules/MacauTournament.md)
   and [Guangzhou](rules/GuangzhouThreeFaan.md).
+- `kawuxing.py`: three-seat, 84-tile rooms using the honors engine and its tile-efficiency AI.
+  Includes open ready, supplier liability and first-reveal draw payments. [Rules](rules/KaWuXing.md).
 - `honors_bonus.py`: regional point schedules with reserved horse tiles, configurable tile sets, immediate kong
   transfers, and shared bonus reveals on multi-win hands.
   [Shangsi, Hundred-Tile, Hezhou and Liuzhou rules](rules/HonorsHorseTiles.md).

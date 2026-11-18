@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play 27 Mahjong rulesets vs AI. English / 中文.
+short_description: Play 29 Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
@@ -16,8 +16,8 @@ Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hong
 **Lishui Fangpao**, **Wenxi**, **Guilin Zhuanzhuan**, **Pook Dazhong**, **Shanxi Datang Tuidaohu**,
 **Hong Kong Old Style**, **Macau Tournament Mahjong**, **Shangsi**, **Hundred-Tile Mahjong**, **Hezhou**,
 **Liuzhou Exploding Fish**, **Guangzhou Three-Faan**, **Golden Island Guangdong**, **Guiliu Wake-Tile Mahjong**,
-**Sichuan Xuezhan Exchange Three**, **Yunnan Xuezhan Flower Pig**, or **Kaxinwu Continuous Wins**
-and play with three AI opponents. Search in either language or
+**Sichuan Xuezhan Exchange Three**, **Yunnan Xuezhan Flower Pig**, **Kaxinwu Continuous Wins**,
+**Suizhou Ka Wu Xing**, or **Xiangyang Ka Wu Xing** and play with two or three AI opponents. Search in either language or
 filter by family. Riichi plays a complete East-South match, and Macau plays a 16-hand match over four winds.
 
 - **Beginner:** a rule-aware tile-efficiency policy.
@@ -45,6 +45,9 @@ ready-hand and refund payments. **Sichuan Xuezhan Exchange Three** adds simultan
 **Kaxinwu Continuous Wins** uses two suits. All seats keep playing after each win, and a won seat
 must discard its drawn tile unless it can win again or make a qualifying kong. The wall-exhaustion
 settlement includes ready-hand payments to seats that already won. [Rules](deploy/play/rules/Kaxinwu.md).
+
+The 84-tile **Suizhou** and **Xiangyang Ka Wu Xing** rooms have three seats and open-ready declarations.
+They use different caps, discard liabilities and passed-win rules. [Rules](deploy/play/rules/KaWuXing.md).
 
 The **112-tile wildcard family** offers two GameTea bonus modes and the Fangchenggang room with seven pairs and
 a four-tile reserve. Source rules and the room choices for unspecified boundaries are listed in the

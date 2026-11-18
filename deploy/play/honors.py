@@ -1,4 +1,4 @@
-"""Hand shapes and calls for four-player 34-kind Mahjong rooms."""
+"""Hand shapes and calls for three- and four-seat Mahjong rooms."""
 
 from collections import Counter, deque
 from dataclasses import dataclass, field
@@ -56,6 +56,7 @@ class TableOptions:
     first_liability_only: frozenset[str] = frozenset()
     exchange_count: int = 0
     closed_live_tail: int = 0
+    seat_count: int = 4
 
 
 DEFAULT_OPTIONS = TableOptions()
@@ -87,6 +88,7 @@ class WinContext:
     last_live_draw: bool = False
     winner_count: int = 0
     late_wall: bool = False
+    ready: bool = False
 
 
 @dataclass(frozen=True)
@@ -109,6 +111,7 @@ class Player:
     liabilities: list[tuple[str, int]] = field(default_factory=list)
     draws: int = 0
     score: int = 0
+    open_ready_hand: tuple[int, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -181,6 +184,10 @@ def standard_shapes(hand, open_sets):
             yield tile, sets
 
 
+def middle_five(sets, tile):
+    return tile < 27 and tile % 9 == 4 and Meld('chi', tile - 1) in sets
+
+
 def thirteen_orphans(hand, melds):
     return not melds and sum(hand) == 14 and all(hand[t] for t in ORPHANS)
 
@@ -190,18 +197,19 @@ def seven_pairs(hand, melds):
 
 
 class HonorsGame:
-    """First-win state machine for four-player games using suited and honor tiles."""
+    """First-win state machine for rooms using suited and honor tiles."""
 
     def __init__(self, seed, dealer, round_wind, *, rules):
         self.rules = rules
         self.options = getattr(rules, 'OPTIONS', DEFAULT_OPTIONS)
+        self.seat_count = self.options.seat_count
         self.dealer = dealer
         self.round_wind = round_wind
         self.next_dealer = dealer
         self.tile_supply = Counter({tile: COPIES[tile] for tile in self.options.tile_kinds})
         self.wall = list(self.tile_supply.elements())
         random.Random(seed).shuffle(self.wall)
-        self.players = [Player() for _ in range(4)]
+        self.players = [Player() for _ in range(self.seat_count)]
         self.discards = [[] for _ in self.players]
         self.cur = dealer
         self.phase = 'action'
@@ -225,15 +233,15 @@ class HonorsGame:
         self.bilateral_horses = []
         self.echo_pending = False
         self.exchanges = []
-        self.kong_deltas = [0] * 4
-        self.echo_deltas = [0] * 4
+        self.kong_deltas = [0] * self.seat_count
+        self.echo_deltas = [0] * self.seat_count
         self.related_seats = []
         self.revealed = {}
         self.claimed_tile = None
         self.reason_code = None
         for _ in range(13):
-            for step in range(4):
-                self.players[(dealer + step) % 4].hand[self.wall.pop()] += 1
+            for step in range(self.seat_count):
+                self.players[(dealer + step) % self.seat_count].hand[self.wall.pop()] += 1
         self._draw(dealer)
         if self.options.exchange_count:
             self.phase = 'exchange'
@@ -283,18 +291,20 @@ class HonorsGame:
     def _win(self, actor, offer=None, winner_count=0):
         player = self.players[actor]
         hand = player.hand.copy()
+        seat_wind = 27 + (actor - self.dealer) % self.seat_count
+        ready = player.open_ready_hand is not None
         if offer is None:
-            ctx = WinContext('zimo', self.drawn_tile, 27 + (actor - self.dealer) % 4,
+            ctx = WinContext('zimo', self.drawn_tile, seat_wind,
                              self.round_wind, self.kong_chain, '天胡' if self.opening else None,
                              self.uninterrupted and actor != self.dealer and player.draws == 1,
                              self.kong_provider, self.remaining == 0,
-                             late_wall=self.remaining <= self.options.closed_live_tail)
+                             late_wall=self.remaining <= self.options.closed_live_tail, ready=ready)
         else:
             hand[offer.tile] += 1
             kind = {'discard': 'ron', 'gang_bu': 'rob_kong', 'gang_an': 'rob_concealed'}[offer.kind]
-            ctx = WinContext(kind, offer.tile, 27 + (actor - self.dealer) % 4,
+            ctx = WinContext(kind, offer.tile, seat_wind,
                              self.round_wind, offer.kong_chain, offer.opening,
-                             last_live_draw=self.remaining == 0, winner_count=winner_count)
+                             last_live_draw=self.remaining == 0, winner_count=winner_count, ready=ready)
         return self.rules.faan(hand, tuple(player.melds), ctx), hand, ctx.kind
 
     def legal_actions(self):
@@ -340,7 +350,7 @@ class HonorsGame:
                 actions.append(('peng', None))
             if player.hand[offer.tile] == 3:
                 actions.append(('zhigang', None))
-            if self.options.chow and actor == (offer.actor + 1) % 4:
+            if self.options.chow and actor == (offer.actor + 1) % self.seat_count:
                 actions.extend(('chi', start) for start, _, _ in self._chows(player, offer.tile))
         return actor, actions
 
@@ -359,20 +369,23 @@ class HonorsGame:
         elif self.offer is not None:
             self._respond(actor, action, actions)
         elif kind == 'discard':
-            self.players[actor].hand[tile] -= 1
-            self.discards[actor].append(tile)
-            if self.uninterrupted and all(river == [tile] for river in self.discards):
-                if self.options.dealer_echo:
-                    self._pay_echo(self.dealer)
-                elif self.options.winner_echo:
-                    self.echo_pending = True
-            self._open_offer(Offer(actor, tile, 'discard', self.kong_chain, '地胡' if self.opening else None))
+            self._discard(actor, tile)
         elif kind == 'zimo':
             self._settle([actor], None)
         else:
             kong = 'gang_an' if kind == 'ankan' else 'gang_bu'
             self.uninterrupted = False
             self._open_offer(Offer(actor, tile, kong, self.kong_chain))
+
+    def _discard(self, actor, tile):
+        self.players[actor].hand[tile] -= 1
+        self.discards[actor].append(tile)
+        if self.uninterrupted and all(river == [tile] for river in self.discards):
+            if self.options.dealer_echo:
+                self._pay_echo(self.dealer)
+            elif self.options.winner_echo:
+                self.echo_pending = True
+        self._open_offer(Offer(actor, tile, 'discard', self.kong_chain, '地胡' if self.opening else None))
 
     def _exchange(self, tiles):
         self.exchanges.append(tiles)
@@ -390,14 +403,14 @@ class HonorsGame:
         self.phase = 'action'
 
     def _pay_echo(self, payer):
-        for seat in range(4):
-            delta = self.options.echo_share * (-3 if seat == payer else 1)
+        for seat in range(self.seat_count):
+            delta = self.options.echo_share * (1 - self.seat_count if seat == payer else 1)
             self.echo_deltas[seat] += delta
             self.players[seat].score += delta
 
     def _open_offer(self, offer):
         self.offer = offer
-        self.responses = deque((offer.actor + step) % 4 for step in (1, 2, 3))
+        self.responses = deque((offer.actor + step) % self.seat_count for step in range(1, self.seat_count))
         self.claim = None
         self.phase = 'response' if offer.kind == 'discard' else 'rob_kong'
         self.drawn_tile = None
@@ -437,7 +450,7 @@ class HonorsGame:
         elif self.claim is not None:
             self._call_discard(offer)
         else:
-            self._draw((offer.actor + 1) % 4)
+            self._draw((offer.actor + 1) % self.seat_count)
 
     def _call_discard(self, offer):
         actor, kind, argument = self.claim
@@ -513,8 +526,8 @@ class HonorsGame:
                 or meld.kind == 'gang_bu' and points.added_payer_from_pong) and meld.provider is not None:
             payers = (meld.provider,)
         else:
-            payers = tuple(seat for seat in range(4) if seat != actor)
-        self._transfer(actor, tuple(share if seat in payers else 0 for seat in range(4)), self.kong_deltas)
+            payers = tuple(seat for seat in range(self.seat_count) if seat != actor)
+        self._transfer(actor, tuple(share if seat in payers else 0 for seat in range(self.seat_count)), self.kong_deltas)
 
     def _liabilities_for(self, actor):
         if not self.options.reciprocal_liability:
@@ -578,6 +591,6 @@ class HonorsGame:
         if points is not None and points.refund_on_draw and reason == 'draw':
             for player, delta in zip(self.players, self.kong_deltas):
                 player.score -= delta
-            self.kong_deltas = [0] * 4
+            self.kong_deltas = [0] * self.seat_count
         provider = self.win_details[0].provider if self.win_details else None
         self.next_dealer = self.rules.next_dealer(self.dealer, self.winners, provider)

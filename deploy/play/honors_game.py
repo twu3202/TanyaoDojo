@@ -10,11 +10,13 @@ from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
+from .kawuxing import SUIZHOU, XIANGYANG, KaWuXingGame
 
 
 RULESETS = {rule.VARIANT: rule for rule in (
-    hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
+    hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu, SUIZHOU, XIANGYANG,
 )}
+KA_WU_XING = (SUIZHOU.VARIANT, XIANGYANG.VARIANT)
 
 
 class HonorsSession(GameSession):
@@ -22,9 +24,10 @@ class HonorsSession(GameSession):
         super().__init__(variant, policy, seed=seed, pacing=pacing)
         self.rules = RULESETS[variant]
         self.hand_number = 0
-        self.totals = [0] * 4
         options = getattr(self.rules, 'OPTIONS', DEFAULT_OPTIONS)
-        self.dealer = 0 if options.host_deals_first else random.Random(self.seed).randrange(4)
+        self.seat_count = options.seat_count
+        self.totals = [0] * self.seat_count
+        self.dealer = 0 if options.host_deals_first else random.Random(self.seed).randrange(self.seat_count)
         self.dealer_advances = 0
         self.game = None
 
@@ -37,8 +40,9 @@ class HonorsSession(GameSession):
             if self.status not in ('starting', 'round_end'):
                 raise ClientError('round_active')
             self.hand_number += 1
-            self.game = HonorsGame(self.seed + self.hand_number, self.dealer,
-                                   27 + (self.dealer_advances // 4) % 4, rules=self.rules)
+            engine = KaWuXingGame if self.variant in KA_WU_XING else HonorsGame
+            self.game = engine(self.seed + self.hand_number, self.dealer,
+                               27 + (self.dealer_advances // self.seat_count) % 4, rules=self.rules)
             self.result = None
             self.options = []
             self.automatic = False
@@ -53,14 +57,18 @@ class HonorsSession(GameSession):
         for actor, player in enumerate(game.players):
             won = actor in game.revealed
             hand = game.revealed.get(actor, player.hand)
-            revealed = actor == 0 or won
+            ready = player.open_ready_hand is not None
+            reveal = hand if actor == 0 or won else player.open_ready_hand
             players.append({
                 'id': actor, 'score': self.totals[actor] + player.score, 'delta': player.score,
-                'hand_count': sum(hand), 'revealed': revealed, 'won': won, 'riichi': False,
-                'hand': [tile_name(tile) for tile, count in enumerate(hand) for _ in range(count)] if revealed else [],
+                'hand_count': sum(hand), 'revealed': reveal is not None, 'won': won, 'riichi': False,
+                'hand': [tile_name(tile) for tile, count in enumerate(reveal) for _ in range(count)]
+                        if reveal is not None else [],
                 'river': [{'tile': tile_name(tile)} for tile in game.discards[actor]],
                 'melds': [self.view_meld(meld) for meld in player.melds],
             })
+            if ready:
+                players[-1]['open_ready'] = True
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
@@ -108,8 +116,10 @@ class HonorsSession(GameSession):
                         time.sleep(self.pacing)
             game.step(action)
             kind, tile = action
-            if kind == 'discard':
+            if kind in ('discard', 'declare_ready'):
                 self.log_event('discard', {'actor': actor, 'tile': tile_name(tile)})
+            if kind == 'declare_ready':
+                self.log_event('open_ready', {'actor': actor}, 'call')
             if game.last_call:
                 caller, meld = game.last_call
                 self.log_event('action', {'actor': caller, 'action': meld.kind}, 'call')
@@ -138,6 +148,8 @@ class HonorsSession(GameSession):
                 self.result['kong_deltas'] = game.kong_deltas.copy()
             if any(game.echo_deltas):
                 self.result['echo_deltas'] = game.echo_deltas.copy()
+            if self.variant in KA_WU_XING:
+                self.result['open_ready_deltas'] = game.ready_deltas.copy()
             if game.horse_tiles:
                 self.result['bonus'] = [tile_name(tile) for tile in game.horse_tiles]
                 mode = getattr(self.rules, 'BONUS_MODE', None)

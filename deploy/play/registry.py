@@ -7,6 +7,7 @@ from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
 from .kaxinwu import VARIANT as KAXINWU
+from .kawuxing import SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
 
@@ -1016,6 +1017,75 @@ VARIANTS[KAXINWU] = {
     }},
 }
 
+_KA_WU_XING = {
+    'family_id': 'ka-wu-xing', 'family': 'Three-player Ka Wu Xing', 'seat_count': 3,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+}
+_KA_WU_XING_RULES = [
+    'Three players, 84 tiles: dots, bamboo and three dragons. Pon and kong are allowed without chow. '
+    'A completed ordinary hand or seven pairs may win from a discard or self-draw.',
+    'After a tenpai discard, you may reveal your hand. Open ready doubles the hand and locks play to drawn-tile '
+    'discards or wins. In a draw, the first seat to reveal pays each opponent one point. Kong points still stand.',
+    'Middle-five wait and pure suit multiply by four. All triplets double; dragon patterns, four-in-one and '
+    'seven-pair variants also score. An open kong charges its supplier two; an added or closed kong charges '
+    'each opponent one or two. The last wall draw allows no kongs.',
+]
+_KA_WU_XING_RULES_ZH = [
+    '三人 84 张，筒条加中发白。可碰杠、不可吃，标准牌型或七对可接炮、自摸。',
+    '打到听牌时可选择亮倒，公开手牌并加倍；此后只可摸切或胡。荒庄首亮者付其他两家各一分，杠分保留。',
+    '卡五星和清一色四倍，碰碰胡两倍；三元、四归一及不同七对也计分。直杠供牌者付两分，'
+    '补杠与暗杠由其他两家各付一分或两分。末张不可杠。',
+]
+
+VARIANTS[SUIZHOU.VARIANT] = {
+    **_KA_WU_XING,
+    'id': SUIZHOU.VARIANT,
+    'name': 'Suizhou Ka Wu Xing',
+    'aliases': ['随州卡五星', '随州麻将', '拳打脚踢', 'Suizhou'],
+    'rule_version': 'suizhou-open-ready-dojo-v1',
+    'subtitle': 'Three seats · Open ready · Double discard wins',
+    'badge': 'Hubei · 84 tiles',
+    'description': 'Reveal a ready hand for a bigger win. The discarder pays both shares if you win on their tile.',
+    'rules': [*_KA_WU_XING_RULES,
+              'A discard or robbed kong can produce two winners; their supplier deals next. '
+              'Robbing an added or a concealed kong is allowed. A passed offer blocks equal or lower scores until your draw.',
+              'Win patterns multiply without a cap. A discard win by an open-ready player charges the supplier twice '
+              'the winning share, even if the supplier has also declared. This room keeps the dealer on a draw.'],
+    'sources': [{'title': 'Suizhou operator rules', 'url': 'https://www.hzbianqu.com/game/1249.html'},
+                {'title': 'Local Ka Wu Xing rules', 'url': 'https://kawuxingmajiang.zocet.com/'}],
+    'translations': {'zh-CN': {
+        'name': '随州卡五星', 'family': '三人卡五星', 'subtitle': '三人 · 亮倒 · 一炮双响',
+        'badge': '湖北 · 84 张', 'description': '亮倒后接炮，由点炮者付两家自摸份。支持一炮双响和升番破漏胡。',
+        'rules': [*_KA_WU_XING_RULES_ZH,
+                  '可抢补杠和暗杠，允许一炮双响，双响由供牌者接庄。漏胡后到自己摸牌前只接更高倍。',
+                  '牌型倍数相乘，不封顶。点炮给亮倒玩家时由点炮者包两份，点炮者已亮倒也照包。荒庄原庄连庄。'],
+    }},
+}
+
+VARIANTS[XIANGYANG.VARIANT] = {
+    **_KA_WU_XING,
+    'id': XIANGYANG.VARIANT,
+    'name': 'Xiangyang Ka Wu Xing',
+    'aliases': ['襄阳卡五星', '襄阳麻将', 'Xiangyang'],
+    'rule_version': 'xiangyang-cap-eight-dojo-v1',
+    'subtitle': 'Three seats · Open ready · Eightfold cap',
+    'badge': 'Hubei · 84 tiles',
+    'description': 'This table caps hand multipliers at eight and waives the extra discard share when both seats have declared.',
+    'rules': [*_KA_WU_XING_RULES,
+              'This room takes the nearest discard winner and allows robbery of an added kong. Passing blocks all further '
+              'offered wins until your draw. The winner deals next; after a draw the dealer repeats.',
+              'Hand patterns multiply up to eight. The discarder covers two shares for an open-ready winner, or '
+              'one share when both seats are open ready. Apply liability after the hand cap.'],
+    'sources': [{'title': 'Xiangyang operator rules', 'url': 'https://www.hzbianqu.com/game/1205.html'}],
+    'translations': {'zh-CN': {
+        'name': '襄阳卡五星', 'family': '三人卡五星', 'subtitle': '三人 · 亮倒 · 八倍封顶',
+        'badge': '湖北 · 84 张', 'description': '牌型八倍封顶。亮倒者接炮可包赔，双方都亮倒时只付一份。',
+        'rules': [*_KA_WU_XING_RULES_ZH,
+                  '本房间取座次最近者胡，允许抢补杠。漏胡后到自己摸牌前任何牌都不能接。胡家接庄，荒庄连庄。',
+                  '牌型相乘八倍封顶，包赔在封顶后算。点炮给亮倒者包两份，双方都亮倒则付一份。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1028,4 +1098,6 @@ SESSION_OPTIONS = {
     SICHUAN_EXCHANGE: {'variant': SICHUAN_EXCHANGE},
     YUNNAN: {'variant': YUNNAN},
     KAXINWU: {'profile': KAXINWU},
+    SUIZHOU.VARIANT: {'variant': SUIZHOU.VARIANT},
+    XIANGYANG.VARIANT: {'variant': XIANGYANG.VARIANT},
 }

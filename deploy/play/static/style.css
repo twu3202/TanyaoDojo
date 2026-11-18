@@ -23,3 +23,11 @@
 @media(max-width:760px){.opponent .meld .tile-back{width:13px;height:17px}.human-seat .meld .tile-back{width:21px;height:28px}}
 .dora:has(.winning-tile-label){flex-wrap:wrap;width:clamp(110px,18vw,160px);margin-inline:auto}
 .winning-tile-label{flex-basis:100%}
+.table.three-player #seat-1,.table.three-player #seat-2{top:31px;width:42%;max-width:258px}
+.table.three-player #seat-1{right:5%}
+.table.three-player #seat-2{left:5%;transform:none}
+.table.three-player #seat-3,.table.three-player .compass [data-wind]{display:none}
+.table.three-player .opponent .seat-title{gap:4px;flex-wrap:wrap}
+.table.three-player .opponent .tile-back{min-width:0;flex-shrink:1}
+.table.three-player .opponent .river{grid-template-columns:repeat(6,minmax(0,20px))}
+.table.three-player .opponent .river img{width:100%}
