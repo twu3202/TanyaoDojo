@@ -210,19 +210,24 @@ class HangzhouGame(HonorsGame):
         self.float_streak[actor] += 1
         self.float_kongs[actor] += self.kong_chain
         self.float_cycle_owner = actor
-        super()._discard(actor, WHITE)
+        self._throw_tile(actor, WHITE)
 
     def _discard(self, actor, tile):
         self.float_streak[actor] = 0
         self.float_kongs[actor] = 0
+        self._throw_tile(actor, tile)
+
+    def _throw_tile(self, actor, tile):
         super()._discard(actor, tile)
+
+    def _can_take_win(self, actor, offer):
+        return (self.rules.dealer_discard_wins and self.dealer in (actor, offer.actor)
+                and self.float_cycle_owner is None and offer.kind in ('discard', 'gang_bu'))
 
     def _response_actions(self):
         actor, offer = self.responses[0], self.offer
-        provider = offer.actor
         during_float = self.float_cycle_owner is not None
-        can_win = (self.rules.dealer_discard_wins and self.dealer in (actor, provider) and not during_float
-                   and offer.kind in ('discard', 'gang_bu'))
+        can_win = self._can_take_win(actor, offer)
         can_call = (offer.kind == 'discard'
                     and (not during_float or (self.rules.floater_can_call and actor == self.float_cycle_owner))
                     and (self.options.chow or actor not in self.floated))
@@ -256,11 +261,12 @@ class HangzhouGame(HonorsGame):
 
     def _call_discard(self, offer):
         actor = self.claim[0]
-        if self.rules.feed_mode in ('dealer_liability', 'two_total'):
+        mode = self.rules.feed_mode
+        if mode in ('dealer_liability', 'room_liability', 'two_total'):
             direction = actor, offer.actor
             self.feeds[direction] += 1
-            if (self.rules.feed_mode == 'dealer_liability' and self.dealer in direction
-                    and self.float_cycle_owner != actor):
+            liability = mode == 'room_liability' or (mode == 'dealer_liability' and self.dealer in direction)
+            if liability and self.float_cycle_owner != actor:
                 self.liability_feeds[direction] += 1
                 if self.liability_feeds[direction] == 3:
                     self.related_seats.append(direction)

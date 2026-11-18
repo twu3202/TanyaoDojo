@@ -300,8 +300,7 @@ class HonorsGame:
         if not self.remaining:
             self._end('draw')
             return
-        replacement = self.rules.WALL_RESERVE if any(self.options.horse_counts) else 0
-        tile = self.wall.pop(replacement if kong_chain else -1)
+        tile = self.wall.pop(self._replacement_index() if kong_chain else -1)
         player = self.players[actor]
         player.hand[tile] += 1
         player.draws += 1
@@ -315,6 +314,9 @@ class HonorsGame:
         self.kong_chain = kong_chain
         self.kong_provider = provider
         self.forbidden_discards = frozenset()
+
+    def _replacement_index(self):
+        return self.rules.WALL_RESERVE if any(self.options.horse_counts) else 0
 
     def _win(self, actor, offer=None, winner_count=0):
         player = self.players[actor]
@@ -382,10 +384,10 @@ class HonorsGame:
             if player.hand[offer.tile] == 3:
                 actions.append(('zhigang', None))
             if self.options.chow and actor == (offer.actor + 1) % self.seat_count:
-                actions.extend(('chi', start) for start, _, _ in self._chows(player, offer.tile))
+                actions.extend(('chi', start) for start, _, _ in self._chows(player, offer.tile, offer.actor))
         return actor, actions
 
-    def _chows(self, player, tile):
+    def _chows(self, player, tile, provider):
         return chow_choices(player.hand, tile, swap_lock=self.rules.SWAP_LOCK,
                             lock_extensions=self.options.chow_lock_extensions)
 
@@ -488,7 +490,7 @@ class HonorsGame:
         player = self.players[actor]
         self.discards[offer.actor].pop()
         if kind == 'chi':
-            consumed, forbidden = next((take, block) for start, take, block in self._chows(player, offer.tile)
+            consumed, forbidden = next((take, block) for start, take, block in self._chows(player, offer.tile, offer.actor)
                                        if start == argument)
             meld = Meld('chi', argument, offer.actor)
         else:

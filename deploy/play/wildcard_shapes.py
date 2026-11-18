@@ -36,14 +36,27 @@ def can_form_sets(counts, wild):
 
 @lru_cache(maxsize=32768)
 def can_form_standard(counts, wild):
+    return _with_pair(counts, wild, can_form_sets)
+
+
+def can_form_pungs(counts, wild):
+    return sum(-count % 3 for count in counts) <= wild and (sum(counts) + wild) % 3 == 0
+
+
+@lru_cache(maxsize=16384)
+def can_form_all_pungs(counts, wild):
+    return _with_pair(counts, wild, can_form_pungs)
+
+
+def _with_pair(counts, wild, sets_fit):
     if (sum(counts) + wild) % 3 != 2:
         return False
-    if wild >= 2 and can_form_sets(counts, wild - 2):
+    if wild >= 2 and sets_fit(counts, wild - 2):
         return True
     for tile, count in enumerate(counts):
         if count:
             pair = min(2, count)
-            if 2 - pair <= wild and can_form_sets(without_tile(counts, tile, pair), wild - 2 + pair):
+            if 2 - pair <= wild and sets_fit(without_tile(counts, tile, pair), wild - 2 + pair):
                 return True
     return False
 

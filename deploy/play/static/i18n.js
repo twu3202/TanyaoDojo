@@ -61,16 +61,22 @@ Object.assign(I18N.en, {
  wildcardFloatTag:'Float ×{count}', promptFloatCycle:'An opponent floated a wildcard. You can discard your draw, make a concealed kong or win.',
  feedLiability:'{caller} ← {provider} · three feeds', setupNoteOne:'You and one AI opponent. You can autoplay the hand.',
  wildcardIndicator:'Wildcard indicator', whiteSubstitute:'White Dragon plays as {tile}', selectWildcard:'Select {tile} (wildcard)',
+ tenWindsRun:'Ten Winds · {count}',
 });
 Object.assign(I18N['zh-CN'], {
  wildcardFloatTag:'飘财 ×{count}', promptFloatCycle:'对手已飘财，你可摸切、暗杠或自摸。',
  feedLiability:'{caller} ← {provider} · 三摊承包', setupNoteOne:'你与一位 AI 单挑，可以随时托管本局。',
  wildcardIndicator:'翻出的财神', whiteSubstitute:'白板替 {tile}', selectWildcard:'选择 {tile}（财神）',
+ tenWindsRun:'十风 · {count}',
 });
 I18N.en.action.float_wildcard='Float wildcard';
 I18N['zh-CN'].action.float_wildcard='飘财';
 I18N.en.action.fangchong_win='Win on discard';
 I18N['zh-CN'].action.fangchong_win='接炮胡';
+I18N.en.action.ten_winds='Discard and win · Ten Winds';
+I18N['zh-CN'].action.ten_winds='打出并胡 · 十风';
+I18N.en.reason.ten_winds_win='{names} wins with Ten Winds';
+I18N['zh-CN'].reason.ten_winds_win='{names} 十风胡牌';
 I18N.en.messages.wildcard_float='{actor} floated a wildcard · {count} in a row.';
 I18N['zh-CN'].messages.wildcard_float='{actor} 飘财，已连飘 {count} 次。';
 Object.assign(I18N.en.fans, {
@@ -81,6 +87,10 @@ Object.assign(I18N.en.fans, {
  '豪华七对':'Luxury seven pairs', '双豪华七对':'Double luxury seven pairs', '三豪华七对':'Triple luxury seven pairs',
  '清七对':'Natural seven pairs', '豪华清七对':'Natural luxury seven pairs',
  '双豪华清七对':'Natural double luxury seven pairs', '三豪华清七对':'Natural triple luxury seven pairs',
+ '十风':'Ten Winds', '乱风':'Unstructured honors', '正风':'All honor pungs', '豪杠开':'Concealed kong draw',
+ '大对子':'All pungs', '大碰胡':'All pungs', '大吊车':'Four sets and a pair', '全字':'All honors',
+ '财神头':'Wildcard head', '三财神':'Three opening wildcards', '正规十三幺':'Natural thirteen orphans',
+ '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 let LANGUAGE='en';
 try{const saved=localStorage.getItem('tanyao_language');if(saved&&I18N[saved])LANGUAGE=saved;}catch{}

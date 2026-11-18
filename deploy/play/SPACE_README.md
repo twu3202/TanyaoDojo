@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play 38 Mahjong rulesets vs AI. English / 中文.
+short_description: Play 40 Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
@@ -19,7 +19,7 @@ Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hong
 **Sichuan Xuezhan Exchange Three**, **Yunnan Xuezhan Flower Pig**, **Kaxinwu Continuous Wins**,
 **Suizhou Ka Wu Xing**, **Xiangyang Ka Wu Xing**, **Shiyan Ka Wu Xing**, **JJ Three-Player Call Points**,
 **JJ Three-Player Multipliers**, **Xiaogan Ka Wu Xing**, **Hangzhou Three-Player**, **Hangzhou Four-Player**,
-**Tonglu**, **Chun’an**, or **Hangzhou Two-Player Flip Wildcard** and play with one to three AI opponents. Search in either language or
+**Tonglu**, **Chun’an**, **Hangzhou Two-Player Flip Wildcard**, **Xiaoshan**, or **Songyang** and play with one to three AI opponents. Search in either language or
 filter by family. Riichi plays a complete East-South match, and Macau plays a 16-hand match over four winds.
 
 - **Beginner:** a rule-aware tile-efficiency policy.
@@ -65,6 +65,8 @@ then settles wins at five points per payer.
 **Tonglu** limits chows and pons separately and requires a Burst with a wildcard. **Chun’an** adds dealer-linked
 discard wins and added-kong robbery. **Hangzhou Two-Player** flips a wildcard and lets White Dragon substitute
 for the indicated natural tile.
+**Xiaoshan** adds Ten Winds, different open and concealed kong-win values and capped payments.
+**Songyang** keeps a 20-tile reserve and assigns the full bill to the supplier on an added-kong robbery.
 [Rules and sources](deploy/play/rules/Hangzhou.md).
 
 The **112-tile wildcard family** offers two GameTea bonus modes and the Fangchenggang room with seven pairs and

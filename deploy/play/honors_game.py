@@ -13,11 +13,12 @@ from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .xiaogan import XIAOGAN, XiaoganGame
+from .zhejiang_flipped import SONGYANG, TEN_WINDS, XIAOSHAN, SongyangGame, XiaoshanGame
 
 
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
-    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS,
+    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -25,6 +26,8 @@ GAME_ENGINES = {
     jj_multiplier.VARIANT: jj_multiplier.JJMultiplierGame,
     XIAOGAN.VARIANT: XiaoganGame,
     **{rules.VARIANT: HangzhouGame for rules in HANGZHOU_ROOMS},
+    XIAOSHAN.VARIANT: XiaoshanGame,
+    SONGYANG.VARIANT: SongyangGame,
 }
 
 
@@ -51,7 +54,7 @@ class HonorsSession(GameSession):
                 raise ClientError('round_active')
             self.hand_number += 1
             engine = GAME_ENGINES.get(self.variant, HonorsGame)
-            dealer_rules = {'dealer_streak': self.dealer_streak} if engine is HangzhouGame else {}
+            dealer_rules = {'dealer_streak': self.dealer_streak} if issubclass(engine, HangzhouGame) else {}
             self.game = engine(self.seed + self.hand_number, self.dealer,
                                27 + (self.dealer_advances // self.seat_count) % 4, rules=self.rules, **dealer_rules)
             self.result = None
@@ -93,6 +96,8 @@ class HonorsSession(GameSession):
                 players[-1]['piao'] = game.piao[actor]
             if isinstance(game, HangzhouGame) and game.float_streak[actor]:
                 players[-1]['wildcard_floats'] = game.float_streak[actor]
+            if isinstance(game, XiaoshanGame) and actor == 0 and game.ten_winds[actor] >= 5:
+                players[-1]['ten_winds_run'] = game.ten_winds[actor]
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
@@ -159,7 +164,7 @@ class HonorsSession(GameSession):
                         time.sleep(self.pacing)
             game.step(action)
             kind, tile = action
-            if kind in ('discard', 'declare_ready', 'declare_dark'):
+            if kind in ('discard', 'declare_ready', 'declare_dark', TEN_WINDS):
                 self.log_event('discard', {'actor': actor, 'tile': self.display_tile(tile)})
             elif action == FLOAT:
                 self.log_event('wildcard_float', {'actor': actor, 'count': game.float_streak[actor]}, 'call')

@@ -1,9 +1,10 @@
 # Hangzhou wildcard rooms
 
-The five rooms play eight hands at base stake one with the 136-tile set and no flowers.
+The seven rooms play eight hands at base stake one with the 136-tile set and no flowers.
 The human hosts and deals the first hand. The wall is live to the last tile; a kong needs a replacement left.
 Kongs draw from the other end of the wall and have no immediate payment. The winner deals next and the dealer
 repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard wins and robbing an added kong.
+Songyang keeps 20 tiles in reserve and allows robbing an added kong from any seat.
 
 | Room | Calls | Dealer share | Feed liability |
 | --- | --- | --- | --- |
@@ -12,6 +13,8 @@ repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard 
 | Tonglu | Chow, pon and kong subject to two separate call limits | ×2, ×4, ×8 | None |
 | Chun’an | Chow, pon and kong, with the guard seat’s pon restriction | Always ×8 | None |
 | Two-player, flip wildcard | Chow, pon and kong against a single opponent | One share | None |
+| Xiaoshan | Two calls per supplier, passed-pon lock and a restricted second chow | ×4, then ×8 | None |
+| Songyang | Chow, pon and kong, with a 20-tile reserve | Always ×2 | Three feeds between any pair of seats |
 
 ## Wildcard and win multipliers
 
@@ -91,6 +94,46 @@ Both seats are blocked from exposed calls during a float circuit. Natural seven 
 base, with another doubling for each actual natural quad. This practice room fixes a single payer at one
 share and uses the full 136-tile set with all undealt tiles live apart from the indicator.
 
+## Xiaoshan Ten Winds
+
+The room starts at second dealer, rises from ×4 to ×8 on the first repeat, and caps at third dealer.
+The winner deals next and an exhausted wall repeats the deal. The selected profile uses the published
+128 limit and no score buy-in or running loss cap. The detailed payout formula applies the hand multiplier
+to each seat’s dealer factor, adds one for each of the winner’s kongs, then caps that payer at 128.
+Kongs have no immediate payment in this profile.
+
+The first chow allows a swap discard. A chow reaching the second permitted call from that supplier locks
+its tile and the opposite end of the same sequence until the discard. Declining a pon locks that tile until
+one’s next draw. Chows, pons and direct kongs share the two-call limit. Upgrading a pon keeps its slot.
+
+With a wildcard, an ordinary win must score at least ×2. Hand multipliers can combine when the selected
+shape supports them. A replacement win uses ×2 for the last open kong or ×4 for the last concealed kong.
+Seven-pairs multipliers start at ×4 and are ×8, ×16 and ×64 with one, two or three natural quads.
+Natural seven pairs double these values. All-honor pungs (正风), other all-honor hands (乱风), opening wins
+and Ten Winds use their own values independently of other hand patterns.
+
+From the first discard, keep discarding honors, the wildcard or a physical White Dragon. Chows, pons and
+open kongs end the run. Concealed kongs can keep it. Choose **Discard and win · Ten Winds** on the tenth
+eligible discard or a later eligible discard in the same run. The source’s formula notation is ambiguous.
+This table starts at ×4 on discard ten and doubles on each additional eligible discard, before the same
+per-payer cap. Ten Winds can settle without a standard winning shape.
+
+## Songyang Kong Liability
+
+The base room uses fixed dealer ×2, the flipped wildcard, and a 20-tile reserve aside from the displayed
+indicator. Replacement tiles leave the same 20 tiles untouched. Only self-draw and robbing an added kong
+can win. For a robbery, the first accepting seat wins and the kong player pays all three normal shares of
+the ×4 robbery-adjusted win. The original pon stands. For a self-draw, the first applicable three-feed link
+sets the liable payer’s bill to all three shares, or double for reverse liability. Other losers pay normally.
+
+Hand and event bundles multiply where compatible. Ordinary forms include pungs, pairs, suit and honor
+patterns, wildcard-head waits, floats, single-tile hands after four calls, and replacement wins. Three
+opening wildcards can declare a win even without a complete hand. A wildcard used in thirteen orphans
+or Seven Winds lowers it to the operator’s irregular tier. The published score table does not include
+complete tile examples for those names. This room counts them by physical face and permits the wildcard
+to fill missing members. Seven Winds means one of each honor plus seven distinct suited tiles, with at
+least three ranks between tiles of a suit. The public display shows the wildcard and the number of live tiles.
+
 ## Sources
 
 - [Zhejiang Game Hall three-player rules and multiplier table](https://www.hzbianqu.com/game/581.html)
@@ -101,3 +144,6 @@ share and uses the full 136-tile set with all undealt tiles live apart from the 
 - [Zhejiang Game Hall example for reserving a wildcard and floating the second](https://www.hzbianqu.com/game/1611.html)
 - [Zhejiang Game Hall Tonglu options and scoring](https://www.hzbianqu.com/game/62.html)
 - [Zhejiang Game Hall Chun’an dealer link and guard seat](https://www.hzbianqu.com/game/1055.html)
+- [Zhejiang Game Hall Xiaoshan hand and payout table](https://www.hzbianqu.com/game/55.html)
+- [Zhejiang Game Hall Songyang scoring and reserve](https://www.hzbianqu.com/game/218.html)
+- [Zhejiang Game Hall Seven Winds definition for the related Jinhua room](https://www.hzbianqu.com/game/74.html)

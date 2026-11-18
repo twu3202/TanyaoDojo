@@ -14,6 +14,7 @@ from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
 from .xiaogan import XIAOGAN
+from .zhejiang_flipped import SONGYANG, XIAOSHAN
 
 VARIANTS = {'riichi': {'id': 'riichi',
             'family_id': 'riichi',
@@ -1378,6 +1379,66 @@ VARIANTS[TWO_HANGZHOU.VARIANT] = {
     }},
 }
 
+VARIANTS[XIAOSHAN.VARIANT] = {
+    **_HANGZHOU, 'id': XIAOSHAN.VARIANT,
+    'name': 'Xiaoshan Mahjong · Ten Winds',
+    'aliases': ['萧山麻将', '十风', '正风', '乱风'],
+    'rule_version': 'xiaoshan-ten-winds-dojo-v1',
+    'subtitle': 'Four seats · Ten Winds · Concealed kong bonuses',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'Win with an opening run of honor discards or build a qualifying self-draw hand.',
+    'rules': [
+        '136 tiles and a flipped wildcard. White Dragons substitute for the indicated face. Beyond Ten Winds, wins require self-draw. '
+        'Hands with a wildcard require a hand multiplier of at least two.',
+        'Up to two calls from one provider. A declined pon locks its tile until your draw. '
+        'The second call from a player applies a swap-discard restriction if it is a chow.',
+        'From your first discard, discard only honors, White Dragons or wildcards to build Ten Winds. '
+        'Without open calls, you may win as you throw the tenth eligible tile, or keep going for a larger payment.',
+        'All-honor pungs score ×128 and other all-honor holdings ×64. An exposed replacement win is ×2 '
+        'and a concealed one is ×4. Dealer shares start at ×4 and repeat at ×8. Add one per winner’s kong '
+        'after multiplying the shares, then cap each payer at 128.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Xiaoshan rules and scoring', 'url': 'https://www.hzbianqu.com/game/55.html'},
+                {'title': 'Xiaoshan calls, wildcard and payout', 'url': 'https://www.hzbianqu.com/article/1060.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '萧山麻将（十风）', 'subtitle': '四人 · 十风 · 明暗杠开分计',
+        'badge': '浙江 · 136 张', 'description': '起手连续打字牌可做十风，普通自摸按牌型与庄闲结算。',
+        'rules': ['136 张，翻财神，白板替原牌面。只自摸，有财神须至少两倍牌型。',
+                  '同一供牌者最多两摊。过碰锁同张至自己摸牌，第二摊如为吃，禁止吃张打张。',
+                  '从首张开始连打字牌、白板或财神，且没有明副露，第十张起可打出并宣告十风。',
+                  '正风 128 倍，乱风 64 倍。明杠开 2 倍，暗杠开 4 倍。二老庄 4 倍起，连庄升至 8 倍。'
+                  '牌型乘庄闲倍率后每个赢家的杠加一，每位付款人封顶 128 分。'],
+    }},
+}
+
+VARIANTS[SONGYANG.VARIANT] = {
+    **_HANGZHOU, 'id': SONGYANG.VARIANT,
+    'name': 'Songyang Mahjong · Kong Liability',
+    'aliases': ['松阳麻将', '抢杠包三家', '正规七风', '十三幺'],
+    'rule_version': 'songyang-kong-liability-dojo-v1',
+    'subtitle': 'Four seats · Rob added kongs · 20-tile reserve',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'Rob an added kong to make its owner pay the whole table. Three feeds change the self-draw bill.',
+    'rules': [
+        '136 tiles, a flipped wildcard and White Dragon substitution. Self-draw or rob an added kong. '
+        'Stop with 20 wall tiles reserved if nobody wins.',
+        'Hand and event multipliers combine. This room counts natural or wildcard-assisted thirteen orphans and '
+        'Seven Winds by physical face. Seven Winds uses seven distinct honors and seven isolated suited tiles.',
+        'Dealer shares are double. On a robbed added kong, its owner pays all three shares. For a self-draw, '
+        'a three-feed relationship can increase one payer to the total of all shares, or twice that amount for reverse liability. '
+        'The other losers still pay their own shares.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Songyang scoring and reserve', 'url': 'https://www.hzbianqu.com/game/218.html'},
+                {'title': 'Songyang hand multipliers', 'url': 'https://www.hzbianqu.com/article/1434.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '松阳麻将（抢杠包赔）', 'subtitle': '四人 · 抢补杠包三家 · 留尾 20 张',
+        'badge': '浙江 · 136 张', 'description': '抢补杠时由被抢者包三家，自摸承包时其他输家仍付普通份。',
+        'rules': ['136 张，翻财神、白板替身。可自摸或抢补杠，牌墙留 20 张流局。',
+                  '牌型与胡法倍率相乘。十三幺与七风按实体牌面，分天然和财神代用。七风是七种字牌加七张数牌，同花色相隔至少三个点数。',
+                  '庄闲之间份额翻倍。抢补杠由被抢者包三家。自摸时，三摊承包的一方付总额，反承包的一方付总额两倍，其他输家仍付本份。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1397,4 +1458,6 @@ SESSION_OPTIONS = {
     JJ_MULTIPLIER: {'variant': JJ_MULTIPLIER},
     XIAOGAN.VARIANT: {'variant': XIAOGAN.VARIANT},
     **{room.VARIANT: {'variant': room.VARIANT} for room in HANGZHOU_ROOMS},
+    XIAOSHAN.VARIANT: {'variant': XIAOSHAN.VARIANT},
+    SONGYANG.VARIANT: {'variant': SONGYANG.VARIANT},
 }

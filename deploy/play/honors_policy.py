@@ -11,6 +11,7 @@ from . import hongkong
 from .hangzhou import FLOAT, WHITE, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
+from .zhejiang_flipped import TEN_WINDS, SongyangRules
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,8 @@ class PolicyView:
     offered: int | None
     remaining: int
     rules: ModuleType | HorseRoom = hongkong
+    offered_by: int | None = None
+    wildcard_indicator: int | None = None
 
 
 def policy_view(game, actor, actions):
@@ -52,7 +55,8 @@ def policy_view(game, actor, actions):
     seat_wind = 27 if setting_piao else 27 + (actor - game.dealer) % game.seat_count
     return PolicyView(hand, tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
                       tuple(actions), seat_wind, game.round_wind,
-                      offered, game.remaining, game.rules)
+                      offered, game.remaining, game.rules,
+                      None if offered is None else game.offer.actor, getattr(game, 'wildcard_indicator', None))
 
 
 @lru_cache(maxsize=1)
@@ -169,14 +173,15 @@ def _live_tiles(view):
 def _ready_waits(hand, melds, view, live):
     waits = 0
     augmented = list(hand)
+    params = {'indicator': view.wildcard_indicator} if isinstance(view.rules, SongyangRules) else {}
     for tile, count in enumerate(live):
         if not count:
             continue
         augmented[tile] += 1
         ron = WinContext('ron', tile, view.seat_wind, view.round_wind)
-        if view.rules.faan(augmented, melds, ron) is not None:
+        if view.rules.faan(augmented, melds, ron, **params) is not None:
             waits += 2 * count
-        elif view.rules.faan(augmented, melds, WinContext('zimo', tile, view.seat_wind, view.round_wind)) is not None:
+        elif view.rules.faan(augmented, melds, WinContext('zimo', tile, view.seat_wind, view.round_wind), **params) is not None:
             waits += count
         augmented[tile] -= 1
     return waits
@@ -236,6 +241,9 @@ def heuristic(view):
         return min(actions, key=rank_exchange)
     if RON in actions:
         return RON
+    ten_winds = next((action for action in actions if action[0] == TEN_WINDS), None)
+    if ten_winds is not None:
+        return ten_winds
     if FLOAT in actions and view.remaining >= 45:
         return FLOAT
     if ZIMO in actions:
@@ -279,7 +287,9 @@ def heuristic(view):
             continue
         if kind == 'chi':
             options = getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS)
-            choices = chow_choices(view.hand, offered, swap_lock=view.rules.SWAP_LOCK,
+            swap_rule = getattr(view.rules, 'chow_swap_lock', None)
+            swap_lock = view.rules.SWAP_LOCK if swap_rule is None else swap_rule(view.melds, view.offered_by)
+            choices = chow_choices(view.hand, offered, swap_lock=swap_lock,
                                    lock_extensions=options.chow_lock_extensions)
             take, block = next((take, block) for start, take, block in choices
                                if start == argument)
