@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 57 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 60 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -11,11 +11,14 @@ JJ Three-Player Multipliers, Xiaogan Ka Wu Xing, Hangzhou Three-Player, Hangzhou
 Chun’an, Hangzhou Two-Player Flip Wildcard, Xiaoshan, Songyang, Suichang, Deqing Wukang, Deqing Xinshi,
 Anji Fifteen Flowers, Anji Tea House Self-Draw, Dongyang, Bianfeng Chongji Ten Ten Up, Bianfeng Chongji Seven Gaps and
 Tiantai Three-Player 300 Hu, Tiantai White Dragon Wild, Taizhou Four-Player Hu, Daxi Buy the Base, Linhai Six Chong Tiles,
-Jinyun Classic, Jinyun Cantonese Style, Jiaxing Raise the Head and Pinghu Flowers and Faan.
+Jinyun Classic, Jinyun Cantonese Style, Jiaxing Raise the Head, Pinghu Flowers and Faan, Quzhou Duanzi,
+Quzhou Lata and Quzhou Lata Banked Match.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
 
+- `quzhou.py`: strict and flexible separated hands, position-sensitive payments, and a 30-point banked match.
+  [Rules and room conventions](rules/Quzhou.md).
 - `jiaxing.py` and `pinghu.py`: same-face wildcards, with carried faan and three-feed choices in Jiaxing and
   flower-count scoring in Pinghu. [Rules and room conventions](rules/JiaxingPinghu.md).
 - `jinyun.py`: opening follow-tile and dealer-weighted settlement in Classic, and self-draw, kong liability and draw refunds

@@ -11,7 +11,7 @@ from . import hongkong
 from .anji import AnjiRules
 from .chongji import ChongjiRules
 from .dongyang import DongyangRules, white_assignments
-from .hangzhou import FLOAT, split_wild
+from .hangzhou import FLOAT, WHITE, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
 from .tiantai import TiantaiWildcardRules
@@ -20,6 +20,7 @@ from .linhai import LinhaiRules
 from .jinyun import JinyunClassicRules
 from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
+from .quzhou import QuzhouRules, separated_distance
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
 
@@ -157,7 +158,8 @@ def _distance(hand, melds, view):
     wildcard = view.wildcard
     if wildcard is not None:
         natural, wild = split_wild(hand, wildcard)
-        choices = white_assignments(natural, wildcard) if isinstance(view.rules, DongyangRules) else (natural,)
+        white_flexible = isinstance(view.rules, (DongyangRules, QuzhouRules)) and wildcard != WHITE
+        choices = white_assignments(natural, wildcard) if white_flexible else (natural,)
         allow_pairs = view.rules.OPTIONS.seven_pairs
         distance = min(_wild_distance(choice, wild, len(melds), view.rules.require_burst, allow_pairs)
                        for choice in choices)
@@ -169,6 +171,21 @@ def _distance(hand, melds, view):
             if all(meld.kind != 'chi' for meld in melds):
                 routes.append(_triplet_distance(natural, 4 - len(melds)) - wild)
             distance = min(routes, default=9)
+        if isinstance(view.rules, QuzhouRules):
+            routes = [distance] if view.rules.lata else []
+            if not view.rules.lata:
+                called_suits = {meld.tile // 9 for meld in melds if meld.tile < 27}
+                for choice in choices:
+                    routes.extend(standard_distance(tuple(count if tile >= 27 or tile // 9 == suit else 0
+                                                          for tile, count in enumerate(choice)), len(melds)) - wild
+                                  for suit in range(3) if called_suits <= {suit})
+                    routes.append(_triplet_distance(choice, 4 - len(melds)) - wild)
+                    if not melds:
+                        singles = min(wild, sum(count % 2 for count in choice))
+                        routes.append(6 - sum(count // 2 for count in choice) - singles - (wild - singles) // 2)
+            if not melds:
+                routes.extend(separated_distance(choice, wild) for choice in choices)
+            distance = min(routes)
         if isinstance(view.rules, JinyunClassicRules) and not melds:
             missing = sum(not natural[tile] for tile in ORPHANS)
             distance = min(distance, missing - any(natural[tile] >= 2 for tile in ORPHANS) - wild)
@@ -215,7 +232,7 @@ def _ready_waits(hand, melds, view, live):
         params['indicator'] = view.wildcard_indicator
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
-    elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, PinghuRules)):
+    elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, PinghuRules, QuzhouRules)):
         params['wildcard'] = view.wildcard
     if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules, TiantaiWildcardRules)):
         def can_win(hand, melds, ctx):

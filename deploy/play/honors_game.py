@@ -13,7 +13,7 @@ from .honors_bonus import HEZHOU, HUNDRED, LIUZHOU, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .flower_wall import FLOWER_TILES, FlowerWall
-from .hangzhou import FLOAT, HANGZHOU_ROOMS, HangzhouGame
+from .hangzhou import FLOAT, HANGZHOU_ROOMS, WHITE, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .jinyun import JINYUN, JINYUN_CANTONESE, JinyunCantoneseGame, JinyunClassicGame
@@ -21,6 +21,7 @@ from .jiaxing import JIAXING, JiaxingGame
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .linhai import LINHAI, LinhaiGame
 from .pinghu import PINGHU, PinghuGame
+from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
 from .taizhou import TAIZHOU, TaizhouGame
 from .xiaogan import XIAOGAN, XiaoganGame
 from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
@@ -31,7 +32,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
-    TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU,
+    TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -58,6 +59,7 @@ GAME_ENGINES = {
     JINYUN_CANTONESE.VARIANT: JinyunCantoneseGame,
     JIAXING.VARIANT: JiaxingGame,
     PINGHU.VARIANT: PinghuGame,
+    **{rules.VARIANT: QuzhouGame for rules in (QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA)},
 }
 
 
@@ -68,7 +70,7 @@ class HonorsSession(GameSession):
         self.hand_number = 0
         options = getattr(self.rules, 'OPTIONS', DEFAULT_OPTIONS)
         self.seat_count = options.seat_count
-        self.totals = [0] * self.seat_count
+        self.totals = [QUZHOU_BANKED.BANK if variant == QUZHOU_BANKED.VARIANT else 0] * self.seat_count
         self.dealer = 0 if options.host_deals_first else random.Random(self.seed).randrange(self.seat_count)
         self.dealer_advances = 0
         self.dealer_streak = 0
@@ -85,6 +87,8 @@ class HonorsSession(GameSession):
             self.hand_number += 1
             engine = GAME_ENGINES.get(self.variant, HonorsGame)
             dealer_rules = {'dealer_streak': self.dealer_streak} if issubclass(engine, HangzhouGame) else {}
+            if self.rules is QUZHOU_BANKED:
+                dealer_rules['bank'] = self.totals
             previous = self.game
             self.game = engine(self.seed + self.hand_number, self.dealer,
                                27 + (self.dealer_advances // self.seat_count) % 4, rules=self.rules, **dealer_rules)
@@ -161,6 +165,8 @@ class HonorsSession(GameSession):
                 elif game.wildcard_indicator != game.wildcard_tile:
                     table['white_substitute'] = tile_name(game.wildcard_indicator)
                 if isinstance(game, DongyangGame) and game.wildcard_tile != DONGYANG.WILDCARD:
+                    table['white_optional'] = self.display_tile(game.wildcard_tile)
+                if isinstance(game, QuzhouGame) and game.wildcard_tile != WHITE:
                     table['white_optional'] = self.display_tile(game.wildcard_tile)
         if isinstance(game, ChongjiGame):
             table['dealer_stake'] = game.dealer_stake
@@ -260,7 +266,8 @@ class HonorsSession(GameSession):
             else:
                 self.log_event('win_fan', {'actor': win.actor, 'fan': win.fan, 'patterns': win.patterns}, 'win')
         match_hands = self.rules.MATCH_HANDS
-        finished = self.hand_number == match_hands
+        busted = isinstance(game, QuzhouGame) and game.busted
+        finished = self.hand_number == match_hands or bool(busted)
         with self.cv:
             self.result = {'reason_code': game.reason_code, 'scores': self.totals.copy(),
                            'deltas': delta, 'winners': game.winners.copy(),
@@ -300,6 +307,8 @@ class HonorsSession(GameSession):
                 self.result['wake_details'] = game.wake_details.copy()
             if finished:
                 best = max(self.totals)
-                self.result['match_hands'] = match_hands
+                self.result['match_hands'] = self.hand_number
+                if busted:
+                    self.result['busted'] = game.busted.copy()
                 self.result['match_winners'] = [seat for seat, points in enumerate(self.totals) if points == best]
             self.publish(table, 'finished' if finished else 'round_end')

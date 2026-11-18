@@ -278,6 +278,9 @@ function renderTaizhou(settlement, container) {
   }));
 }
 function renderBonusTiles(result, container) {
+  if(result.busted?.length) {
+    container.append(text('p', tr('bankExhausted', {names: result.busted.map(playerName).join(' · ')}), 'bonus-detail'));
+  }
   renderTaizhou(result.taizhou_settlement, container);
   const mode = result.bonus_mode;
   if (result.bonus?.length) {

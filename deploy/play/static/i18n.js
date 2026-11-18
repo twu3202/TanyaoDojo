@@ -107,6 +107,10 @@ Object.assign(I18N.en.fans, {
  '财神会':'Wild Gathering', '杠上开花':'Kong replacement win', '海底捞月':'Last draw win', '点杠杠开':'Win on a direct-kong replacement',
  '无百搭':'No wildcards', '三百搭':'Three wildcards', '全老头':'All honors', '杠开花开':'Kong or flower replacement win',
  '黄番':'Draw bonus', '老头黄':'Honor wildcard bonus', '豹子黄':'Doubles bonus', '百搭连庄':'Repeat wildcard bonus',
+ '十三百搭':'Separated hand', '真百搭':'Separated hand with seven honors', '烂百搭':'Flexible separated hand',
+ '三财倒':'Three-wildcard self-draw', '七风倒':'Seven-honor self-draw', '全风字':'All honors',
+ '全风字大碰胡':'All-honor pungs', '全风字七对':'All-honor seven pairs', '混碰':'Mixed-suit pungs',
+ '清碰':'Pure-suit pungs', '混七对':'Mixed-suit seven pairs', '清七对':'Pure-suit seven pairs',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 Object.assign(I18N.en.tileHonors, {F1:'Spring', F2:'Summer', F3:'Autumn', F4:'Winter',
@@ -120,6 +124,7 @@ I18N.en.taiCount='{n} tai';
 I18N['zh-CN'].taiCount='{n} 台';
 Object.assign(I18N.en, {
   followTransfers:'Opening follow-tile points · {amounts}',
+  bankExhausted:'{names} could not cover the full bill. The match is over.',
   liabilityPrompt:'Rivals formed a liability link. Stay in the hand or fold to sit out scoring.',
   continueHand:'Stay in', foldHand:'Fold this hand', foldedSeat:'Folded', yellowFaan:'Carried bonus faan {n}',
   countedFlowers:'{n} flower points',
@@ -134,6 +139,7 @@ Object.assign(I18N.en, {
 });
 Object.assign(I18N['zh-CN'], {
   followTransfers:'开局跟牌分 · {amounts}',
+  bankExhausted:'{names} 的余额不足以付清账单，整场结束。',
   liabilityPrompt:'其他牌手形成三摊承包。继续打牌，或退出本局计分。',
   continueHand:'继续打牌', foldHand:'退出本局计分', foldedSeat:'已退出计分', yellowFaan:'累计黄番 {n}',
   countedFlowers:'花数 {n}',

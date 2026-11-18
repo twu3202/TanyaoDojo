@@ -23,6 +23,7 @@ from .linhai import LINHAI
 from .jinyun import JINYUN, JINYUN_CANTONESE
 from .jiaxing import JIAXING
 from .pinghu import PINGHU
+from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA
 from .xiaogan import XIAOGAN
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
@@ -1884,6 +1885,63 @@ VARIANTS[PINGHU.VARIANT] = {
     }},
 }
 
+VARIANTS[QUZHOU_DUANZI.VARIANT] = {
+    'id': QUZHOU_DUANZI.VARIANT, 'family_id': 'hangzhou-wildcard', 'family': 'Hangzhou wildcard family', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Quzhou Mahjong · Duanzi', 'aliases': ['衢州段子胡', '段子麻将', '十三百搭', '真百搭'],
+    'rule_version': 'quzhou-136-duanzi-dojo-v1', 'subtitle': 'Four seats · No chow · Special hands',
+    'badge': 'Zhejiang · Separated suits',
+    'description': 'Build a qualifying special hand, including separated ranks and single honors.',
+    'rules': ['136 tiles and the full wall. The flipped face is wild. White Dragons can stand for its original face inside a winning hand.',
+              'Pon and kong are available. Only special hands can win. A separated hand assigns 147, 258 and 369 to different suits, with five to seven distinct honors.',
+              'Opponents each pay on self-draw. A discard supplier pays alone. A robbed added kong charges its supplier double the discard value.'],
+    'sources': [{'title': 'Zhejiang Game Hall Quzhou rules and scoring', 'url': 'https://www.hzbianqu.com/game/93.html'},
+                {'title': 'Zhejiang Game Hall Quzhou kong robbery', 'url': 'https://www.hzbianqu.com/article/1127.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭州财神系', 'name': '衢州麻将（段子胡）', 'subtitle': '四人 · 不吃 · 特殊牌型',
+        'badge': '浙江 · 十三百搭', 'description': '只胡段子牌型，可以按三门隔张和单字凑十三百搭。',
+        'rules': ['136 张，摸尽牌墙。翻同面财神，白板在和牌中可为本面或替原财神牌面。',
+                  '可碰杠，只有特殊牌型可以胡。十三百搭把 147、258、369 分给三门，另取五至七种单字。',
+                  '自摸三家分别付，点炮供牌家独付，抢补杠供牌家付点炮值两倍。'],
+    }},
+}
+
+VARIANTS[QUZHOU_LATA.VARIANT] = {
+    **VARIANTS[QUZHOU_DUANZI.VARIANT], 'id': QUZHOU_LATA.VARIANT,
+    'name': 'Quzhou Mahjong · Lata', 'aliases': ['衢州邋遢胡', '烂百搭', '邋遢胡普通'],
+    'rule_version': 'quzhou-136-lata-ordinary-dojo-v1', 'subtitle': 'Four seats · Chow and plain wins · 34-tile reserve',
+    'description': 'Play ordinary hands and flexible separated hands with Quzhou’s shared discard bills.',
+    'rules': ['136 tiles and a 34-tile reserve. Chow, pon and kong are available. Plain hands and flexible separated hands can win.',
+              'A plain self-draw collects 2 per opponent. A special hand collects 4 per opponent. On a discard, the two uninvolved opponents each pay one less.',
+              'Opening wins, kong replacement wins and four-set single waits use fixed bills. A robbed added kong charges its supplier 30.'],
+    'sources': [{'title': 'Zhejiang Game Hall ordinary and banked Lata rules', 'url': 'https://www.hzbianqu.com/game/93.html'},
+                {'title': 'Zhejiang Game Hall fixed Lata payments', 'url': 'https://www.hzbianqu.com/article/1097.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭州财神系', 'name': '衢州麻将（邋遢胡）', 'subtitle': '四人 · 可吃可平胡 · 留尾 34 张',
+        'badge': '浙江 · 普通结算', 'description': '平胡和灵活间隔的烂百搭都能胡，放炮时另两家也分担。',
+        'rules': ['136 张，留 17 墩。可吃碰杠，平胡和烂百搭都可胡。',
+                  '平胡自摸各家付 2，特殊牌自摸各付 4。接炮时放炮家付全额，另两家各少付 1。',
+                  '天地胡、杠开及四副单吊有固定账单。抢补杠由供牌家独付 30。'],
+    }},
+}
+
+VARIANTS[QUZHOU_BANKED.VARIANT] = {
+    **VARIANTS[QUZHOU_LATA.VARIANT], 'id': QUZHOU_BANKED.VARIANT,
+    'name': 'Quzhou Mahjong · Lata Banked Match', 'aliases': ['衢州局麻', '邋遢胡局麻', '衢州三十子'],
+    'rule_version': 'quzhou-136-lata-banked-dojo-v1', 'subtitle': 'Four seats · 30 points each · Match ends on overdraft',
+    'description': 'Manage a 30-point balance. Dealer and supplier positions decide each bill.',
+    'rules': ['Use the Lata tile and win rules. Each seat receives 30 points to start. Plain and special hands pay the same position-based amounts.',
+              'The dealer’s self-draw charges each opponent 8. A nondealer’s self-draw charges the dealer 8 and the other seats 4 each. Discard wins use the dealer and supplier positions.',
+              'If a bill exceeds a player’s balance they pay the balance and the match ends. The largest remaining balance wins.'],
+    'translations': {'zh-CN': {
+        'family': '杭州财神系', 'name': '衢州麻将（邋遢胡局麻）', 'subtitle': '四人 · 各 30 分 · 付不够则结束',
+        'badge': '浙江 · 局麻', 'description': '开局各有 30 分，按庄闲与放炮身份算账。',
+        'rules': ['沿用邋遢胡的牌张和胡牌规则。每家起始 30 分，平胡与特殊牌型采用相同的按身份付款。',
+                  '庄家自摸每家付 8；闲家自摸庄付 8，其他两家各付 4。点炮按庄闲和放炮方另算。',
+                  '应付超过余额时只付余额，整场结束，余额最高者获胜。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1922,4 +1980,5 @@ SESSION_OPTIONS = {
     JINYUN_CANTONESE.VARIANT: {'variant': JINYUN_CANTONESE.VARIANT},
     JIAXING.VARIANT: {'variant': JIAXING.VARIANT},
     PINGHU.VARIANT: {'variant': PINGHU.VARIANT},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED)},
 }
