@@ -10,7 +10,7 @@
 
 平面表(27 列 = 万筒条各 9):
    0-3  自家手牌计数 one-hot(≥1..≥4)
-   4    刚摸的牌 one-hot
+   4    当前行动者实际摸到的牌 one-hot，碰后与响应阶段全 0
    5-8  四家牌河计数/4(相对序)
    9-12 四家副露暴露计数/4(碰 3、杠 4)
   13-16 四家定缺花色(整门置 1)—— 公开信息
@@ -38,7 +38,7 @@ import jax.numpy as jnp
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from common.suit_table import load_table, make_jax_ops, NUM_TILES
-from sichuan.env_jax import State, NUM_PLAYERS, WALL_SIZE, MK_GANG_MING, MAX_MELDS
+from sichuan.env_jax import State, NUM_PLAYERS, WALL_SIZE, MK_GANG_MING, MAX_MELDS, PH_ACTION
 
 NUM_PLANES = 22
 NUM_PLANES_DISC = 24        # disc=True 时的平面数(见文件头平面表 22-23)
@@ -76,9 +76,7 @@ def observe(state: State, disc: bool = False) -> dict:
     hand = state.hand[cp].astype(jnp.float32)
     planes = [ (hand >= k).astype(jnp.float32) for k in (1, 2, 3, 4) ]
 
-    # 刚摸的牌:摸后手牌为 3k+2,用"最后一次摸的牌"近似不可得,故用牌墙指针回溯
-    last = state.wall[jnp.clip(WALL_SIZE - state.wall_ix, 0, WALL_SIZE - 1)].astype(jnp.int32)
-    drawn = jax.nn.one_hot(last, NUM_TILES, dtype=jnp.float32) * ((jnp.sum(hand) % 3) == 2)
+    drawn = jax.nn.one_hot(state.drawn_tile, NUM_TILES, dtype=jnp.float32) * (state.phase == PH_ACTION)
     planes.append(drawn)
 
     river = state.river[rel].astype(jnp.float32)
@@ -100,9 +98,7 @@ def observe(state: State, disc: bool = False) -> dict:
     planes.append(visible / 4.0)
 
     if disc:
-        # 打牌决策特征。只在"摸完待打"(手牌 3k+2)时有意义 —— 3k+1 的手牌再拿掉一张
-        # 就是 3k,向听查表对这种残缺手型返回的数没有语义,故整段填最差值而不是让网络
-        # 去学会忽略它。
+        # 摸牌后或碰后待打的手牌都是 3k+2,都需要弃牌向听特征。
         hand_i = state.hand[cp].astype(jnp.int32)
         st_d = _discard_shanten(hand_i, state.n_melds[cp].astype(jnp.int32),
                                 state.void[cp].astype(jnp.int32)).astype(jnp.float32)

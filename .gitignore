@@ -1,11 +1,23 @@
 # Data (26 GB+; Tenhou's terms forbid redistribution, never check it in)
 data/
+*.mjson
+*.mjson.gz
+*.mjlog
+*.mjlog.gz
+*.jsonl
+*.jsonl.gz
 
 # Training outputs and evaluation logs (large; weight snapshots stay local in weights_backup/)
 runs/
 eval/
 weights_backup/
 data_staging/
+*.pkl
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.npz
 
 # Rust build products
 Mortal/target/
@@ -16,6 +28,10 @@ __pycache__/
 *.pyc
 .DS_Store
 *.log
+.env
+.env.*
+!.env.example
+/.claude/
 
 # Third-party opponent (akochan source clone, not checked in)
 vendor/
@@ -45,6 +61,8 @@ MAHJAX_MIGRATION.md
 
 # Internal research reports and reviews: kept locally, not published
 research/
+/deploy/play/deployment.json
+/patches/sichuan_rulefix/run_chain.py
 
 # Sichuan: the lookup table is a build product (rebuilt in about 2 s); docs/ holds internal plans (kept locally)
 common/suit_table.npy

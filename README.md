@@ -18,7 +18,12 @@ for **Sichuan mahjong**.
 > **Evaluation module.** Counterfactual rollouts on the true walls, decision-level EV maps and luck control variates
 > live in a separate repository, [riichi-eval](https://github.com/twu3202/riichi-eval).
 >
-> **Try it.** [🀄 What would the model discard?](https://huggingface.co/spaces/Twu31/TanyaoDojo-decisions) is an
+> **Play a full game.** [🀄 TanyaoDojo Mahjong](https://huggingface.co/spaces/Twu31/TanyaoDojo-Play) supports riichi hanchan,
+> Sichuan Xuezhan, two Hongzhong bonus profiles, and Fangchenggang Hongzhong against three AI opponents. The UI defaults to English,
+> with a persistent Simplified Chinese option; beginner heuristics and existing trained models are available.
+> Source and deployment notes: [`deploy/play/`](deploy/play/README.md).
+>
+> **Analyze a position.** [🀄 What would the model discard?](https://huggingface.co/spaces/Twu31/TanyaoDojo-decisions) is an
 > interactive Space with the best own model (tpt 408k). It also serves `POST /v1/decisions`, a decision-model
 > interface for any position given as an mjai log ([`decision_api.py`](jax_rl/mjai_bot/decision_api.py)).
 
@@ -139,7 +144,10 @@ all measured zero after that.
 
 ## Recent experiments (newest first)
 
-All closed; nothing is running.
+All listed riichi screening runs ended without a promotion. Riichi training remains paused.
+On 2026-11-15, the user authorized a separate corrected-rule Sichuan baseline on the RTX 5060 Ti
+(two 50.33M-step seeds with fixed follow-up evaluations; see [the run design](patches/sichuan_rulefix/README.md)).
+A screening drop does not prove zero effect; dated claims that a whole direction is closed require this qualification.
 
 - **Pessimism dose** (closed, 11-11: dropped by SPRT at 5,000 groups). v11 was fine-tuned offline with a smaller
   conservative weight, plain CQL. A base went online only if its large Q gaps shrank (p90 ≤ 0.7×) without lifting

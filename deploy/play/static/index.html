@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#173e35"><title>TanyaoDojo · Mahjong Dojo</title><link rel="stylesheet" href="/style.css"></head>
+<body>
+<header class="topbar"><a class="brand" href="/" aria-label="Mahjong Dojo home" data-i18n-aria="homeLabel"><span class="brand-tile">發</span><span><span data-i18n="brand">Mahjong Dojo</span><small>TANYAO DOJO</small></span></a><nav><button id="rules-button" class="text-button" data-i18n="rules">Rules</button><select id="language" data-language aria-label="Language" data-i18n-aria="languageLabel"><option value="en">English</option><option value="zh-CN">简体中文</option></select><span class="edition" data-i18n="edition">OPEN PLAY · 02</span></nav></header>
+<main id="lobby" class="lobby">
+  <section class="hero"><p class="eyebrow" data-i18n="eyebrow">ONE TABLE. MANY WAYS TO PLAY.</p><h1><span data-i18n="hero1">Take a seat.</span><br><em data-i18n="hero2">Play a hand.</em></h1><p class="intro"><span data-i18n="intro">Choose a ruleset and sit down with three AI players.</span><br><span data-i18n="intro2">From the first draw to the final settlement.</span></p><div class="hero-tiles" aria-hidden="true"><img src="/tiles/2m.svg"><img src="/tiles/3m.svg"><img src="/tiles/4m.svg"><img src="/tiles/F.svg"></div><p class="quiet" data-i18n="coming">Regional rulesets are added by family, once they are ready to play.</p></section>
+  <section class="setup" aria-label="Table setup" data-i18n-aria="setupLabel">
+    <div class="section-label"><span data-i18n="chooseVariant">Choose a ruleset</span><span id="ruleset-count" role="status"></span></div>
+    <div class="catalog-filters" id="catalog-filters" hidden>
+      <label><span data-i18n="searchRulesets">Search rulesets</span><input type="search" id="catalog-search" autocomplete="off"></label>
+      <label><span data-i18n="familyFilter">Family</span><select id="catalog-family"><option value="" data-i18n="allFamilies">All families</option></select></label>
+    </div>
+    <div id="variant-cards"><p class="quiet" data-i18n="loadingCatalog">Preparing the tables…</p></div>
+    <button type="button" id="catalog-more" class="secondary" hidden></button>
+    <div class="section-label policy-label"><label for="policy" data-i18n="choosePolicy">Choose your opponents</label></div>
+    <select id="policy" aria-label="AI difficulty" disabled></select>
+    <div class="setup-note"><span class="dot"></span><span data-i18n="setupNote">Your seat is at the bottom. You can autoplay the rest of a hand.</span></div>
+    <button id="start-button" class="primary" disabled><span data-i18n="start">Start playing</span><span>↗</span></button>
+    <p id="lobby-error" class="error" role="alert"></p>
+  </section>
+</main>
+<main id="room" class="room hidden">
+  <aside class="room-side"><button id="leave-button" class="text-button back" data-i18n="back">← Back to lobby</button><p class="eyebrow" data-i18n="inGame">AT THE TABLE</p><h2 id="room-title"></h2><p id="room-subtitle"></p><div class="side-rule"><span data-i18n="currentRules">CURRENT RULESET</span><button id="room-rules" class="text-button" data-i18n="viewRules">Read the rules ↗</button></div><div class="help-card"><span data-i18n="helpTitle">One tile at a time</span><p data-i18n="help">Select a tile, then confirm your discard. Calls, wins and passes appear when available.</p></div><button id="auto-button" class="secondary" data-i18n="autoplay">Autoplay this hand</button><p id="connection" class="connection" role="status" data-i18n="connecting">Connecting to the table…</p></aside>
+  <section class="play-area" aria-label="Mahjong table" data-i18n-aria="tableLabel">
+    <div class="table-topline"><span id="table-round" data-i18n="preparing">Preparing the hand</span><span id="table-state" data-i18n="aiReady">The AI players are taking their seats</span></div>
+    <div class="table" id="table">
+      <div class="opponent top-seat" id="seat-2"></div><div class="opponent left-seat" id="seat-3"></div><div class="opponent right-seat" id="seat-1"></div>
+      <div class="center-board"><div class="compass"><span data-wind="N">N</span><span data-wind="W">W</span><b>道</b><span data-wind="E">E</span><span data-wind="S">S</span></div><p id="remaining"></p><div id="dora" class="dora"></div><p id="pot" class="pot"></p></div>
+      <div class="human-river" id="human-river"></div><div class="human-seat" id="seat-0"></div>
+    </div>
+    <div class="action-panel"><div class="action-header"><p id="prompt" aria-live="polite" data-i18n="preparing">Preparing the hand</p><span id="chosen-tile"></span></div><div id="actions" class="actions"></div><p id="room-error" class="error" role="alert"></p></div>
+  </section>
+  <aside class="journal"><div class="journal-heading"><span data-i18n="events">Table history</span><small data-i18n="liveEvents">RECENT EVENTS</small></div><ol id="events" aria-live="off"></ol><div class="journal-footer"><span data-i18n="privacy1">Public information only</span><br><span data-i18n="privacy2">AI cannot see your hand</span></div></aside>
+</main>
+<footer id="footer"><span data-i18n="footer">TanyaoDojo · One hand at a time</span><span data-i18n="footer2">Complete rules · You vs three AI players</span></footer>
+<dialog id="rules-dialog"><select class="dialog-language" data-language aria-label="Language" data-i18n-aria="languageLabel"><option value="en">English</option><option value="zh-CN">简体中文</option></select><button class="dialog-close" id="close-rules" aria-label="Close rules">×</button><p class="eyebrow" data-i18n="before">BEFORE YOU SIT DOWN</p><h2 id="rules-title"></h2><p id="rules-intro"></p><ul id="rules-list"></ul><button id="rules-ok" class="primary" data-i18n="gotIt">Got it</button></dialog>
+<dialog id="result-dialog"><select class="dialog-language" data-language aria-label="Language" data-i18n-aria="languageLabel"><option value="en">English</option><option value="zh-CN">简体中文</option></select><p class="eyebrow" data-i18n="resultEyebrow">THE HAND IS SETTLED</p><h2 id="result-title"></h2><p id="result-reason"></p><div id="result-bonus"></div><div id="result-scores"></div><button id="next-button" class="primary" data-i18n="next">Next hand ↗</button><button id="result-leave" class="text-button" data-i18n="returnLobby">Back to lobby</button></dialog>
+<div id="loading" class="loading hidden" role="status"><div class="spinner"></div><strong data-i18n="opening">Opening your table</strong><span data-i18n="openingHint">The wall and AI players will be ready shortly.</span></div>
+<script src="/i18n.js" defer></script><script src="/app.js" defer></script>
+</body></html>

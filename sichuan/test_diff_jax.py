@@ -2,7 +2,8 @@
 两边打同一副牌、走同一动作序列;每一步比对 (合法动作集, 手牌, 副露, 分数, phase, 当前玩家)。
 """
 import sys, random, numpy as np, jax, jax.numpy as jnp
-sys.path.insert(0, "/mnt/d/Better_mortal")
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from sichuan.reference_impl import SichuanGame, NUM_TILES
 from sichuan import env_jax as E
 
@@ -55,6 +56,18 @@ def run_one(seed, verbose=False):
                 return ("副露不符", step, f"p{p} act={a} ref={ref_melds(g.players[p])} jax={jax_melds(st,p)}")
         if list(np.asarray(st.score)) != g.scores():
             return ("分数不符", step, f"act={a} ref={g.scores()} jax={list(np.asarray(st.score))}")
+        if int(st.phase) != {"void": 0, "action": 1, "response": 2, "over": 3}[g.phase]:
+            return ("阶段不符", step, f"act={a} ref={g.phase} jax={int(st.phase)}")
+        if list(np.asarray(st.finished)) != [p.hu for p in g.players]:
+            return ("离场状态不符", step, str(a))
+        if int(st.wall_ix) != 108 - len(g.wall):
+            return ("摸牌数不符", step, str(a))
+        if int(st.drawn_tile) != (-1 if g.drawn_tile is None else g.drawn_tile):
+            return ("本回合摸牌不符", step, str(a))
+        if not np.array_equal(np.asarray(st.river), [[r.count(t) for t in range(NUM_TILES)] for r in g.discards]):
+            return ("牌河不符", step, str(a))
+        if g.tile_conservation() != 108 or sum(g.scores()) != 0:
+            return ("守恒失败", step, str(a))
     return ("超步数", 4000, None)
 
 # 用法: test_diff_jax.py <局数> [起始 seed]  —— 便于多进程按 seed 段并行
@@ -73,3 +86,4 @@ if not bad:
 else:
     for k, v in bad.items():
         print(f"  {k}: {len(v)} 例   首例 seed={v[0][0]} step={v[0][1]}  {v[0][2]}")
+    sys.exit(1)

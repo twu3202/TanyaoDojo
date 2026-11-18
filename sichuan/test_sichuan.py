@@ -1,6 +1,8 @@
 """川麻参考实现 v0 用例集。直接运行:python test_sichuan.py(无 pytest 依赖)。"""
 import sys
-from reference_impl import (NUM_TILES, SichuanGame, calc_fan, is_hu, random_playout, suit_of)
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from sichuan.reference_impl import (NUM_TILES, SichuanGame, calc_fan, is_hu, random_playout, suit_of)
 
 PASS = 0
 
@@ -155,3 +157,10 @@ for seed in range(200):
         check(f"对局{seed}番在范围", 0 <= fan <= 4)
 
 print(f"ALL {PASS} CHECKS PASSED  (200局: 三胡终局={overs['hu3']}, 流局={overs['wall']}, 总胡次={total_hu})")
+
+# Rule-oracle cases independent of the Python-vs-JAX differential oracle.
+import unittest
+from sichuan.test_response_priority import ReferencePriorityTests
+result = unittest.TextTestRunner().run(unittest.defaultTestLoader.loadTestsFromTestCase(ReferencePriorityTests))
+if not result.wasSuccessful():
+    sys.exit(1)

@@ -101,7 +101,7 @@ def make_pick(path):
     return "net", pick
 
 
-def play_deal(seed, a_seat, A, B, rng_seed):
+def play_deal(seed, a_seat, A, B, rng_seed, *, trace=None):
     """A 坐 a_seat,B 坐其余三席。返回四家分数。"""
     (ka, fa), (kb, fb) = A, B
     g = SichuanGame(seed)
@@ -126,6 +126,8 @@ def play_deal(seed, a_seat, A, B, rng_seed):
             a = cand[0] if cand else acts[0]
         else:
             a = fn(g, i, acts, rng)
+        if trace is not None:
+            trace.append((i, a))
         g.step(a)
         st = _step(st, jnp.int32(ref_to_id(a)))
         guard += 1

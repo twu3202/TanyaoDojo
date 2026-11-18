@@ -1,0 +1,57 @@
+---
+title: TanyaoDojo Mahjong
+emoji: 🀄
+colorFrom: green
+colorTo: yellow
+sdk: docker
+app_port: 7860
+license: agpl-3.0
+short_description: Play five Mahjong rulesets vs AI. English / 中文.
+---
+
+# TanyaoDojo · Mahjong table
+
+Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hongzhong One Ma**, or
+**Fangchenggang Hongzhong** and play with three AI opponents. Search for a ruleset using either language or
+filter by family. Riichi continues through a complete East-South match, including native dealer repeats and
+extensions. The other rooms offer complete hands with settlement and next-hand play.
+
+- **Beginner:** a rule-aware tile-efficiency policy.
+- **Standard:** the existing TanyaoDojo tpt 408k riichi network or the independently trained Sichuan P2 network.
+- Click a tile, then confirm the discard. Legal calls, wins, passes and riichi declarations appear when available.
+- You can autoplay the rest of the current hand, continue to the next hand, or return to the lobby.
+- Refreshing the page restores your live table in the same browser tab. Tables expire after inactivity and are lost
+  on a server restart. This preview has a bounded number of simultaneous tables.
+
+Only the player's own hand and public information are sent to the browser. Other players' concealed tiles and
+wall seeds stay on the server. AI policies receive their own seat's observation, not other seats' hidden hands.
+
+## Language
+
+English is the default. Select English or 简体中文 in the header or dialogs; the preference is remembered.
+You can switch during a hand without losing your table or pending choice.
+
+## Rule scope
+
+The Sichuan rule version has mandatory dingque, no chi, multiple winners, wind/rain kong payments, a four-fan cap,
+ready-hand settlement and refunds. It **does not include** exchanging three tiles, call transfer, flower-pig
+penalties or every local room option. Those are separate future rule versions, not silently claimed as supported.
+
+The **112-tile wildcard family** offers two GameTea bonus modes and the Fangchenggang room with seven pairs and
+a four-tile reserve. Source rules and the room choices for unspecified boundaries are listed in the
+[rule specification](deploy/play/rules/Hongzhong.md) and the in-game rules dialog.
+
+The catalog exposes only implemented, tested rulesets. More regional variants will be added
+by rule family. No training runs inside this Space; models are fixed CPU inference snapshots.
+
+## Source and attribution
+
+- App, original SVG tile drawings, and Sichuan implementation: [TanyaoDojo](https://github.com/twu3202/TanyaoDojo).
+- Native riichi engine and riichi model architecture: [Mortal](https://github.com/Equim-chan/Mortal), AGPL-3.0-or-later.
+  The corresponding Rust source used by this Docker build is included in `native_source/`; it is based on upstream
+  commit `0cff2b52982be5b1163aa9a62fb01f03ce91e0d2` with the project's rollout bridge changes.
+- Riichi checkpoint and model code are reused from the owner's [decision Space](https://huggingface.co/spaces/Twu31/TanyaoDojo-decisions).
+- Sichuan weights: project P2 b2272, evaluated on the corrected response-priority engine before integration.
+
+See `LICENSE`, `LICENSE-MIT`, `ASSET_MANIFEST.json` and `deploy/play/README.md`. The web adapter is not a substitute
+for the project's fixed-protocol research evaluations. No Tenhou game logs or derived datasets are included.

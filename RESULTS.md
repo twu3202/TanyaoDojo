@@ -1,5 +1,11 @@
 # Evaluation results log
 
+> **Evidence qualification (2026-11-15).** The dated verdicts below preserve the original decisions.
+> A screening drop is not proof of zero effect; many stopped comparisons have intervals spanning positive effects.
+> The C′ improvement is measured but its training transition remains unexplained after unsuccessful replays.
+> The tested PG and Cal-QL adaptations do not establish that their entire method families fail.
+> No new riichi training or strength evaluation was run in this review; the sacred protocol is unchanged.
+
 ## Phase 1 baseline: v1 vs Mortal v4 (100k-game duplicate 1v3)
 
 Method: fixed wall seeds (seed_key=20260711), the challenger rotates through all 4 seats to cancel out luck,

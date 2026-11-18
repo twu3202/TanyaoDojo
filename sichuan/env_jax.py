@@ -19,7 +19,7 @@ phase: 0=定缺 1=行动(摸后决策) 2=响应(打牌后逐家询问) 3=终局
 关键实现注记:
   · 血战"离场"用定长 bool 掩码 finished 表示,轮转 = 定长 4 循环跳过离场者;
   · 响应队列定长 3(-1 填充),按 reference 的 _resp_order 顺序;
-  · 一炮多响:队列内每家独立结算,ron_flag 记录;碰/杠在已有荣时不成立;
+  · 一炮多响:队列内每家独立结算;碰/杠先登记,全部响应后无人荣才执行;
   · 刮风下雨记账用 (4,4) 矩阵 gang_ledger[payer, receiver],流局退税直接按行列求和;
   · 抢杠:补杠时 vmap 检查其余在场者能否荣该张,成立则补杠不成立。
 """
@@ -85,6 +85,9 @@ class State:
     resp_ix: jnp.ndarray         # int32
     ron_flag: jnp.ndarray        # (4,) bool 本次打牌的荣和者
     first_ron: jnp.ndarray       # int32 队列顺序里**第一个**荣和者(-1 无);牌归他
+    claim_player: jnp.ndarray    # int32 pending pung/kong claimant (-1 none)
+    claim_action: jnp.ndarray    # int32 A_PENG or A_ZHIGANG (-1 none)
+    drawn_tile: jnp.ndarray      # int32 当前实际摸到的牌,碰后/非行动阶段为 -1
     last_draw_was_gang: jnp.ndarray  # bool
     discard_was_gang: jnp.ndarray    # bool
     hai_di: jnp.ndarray          # bool
@@ -210,7 +213,8 @@ def _liuju_settle(st: State) -> State:
     # 退税:未听者(不含已胡)退还本局收到的全部杠钱
     refund = jnp.where(no_ting[None, :], st.gang_ledger, 0)   # [payer, receiver]
     score = score - refund.sum(axis=0) + refund.sum(axis=1)
-    return st.replace(score=score, phase=jnp.int32(PH_OVER), terminated=TRUE)
+    return st.replace(score=score, phase=jnp.int32(PH_OVER), terminated=TRUE,
+                      drawn_tile=jnp.int32(-1))
 
 
 # ------------------------------------------------------------------ 轮转
@@ -232,6 +236,7 @@ def _draw(st: State, i, from_gang):
     return st.replace(hand=st.hand.at[i, t].add(1),
                       wall_ix=st.wall_ix + 1,
                       cur=jnp.int32(i),
+                      drawn_tile=t,
                       last_draw_was_gang=from_gang,
                       hai_di=(WALL_SIZE - st.wall_ix - 1) == 0,
                       phase=jnp.int32(PH_ACTION))
@@ -242,7 +247,7 @@ def _begin_turn(st: State, i, from_gang=FALSE):
     wall_empty = st.wall_ix >= WALL_SIZE
     return jax.lax.cond(
         (st.n_hu >= 3) | (i < 0),
-        lambda s: s.replace(phase=jnp.int32(PH_OVER), terminated=TRUE),
+        lambda s: s.replace(phase=jnp.int32(PH_OVER), terminated=TRUE, drawn_tile=jnp.int32(-1)),
         lambda s: jax.lax.cond(wall_empty, _liuju_settle,
                                lambda ss: _draw(ss, i, from_gang), s),
         st)
@@ -261,8 +266,7 @@ def _legal_mask(st: State) -> jnp.ndarray:
     hand = st.hand[i].astype(jnp.int32)
     nm = st.n_melds[i].astype(jnp.int32)
     vd = st.void[i].astype(jnp.int32)
-    n_hand = jnp.sum(hand)
-    post_draw = (n_hand % 3) == 2                      # 摸后 3k+2;鸣牌后 3k+1 只能打
+    post_draw = st.drawn_tile >= 0                    # 碰后同样是 3k+2,但只能弃牌
     is_void_tile = SUIT == vd
     has_void = jnp.any(jnp.where(is_void_tile, hand, 0) > 0)
     # 缺门必打:手里还有缺门牌时,打牌掩码仅开放缺门张
@@ -314,9 +318,11 @@ def _do_discard(st: State, t):
     st = st.replace(hand=st.hand.at[i, t].add(-1),
                     river=st.river.at[i, t].add(1),
                     pending_tile=jnp.int32(t), pending_from=i,
+                    drawn_tile=jnp.int32(-1),
                     discard_was_gang=st.last_draw_was_gang,
                     ron_flag=jnp.zeros(NUM_PLAYERS, dtype=bool),
-                    first_ron=jnp.int32(-1))
+                    first_ron=jnp.int32(-1),
+                    claim_player=jnp.int32(-1), claim_action=jnp.int32(-1))
     q = _resp_order(st, i)
     st = st.replace(resp_queue=q, resp_ix=jnp.int32(0))
     return jax.lax.cond(q[0] >= 0,
@@ -403,8 +409,14 @@ def _resp_advance(st: State) -> State:
                                 lambda y: y.replace(phase=jnp.int32(PH_OVER), terminated=TRUE),
                                 lambda y: _begin_turn(y, _next_alive(y, dp)), x)
 
-        return jax.lax.cond(any_ron, with_ron,
-                            lambda x: _begin_turn(x, _next_alive(x, dp)), s)
+        def without_ron(x):
+            return jax.lax.cond(
+                x.claim_player >= 0,
+                lambda y: jax.lax.cond(y.claim_action == A_PENG, _apply_peng, _apply_zhigang, y),
+                lambda y: _begin_turn(y, _next_alive(y, dp)), x)
+
+        s = jax.lax.cond(any_ron, with_ron, without_ron, s)
+        return s.replace(claim_player=jnp.int32(-1), claim_action=jnp.int32(-1))
 
     return jax.lax.cond(more, lambda s: s, finish, st)
 
@@ -419,9 +431,9 @@ def _do_ron(st: State) -> State:
     return _resp_advance(st)
 
 
-def _do_peng(st: State) -> State:
-    """已有荣和时碰不成立(牌被胡家拿走),仅跳过本家。"""
-    j = st.resp_queue[jnp.clip(st.resp_ix, 0, 2)]
+def _apply_peng(st: State) -> State:
+    """Resolve a deferred claim after every seat has declined a win."""
+    j = st.claim_player
     dt, dp = st.pending_tile, st.pending_from
 
     def claim(s: State):
@@ -431,16 +443,16 @@ def _do_peng(st: State) -> State:
                       melds_tile=s.melds_tile.at[j, k].set(dt),
                       n_melds=s.n_melds.at[j].add(1),
                       river=s.river.at[dp, dt].add(-1),
-                      cur=j, last_draw_was_gang=FALSE,
+                      cur=j, drawn_tile=jnp.int32(-1), last_draw_was_gang=FALSE,
                       phase=jnp.int32(PH_ACTION),
                       resp_ix=jnp.int32(3))
         return s
 
-    return jax.lax.cond(jnp.any(st.ron_flag), _resp_advance, claim, st)
+    return claim(st)
 
 
-def _do_zhigang(st: State) -> State:
-    j = st.resp_queue[jnp.clip(st.resp_ix, 0, 2)]
+def _apply_zhigang(st: State) -> State:
+    j = st.claim_player
     dt, dp = st.pending_tile, st.pending_from
 
     def claim(s: State):
@@ -450,12 +462,28 @@ def _do_zhigang(st: State) -> State:
                       melds_tile=s.melds_tile.at[j, k].set(dt),
                       n_melds=s.n_melds.at[j].add(1),
                       river=s.river.at[dp, dt].add(-1),
-                      resp_ix=jnp.int32(3))
+                      cur=j, resp_ix=jnp.int32(3))
         s = _pay(s, dp, j, 2 * BASE, is_gang=True)
         return jax.lax.cond(s.wall_ix >= WALL_SIZE, _liuju_settle,
                             lambda x: _draw(x, j, TRUE), s)
 
-    return jax.lax.cond(jnp.any(st.ron_flag), _resp_advance, claim, st)
+    return claim(st)
+
+
+def _defer_claim(st: State, action) -> State:
+    j = st.resp_queue[jnp.clip(st.resp_ix, 0, 2)]
+    keep = (~jnp.any(st.ron_flag)) & (st.claim_player < 0)
+    st = st.replace(claim_player=jnp.where(keep, j, st.claim_player),
+                    claim_action=jnp.where(keep, jnp.int32(action), st.claim_action))
+    return _resp_advance(st)
+
+
+def _do_peng(st: State) -> State:
+    return _defer_claim(st, A_PENG)
+
+
+def _do_zhigang(st: State) -> State:
+    return _defer_claim(st, A_ZHIGANG)
 
 
 # ------------------------------------------------------------------ Env
@@ -492,6 +520,8 @@ def _init_from_wall(wall) -> State:
         pending_tile=jnp.int32(-1), pending_from=jnp.int32(-1),
         resp_queue=jnp.full(3, -1, jnp.int32), resp_ix=jnp.int32(0),
         ron_flag=jnp.zeros(NUM_PLAYERS, dtype=bool), first_ron=jnp.int32(-1),
+        claim_player=jnp.int32(-1), claim_action=jnp.int32(-1),
+        drawn_tile=jnp.int32(-1),
         last_draw_was_gang=FALSE, discard_was_gang=FALSE, hai_di=FALSE,
         n_hu=jnp.int32(0),
         legal_action_mask=jnp.zeros(NUM_ACTIONS, dtype=bool),

@@ -66,6 +66,7 @@ class Args(BaseModel):
     shaping_w: float = 0.5
     mem_fraction: float = 0.85
     seed: int = 0
+    init_seed: int = 1          # explicit network seed; default preserves historical initialization
     save_path: str = "runs/sichuan_p2.pkl"
     snapshot_every_blocks: int = 64
     log_every_blocks: int = 8
@@ -226,7 +227,7 @@ def main():
     key, k0 = jax.random.split(key)
     st0 = jax.vmap(ENV.init)(jax.random.split(k0, args.num_envs))
     sample = jax.tree.map(lambda x: x[:2], jax.vmap(_OBSERVE)(st0))
-    params = net.init(jax.random.PRNGKey(1), sample)
+    params = net.init(jax.random.PRNGKey(args.init_seed), sample)
     if args.init_from:
         with open(args.init_from, "rb") as f:
             params = pickle.load(f)
@@ -257,8 +258,19 @@ def main():
     prev_adv_std = None
     save = Path(args.save_path)
     save.parent.mkdir(parents=True, exist_ok=True)
+
+    def save_params(path):
+        # A disconnect or interrupted process must not corrupt the last complete weights.
+        path = Path(path)
+        temporary = path.with_name(path.name + ".tmp")
+        with open(temporary, "wb") as f:
+            pickle.dump(jax.device_get(ts.params), f)
+        os.replace(temporary, path)
+
     for b in range(NUM_JIT):
         ts, env_state, key, m = block(ts, env_state, key)
+        if not all(__import__("math").isfinite(float(x)) for x in m):
+            raise RuntimeError(f"non-finite training metrics at block {b+1}; preserving the last checkpoint")
         steps += BATCH * args.updates_per_jit
         if (b + 1) % args.log_every_blocks == 0 or b == 0:
             loss, vl, ent, clipf, mratio, mkl, astd = [float(x) for x in m]
@@ -275,10 +287,8 @@ def main():
             if osc > 0.5:
                 print("  ⚠️ adv_osc>0.5:优势尺度震荡,价值函数没跟上", flush=True)
         if (b + 1) % args.snapshot_every_blocks == 0:
-            with open(f"{save}.b{b+1}.pkl", "wb") as f:
-                pickle.dump(jax.device_get(ts.params), f)
-        with open(save, "wb") as f:
-            pickle.dump(jax.device_get(ts.params), f)
+            save_params(f"{save}.b{b+1}.pkl")
+        save_params(save)
 
 
 if __name__ == "__main__":

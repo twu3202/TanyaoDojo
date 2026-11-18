@@ -26,7 +26,8 @@ excluded from v0 are listed at the end.
 - Order: draw → (optional: concealed kong / added kong / self-drawn win) → discard → responses from the other players.
 - **No chow.** The only responses are: pung, exposed kong (on a discard), win on the discard, pass.
 - Response priority: **win > pung/kong**; several players able to win at once = **multiple winners on one discard** (all of them stand; see §6).
-- A pung or kong must be followed by a discard (after a kong, first draw a replacement "on the kong" tile).
+- After a pung, the caller immediately discards without drawing. Self-drawn wins, concealed kongs and added kongs require a turn with an actual draw.
+- After a kong, draw a replacement "on the kong" tile and resume the draw-turn actions.
 - Three kinds of kong: exposed kong (another player discards the 4th tile), added kong (self-drawing the 4th tile after a pung), concealed kong (4 tiles in hand).
   - An added kong can be robbed: a player waiting on that tile can win on it (**robbing the kong**, counted as a fan type in §5). When the robbing win stands, the added kong does not (the tile goes to the winner,
     and the player who declared the kong gets no wind-and-rain payment).

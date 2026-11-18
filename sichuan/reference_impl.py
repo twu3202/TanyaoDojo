@@ -157,7 +157,7 @@ class Player:
 
 class SichuanGame:
     """
-    phase: "void" -> "action"(当前玩家摸后决策) -> "response"(打牌后逐家响应) -> ... -> "over"
+    phase: "void" -> "action"(摸牌或碰后弃牌) -> "response"(打牌后逐家响应) -> ... -> "over"
     响应实现:打牌后依优先级征询(先胡后碰杠),内部逐家询问;多家胡全部成立。
     """
 
@@ -173,6 +173,8 @@ class SichuanGame:
         self.void_declared = 0
         self.pending_discard = None      # (player, tile)
         self.response_queue = []         # 待询问的响应者
+        self.pending_claim = None        # (player, kind), applied only after all responses
+        self.drawn_tile = None           # 当前行动者本回合实际摸到的牌,碰后为空
         self.last_draw_was_gang = False  # 杠上花/杠上炮标记
         self.hu_order = []
         self.turn_guard = 0
@@ -216,7 +218,7 @@ class SichuanGame:
         if self.phase == "action":
             p = self.players[self.cur]
             acts = []
-            post_draw = sum(p.hand) % 3 == 2   # 摸牌后 3k+2;碰后 3k+1(只能打牌)
+            post_draw = self.drawn_tile is not None
             void_tiles = [t for t in range(NUM_TILES) if suit_of(t) == p.void and p.hand[t] > 0]
             if void_tiles:
                 acts = [("discard", t) for t in void_tiles]      # 缺门必打
@@ -324,7 +326,8 @@ class SichuanGame:
 
     def _begin_turn(self, i, from_gang=False):
         """i 摸牌进入 action;墙空则流局。"""
-        if len(self.hu_order) >= 3:
+        self.drawn_tile = None
+        if i is None or len(self.hu_order) >= 3:
             self.phase = "over"
             return
         if not self.wall:
@@ -333,7 +336,7 @@ class SichuanGame:
         self.cur = i
         self.last_draw_was_gang = from_gang
         self.hai_di = len(self.wall) == 1
-        self._draw_to(self.players[i])
+        self.drawn_tile = self._draw_to(self.players[i])
         self.phase = "action"
 
     def step(self, action):
@@ -348,14 +351,18 @@ class SichuanGame:
             return
         if self.phase == "action":
             p = self.players[self.cur]
+            if self.drawn_tile is None and kind != "discard":
+                raise ValueError("碰后只能弃牌")
             if kind == "discard":
                 assert p.hand[arg] > 0
+                self.drawn_tile = None
                 p.hand[arg] -= 1
                 self.discards[self.cur].append(arg)
                 self.discard_was_gang = self.last_draw_was_gang
                 self.pending_discard = (self.cur, arg)
                 self.response_queue = [j for j in (self._resp_order()) ]
                 self.ron_winners = []
+                self.pending_claim = None
                 self.phase = "response" if self.response_queue else None
                 if not self.response_queue:
                     self._begin_turn(self._next_alive(self.cur))
@@ -386,10 +393,7 @@ class SichuanGame:
                     p.hand[arg] -= 1   # 该张被抢(离开杠者;计入胡家结算,牌面归属仅记账)
                     self.discards[self.cur].append(arg)
                     nxt = self._next_alive(self.cur)
-                    if nxt is None or len(self.hu_order) >= 3:
-                        self.phase = "over"
-                    else:
-                        self._begin_turn(nxt)
+                    self._begin_turn(nxt)
                     return
                 p.hand[arg] -= 1
                 p.melds.remove(("peng", arg))
@@ -402,11 +406,7 @@ class SichuanGame:
                        "gang_shang_hua": self.last_draw_was_gang,
                        "hai_di": getattr(self, "hai_di", False)}
                 self._settle_hu(self.cur, self.players[self.cur].hand, ctx)
-                nxt = self._next_alive(self.cur)
-                if nxt is None or len(self.hu_order) >= 3:
-                    self.phase = "over"
-                else:
-                    self._begin_turn(nxt)
+                self._begin_turn(self._next_alive(self.cur))
                 return
             raise ValueError(f"action phase 不接受 {kind}")
         if self.phase == "response":
@@ -423,31 +423,15 @@ class SichuanGame:
             elif kind == "pass":
                 self.response_queue.pop(0)
             elif kind in ("peng", "zhigang"):
-                # 有人已荣则碰/杠不成立(牌被胡家拿走)
-                if self.ron_winners:
-                    self.response_queue.pop(0)
-                else:
-                    self.response_queue = []
-                    if kind == "peng":
-                        p.hand[dt] -= 2
-                        p.melds.append(("peng", dt))
-                        self.discards[dp].pop()
-                        self.cur = i
-                        self.phase = "action_after_claim"
-                        self.phase = "action"
-                        self.last_draw_was_gang = False
-                        return
-                    else:
-                        p.hand[dt] -= 3
-                        p.melds.append(("gang_ming", dt))
-                        self.discards[dp].pop()
-                        self._gang_money(i, "gang_ming", provider=dp)
-                        self._begin_turn(i, from_gang=True)
-                        return
+                # A later seat may still win. Do not mutate tiles, scores or wall yet.
+                if not self.ron_winners and self.pending_claim is None:
+                    self.pending_claim = (i, kind)
+                self.response_queue.pop(0)
             else:
                 raise ValueError(f"response phase 不接受 {kind}")
             if not self.response_queue:
                 if self.ron_winners:
+                    self.pending_claim = None
                     self.discards[dp].pop()
                     self.players[self.ron_winners[0]].hand[dt] += 1   # 牌归首个胡家(守恒)
                     if len(self.hu_order) >= 3:
@@ -458,6 +442,21 @@ class SichuanGame:
                         self.phase = "over"
                     else:
                         self._begin_turn(nxt)
+                elif self.pending_claim is not None:
+                    caller, claim = self.pending_claim
+                    self.pending_claim = None
+                    p = self.players[caller]
+                    p.hand[dt] -= 2 if claim == "peng" else 3
+                    p.melds.append(("peng" if claim == "peng" else "gang_ming", dt))
+                    self.discards[dp].pop()
+                    self.cur = caller
+                    if claim == "peng":
+                        self.phase = "action"
+                        self.drawn_tile = None
+                        self.last_draw_was_gang = False
+                    else:
+                        self._gang_money(caller, "gang_ming", provider=dp)
+                        self._begin_turn(caller, from_gang=True)
                 else:
                     self._begin_turn(self._next_alive(dp))
             return
@@ -475,13 +474,7 @@ class SichuanGame:
 
     def _begin_turn_same(self, from_gang):
         """杠后本家补摸。"""
-        if not self.wall:
-            self._liuju_settle()
-            return
-        self.last_draw_was_gang = from_gang
-        self.hai_di = len(self.wall) == 1
-        self._draw_to(self.players[self.cur])
-        self.phase = "action"
+        self._begin_turn(self.cur, from_gang)
 
 
 # ---------------- 随机对局与不变量 ----------------
