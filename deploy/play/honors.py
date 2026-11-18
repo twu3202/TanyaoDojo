@@ -175,9 +175,9 @@ def _sets(counts):
     return tuple(options)
 
 
-def standard_shapes(hand, open_sets):
-    """Yield all four-set-and-a-pair interpretations, counting declared sets."""
-    if sum(hand) != 3 * (4 - open_sets) + 2:
+def standard_shapes(hand, open_sets, *, groups=4):
+    """Yield set-and-pair interpretations, counting declared sets."""
+    if sum(hand) != 3 * (groups - open_sets) + 2:
         return
     for tile, count in enumerate(hand):
         if count < 2:
@@ -271,11 +271,7 @@ class HonorsGame:
         self.claimed_tile = None
         self.reason_code = None
         self._prepare_wall()
-        for _ in range(13):
-            for step in range(self.seat_count):
-                actor = (dealer + step) % self.seat_count
-                self.players[actor].hand[self._deal_tile(actor)] += 1
-        self._draw(dealer)
+        self._deal_opening()
         if self.options.exchange_count:
             self.phase = 'exchange'
             self.cur = 0
@@ -292,6 +288,13 @@ class HonorsGame:
 
     def _deal_tile(self, actor):
         return self.wall.pop()
+
+    def _deal_opening(self):
+        for _ in range(13):
+            for step in range(self.seat_count):
+                actor = (self.dealer + step) % self.seat_count
+                self.players[actor].hand[self._deal_tile(actor)] += 1
+        self._draw(self.dealer)
 
     @property
     def remaining(self):

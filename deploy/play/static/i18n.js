@@ -166,6 +166,27 @@ I18N.en.branchCount='{n} tiles in one suit';
 I18N['zh-CN'].branchCount='{n} 支';
 I18N.en.longestSuit='Best suit {n} · Need 8';
 I18N['zh-CN'].longestSuit='最多一门 {n} 支 · 需 8 支';
+Object.assign(I18N.en, {
+  goldIndicator:'Gold wildcard', dealerTai:'Dealer +{n} tai', goldCount:'Gold tiles × {n}', passedWinBlock:'Win blocked after pass',
+  promptGold:'Claim the opening gold or pass. A tile on the claim button is the dealer’s discard.',
+  promptFlowerWin:'Declare the flower win or keep playing.',
+});
+Object.assign(I18N['zh-CN'], {
+  goldIndicator:'翻出的金', dealerTai:'庄加 {n} 台', goldCount:'金牌 × {n}', passedWinBlock:'过水禁胡',
+  promptGold:'可抢金或过。抢金按钮上的牌是庄家要换出的牌。',
+  promptFlowerWin:'可胡花或继续打牌。',
+});
+Object.assign(I18N.en.action, {claim_gold:'Claim gold', three_gold:'Win with three golds', flower_hu:'Win with flowers'});
+Object.assign(I18N['zh-CN'].action, {claim_gold:'抢金', three_gold:'三金倒', flower_hu:'胡花'});
+Object.assign(I18N.en.reason, {gold_claim:'{names} claimed the opening gold.', three_gold_win:'{names} won with three gold tiles.',
+  flower_hu:'{names} won with flowers.'});
+Object.assign(I18N['zh-CN'].reason, {gold_claim:'{names} 开局抢金胡牌', three_gold_win:'{names} 三金倒胡牌', flower_hu:'{names} 胡花'});
+Object.assign(I18N.en.fans, {
+  '抢金':'Opening gold claim', '三金倒':'Three gold tiles', '金雀':'Gold pair', '金龙':'Gold pung',
+  '无花无杠':'No flowers or kongs', '一张花':'One flower', '八仙过海':'All eight flowers', '七抢一':'Seven flowers claim the eighth',
+  '门清自摸':'Closed self-draw', '全求人':'Five exposed sets', '独听':'Single wait', '正花':'Seat flower',
+  '花杠':'Complete flower group', '门风':'Seat wind', '圈风':'Round wind', '青发':'Green Dragon', '红中':'Red Dragon',
+});
 let LANGUAGE='en';
 try{const saved=localStorage.getItem('tanyao_language');if(saved&&I18N[saved])LANGUAGE=saved;}catch{}
 const tr=(key,args={})=>{let s=I18N[LANGUAGE][key]??I18N.en[key]??key;return String(s).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');};
@@ -173,7 +194,7 @@ const tpl=(text,args={})=>String(text).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');
 const playerName=i=>I18N[LANGUAGE].names[i]??String(i);
 const tileText=t=>I18N[LANGUAGE].tileHonors[t]||(LANGUAGE==='en'?`${t.endsWith('r')?'Red ':''}${t[0]} ${I18N.en.suits['mps'.indexOf(t[1])]}`:`${t[0]}${I18N['zh-CN'].suits['mps'.indexOf(t[1])]}${t.endsWith('r')?'赤':''}`);
 const actionText=k=>I18N[LANGUAGE].action[k]??k;
-const countedPatterns=[['根x','gen'],['鬼x','ghost'],['花牌x','flowerBonus'],['底胡x','baseHu'],['台数x','taiCount'],['番数x','faanCount'],['花数x','countedFlowers'],['八支x','branchCount']];
+const countedPatterns=[['根x','gen'],['鬼x','ghost'],['花牌x','flowerBonus'],['底胡x','baseHu'],['台数x','taiCount'],['番数x','faanCount'],['花数x','countedFlowers'],['八支x','branchCount'],['金牌x','goldCount']];
 function patternText(pattern){
   const match=countedPatterns.find(([prefix])=>pattern.startsWith(prefix));
   return match?tr(match[1],{n:pattern.slice(match[0].length)}):(I18N[LANGUAGE].fans[pattern]||pattern);

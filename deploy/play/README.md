@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 66 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 68 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -13,11 +13,13 @@ Anji Fifteen Flowers, Anji Tea House Self-Draw, Dongyang, Bianfeng Chongji Ten T
 Tiantai Three-Player 300 Hu, Tiantai White Dragon Wild, Taizhou Four-Player Hu, Daxi Buy the Base, Linhai Six Chong Tiles,
 Jinyun Classic, Jinyun Cantonese Style, Jiaxing Raise the Head, Pinghu Flowers and Faan, Quzhou Duanzi,
 Quzhou Lata, Quzhou Lata Banked Match, Bengbu Classic, Bengbu East Wind Flowers, Lipu Feed Liability, Wuhu Eight Suit Tiles,
-Wuhu Red Dragon 515 and Anhui Red Dragon.
+Wuhu Red Dragon 515, Anhui Red Dragon, Fuzhou 36 Flowers and Taiwanese Sixteen Tiles.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
 
+- `sixteen.py`, `fuzhou.py` and `taiwan.py`: shared 16/17-tile opening and five-set progression, with opening gold
+  and flower-win rules. [Rules and room conventions](rules/SixteenTileMahjong.md).
 - `wuhu.py` and `hongzhong.py`: eight-suit-tile gates, decomposition-dependent scoring and all-payer or
   third-pon liability, plus Anhui's natural-hand robbery and reserved horses. [Anhui rules](rules/WuhuAnhui.md).
 - `bengbu.py` and `lipu.py`: seat-timed flower replacement, dealer surcharges, reciprocal feed liability,

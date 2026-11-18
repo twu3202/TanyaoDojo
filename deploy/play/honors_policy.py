@@ -11,6 +11,7 @@ from . import hongkong
 from .anji import AnjiRules
 from .chongji import ChongjiRules
 from .dongyang import DongyangRules, white_assignments
+from .fuzhou import FuzhouRules, GOLD_CLAIMS, split_gold
 from .hangzhou import FLOAT, WHITE, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
@@ -21,6 +22,7 @@ from .jinyun import JinyunClassicRules
 from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
 from .quzhou import QuzhouRules, separated_distance
+from .sixteen import SET_COUNT, SixteenRules
 from .wuhu import WuhuRules, suit_counts
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
@@ -93,38 +95,71 @@ def _suit(counts):
 
 
 @lru_cache(maxsize=32768)
-def _combine(first, second):
+def _combine(first, second, groups=4):
     best = {}
     for sets, pair, parts in first:
         for more_sets, more_pair, more_parts in second:
             key = sets + more_sets, pair + more_pair
-            if key[0] <= 4 and key[1] <= 1:
+            if key[0] <= groups and key[1] <= 1:
                 best[key] = max(best.get(key, -1), parts + more_parts)
     return tuple((sets, pair, parts) for (sets, pair), parts in sorted(best.items()))
 
 
 @lru_cache(maxsize=4096)
-def _honors(counts):
+def _honors(counts, groups=4):
     profile = ((0, 0, 0),)
     for count in counts:
         if count >= 2:
             choices = ((0, 0, 1), (0, 1, 0))
             if count >= 3:
                 choices += ((1, 0, 0),)
-            profile = _combine(profile, choices)
+            if count == 4 and groups == SET_COUNT:
+                choices += ((0, 0, 2), (0, 1, 1))
+            profile = _combine(profile, choices, groups)
     return profile
 
 
+@lru_cache(maxsize=8192)
+def _five_suit(counts):
+    # Ten tiles are necessary to exceed the training table's four-part limit.
+    if sum(counts) < 10:
+        return _suit(counts)
+    first = next(i for i, n in enumerate(counts) if n)
+    moves = [((first,), (0, 0, 0))]
+    if counts[first] >= 2:
+        pair = (first, first)
+        moves.extend(((pair, (0, 1, 0)), (pair, (0, 0, 1))))
+    if counts[first] >= 3:
+        moves.append(((first,) * 3, (1, 0, 0)))
+    for other in range(first + 1, min(first + 3, 9)):
+        if counts[other]:
+            moves.append(((first, other), (0, 0, 1)))
+    if first <= 6 and counts[first + 1] and counts[first + 2]:
+        moves.append(((first, first + 1, first + 2), (1, 0, 0)))
+
+    profile = {}
+    for consumed, added in moves:
+        rest = list(counts)
+        for tile in consumed:
+            rest[tile] -= 1
+        states = _combine(_five_suit(tuple(rest)), (added,), SET_COUNT)
+        for sets, pair, parts in states:
+            key = sets, pair
+            profile[key] = max(profile.get(key, -1), min(parts, SET_COUNT))
+    return tuple((sets, pair, parts) for (sets, pair), parts in sorted(profile.items()))
+
+
 @lru_cache(maxsize=65536)
-def standard_distance(hand, meld_count):
+def standard_distance(hand, meld_count, groups=4):
     """Standard shanten on all 34 kinds, using the project's existing suit table."""
-    return min(8 - 2 * total - min(parts, 4 - total) - pair
-               for sets, pair, parts in _shape_states(hand) if (total := sets + meld_count) <= 4)
+    return min(2 * (groups - total) - min(parts, groups - total) - pair
+               for sets, pair, parts in _shape_states(hand, groups) if (total := sets + meld_count) <= groups)
 
 
-def _shape_states(hand):
-    suited = _combine(_combine(_suit(hand[:9]), _suit(hand[9:18])), _suit(hand[18:27]))
-    return _combine(suited, _honors(hand[27:]))
+def _shape_states(hand, groups=4):
+    shape = _five_suit if groups == SET_COUNT else _suit
+    suited = _combine(_combine(shape(hand[:9]), shape(hand[9:18]), groups), shape(hand[18:27]), groups)
+    return _combine(suited, _honors(hand[27:], groups), groups)
 
 
 @lru_cache(maxsize=32768)
@@ -159,6 +194,11 @@ def _wild_distance(natural, wild, meld_count, require_burst, allow_pairs):
 
 
 def _distance(hand, melds, view):
+    if isinstance(view.rules, SixteenRules):
+        if isinstance(view.rules, FuzhouRules):
+            natural, wild = split_gold(hand, view.wildcard)
+            return max(0, standard_distance(natural, len(melds), SET_COUNT) - wild)
+        return standard_distance(hand, len(melds), SET_COUNT)
     if isinstance(view.rules, WuhuRules):
         return max(standard_distance(hand, len(melds)), 7 - max(suit_counts(hand, melds)))
     wildcard = view.wildcard
@@ -239,12 +279,14 @@ def _ready_waits(hand, melds, view, live):
     params = {}
     if isinstance(view.rules, SongyangRules):
         params['indicator'] = view.wildcard_indicator
+    elif isinstance(view.rules, FuzhouRules):
+        params['gold'] = view.wildcard
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
     elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, PinghuRules, QuzhouRules)):
         params['wildcard'] = view.wildcard
     if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules,
-                              TiantaiWildcardRules, WuhuRules)):
+                              TiantaiWildcardRules, WuhuRules, SixteenRules)):
         def can_win(hand, melds, ctx):
             return view.rules.can_win(hand, melds, ctx, **params)
     else:
@@ -285,7 +327,7 @@ def _ukeire(distance, rest, melds, live, view):
     # Once a route has been chosen, compare ordinary shape improvements among tied discards.
     if distance == 0:
         return 0
-    if isinstance(view.rules, WuhuRules) or getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).seven_pairs:
+    if isinstance(view.rules, (WuhuRules, SixteenRules)) or getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).seven_pairs:
         improve = lambda hand: _distance(hand, melds, view)
     else:
         improve = lambda hand: standard_distance(hand, len(melds))
@@ -306,6 +348,10 @@ def _ukeire(distance, rest, melds, live, view):
 
 def heuristic(view):
     actions = view.actions
+    if isinstance(view.rules, SixteenRules):
+        special = next((action for action in actions if action[0] in (*GOLD_CLAIMS, 'flower_hu')), None)
+        if special is not None:
+            return special
     if actions[0][0] == 'liability_choice':
         worthwhile = _distance(view.hand, view.melds, view) <= 1 and view.remaining >= 5
         return 'liability_choice', int(worthwhile)

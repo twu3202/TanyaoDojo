@@ -4,6 +4,7 @@ from .bengbu import BENGBU, BENGBU_FLOWER
 from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .chongji import CHONGJI, CHONGJI_SEVEN
 from .dongyang import DONGYANG
+from .fuzhou import FUZHOU
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
 from .guiliu import VARIANT as GUILIU
@@ -19,6 +20,7 @@ from .macau import VARIANT as MACAU
 from .suited import Profile
 from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
 from .taizhou import TAIZHOU
+from .taiwan import TAIWAN
 from .daxi import DAXI
 from .linhai import LINHAI
 from .lipu import LIPU
@@ -2066,6 +2068,53 @@ VARIANTS['anhui-hongzhong'] = {
     }},
 }
 
+VARIANTS[FUZHOU.VARIANT] = {
+    'id': FUZHOU.VARIANT, 'family_id': 'sixteen-tile', 'family': 'Sixteen-tile Mahjong', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Fuzhou Mahjong · 36 Flowers', 'aliases': ['福州麻将', '福州36花', '福州十六张', '抢金'],
+    'rule_version': 'fuzhou-sixteen-36-flowers-dojo-v1', 'subtitle': 'Four seats · Five sets · Opening gold claim',
+    'badge': 'Fujian · Gold wildcard',
+    'description': 'Replace all honors and flowers, then reveal a gold wildcard that can be claimed during the opening.',
+    'rules': ['144 tiles. All winds, dragons, plants and seasons are flowers. Replace them in passes from the dealer after dealing 16 tiles, with an extra tile for the dealer.',
+              'Flip a suited gold after replacing flowers. The other copies are wild. At the opening, accept a three-gold win or claim the displayed gold to complete a hand.',
+              'A standard win uses five sets and a pair. Gold stays out of calls. A free gold pair wait must self-draw. The reserve is 18 tiles.',
+              'Each flower, gold, exposed kong and dealer repeat adds 1. Concealed kongs add 2. Double that subtotal on self-draw, then add the highest special award.'],
+    'sources': [{'title': 'Zhejiang Game Hall Fuzhou deal, flower rounds and gold', 'url': 'https://www.hzbianqu.com/game/160.html'},
+                {'title': 'Fuzhou language resource local gold-claim sequence', 'url': 'https://resource.zingzeu.org/kb/word-lists/mahjong'},
+                {'title': 'Xinyue Fuzhou flower and special-hand scoring', 'url': 'https://xinyueyouxi.com/game/216-22?channel_id=0&product_id=33&region='}],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '福州麻将（三十六花）', 'subtitle': '四人 · 五副一对 · 开局抢金',
+        'badge': '福建 · 翻金百搭', 'description': '字牌全部作花。轮补结束后开金，起手可抢金胡。',
+        'rules': ['144 张，风牌、三元牌、四季和四花都算花。闲家发 16 张，庄家多一张，从庄家起分轮补花。',
+                  '补完翻一张数牌作金，同面其余牌百搭。开局可三金倒或用亮出的金凑牌抢金。',
+                  '普通胡须五副一对。金不参与副露，闲金只能自摸。本桌留尾 18 张。',
+                  '花、金、明杠和连庄各计 1 分，暗杠计 2 分。自摸将小计翻倍，再加最高特殊胡分。'],
+    }},
+}
+
+VARIANTS[TAIWAN.VARIANT] = {
+    'id': TAIWAN.VARIANT, 'family_id': 'sixteen-tile', 'family': 'Sixteen-tile Mahjong', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Taiwanese Mahjong · Sixteen Tiles', 'aliases': ['台式麻将', '台湾麻将', '台麻十六张', '七抢一'],
+    'rule_version': 'taiwan-sixteen-seat-flowers-dojo-v1', 'subtitle': 'Four seats · Five sets · Seat flowers and dealer tai',
+    'badge': 'Taiwan · Eight flowers',
+    'description': 'Build five sets and a pair or win with flowers. Each bill depends on the dealer’s streak.',
+    'rules': ['144 tiles including eight flowers. Each player is dealt 16, with an extra tile for the dealer. Leave 16 tiles in reserve.',
+              'Chow, pon, kong and added-kong robbery are allowed. One player can win a discard. Passing a win blocks further wins until you draw and discard on a nonwinning turn.',
+              'All eight flowers win from everyone. Seven flowers can claim from the holder of the eighth. Both count eight tai.',
+              'Bills pay a 3-point base plus tai. A bill involving the dealer adds one tai and another two for each repeat.'],
+    'sources': [{'title': 'Taipei-style sixteen-tile flow and flowers', 'url': 'https://www.mjweb.com.tw/htm/rule_mj.htm'},
+                {'title': 'Taiwanese flower wins and dealer-tai schedule', 'url': 'https://diam.ngct.net/mj_rules.php'}],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '台式麻将（十六张）', 'subtitle': '四人 · 五副一对 · 正花与连庄台',
+        'badge': '台湾 · 八花', 'description': '凑五副一对或和花。每笔涉及庄家的账单按连庄数加台。',
+        'rules': ['144 张，含八张花牌。闲家发 16 张，庄家多一张，留尾 16 张。',
+                  '可吃碰杠，能抢补杠，一炮一响。过胡后要摸到非胡牌并打牌才能解锁。',
+                  '八仙过海三家付，七抢一由第八朵花的持有者付，均为八台。',
+                  '底 3 分，另加台数。庄家相关账单加 1 台，每多连庄一次再加 2 台。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2108,4 +2157,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (BENGBU, BENGBU_FLOWER, LIPU)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (WUHU, WUHU_515)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (FUZHOU, TAIWAN)},
 }
