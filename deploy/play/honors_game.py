@@ -16,6 +16,7 @@ from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .flower_wall import FLOWER_TILES, FlowerWall
 from .fuzhou import FUZHOU, FuzhouGame
+from .fuxin import FUXIN_ROOMS, FuxinGame
 from .fujian_sixteen import NANPING_HONORS, NANPING_RED, NANPING_SUITED, NINGDE, FujianSixteenGame
 from .fujian_travel import FUJIAN_TRAVEL_ROOMS, FujianTravelGame
 from .hangzhou import FLOAT, HANGZHOU_ROOMS, WHITE, HangzhouGame
@@ -31,6 +32,7 @@ from .longyan import LONGYAN, LONGYAN_HALF, TRAVEL, LongyanGame
 from .northeast import HARBIN, BaoGame, HarbinGame
 from .pinghu import PINGHU, PinghuGame
 from .quzhou import QUZHOU_BANKED, QUZHOU_DUANZI, QUZHOU_LATA, QuzhouGame
+from .shenyang import SHENYANG, ShenyangGame
 from .sixteen import SixteenGame
 from .taiwan import TAIWAN, TaiwanGame
 from .taizhou import TAIZHOU, TaizhouGame
@@ -48,7 +50,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
     NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE, *XIANYOU_ROOMS, *FUJIAN_TRAVEL_ROOMS, CHANGCHUN, HARBIN,
-    JILIN, SHUANGLIAO,
+    JILIN, SHUANGLIAO, SHENYANG, *FUXIN_ROOMS,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -92,6 +94,8 @@ GAME_ENGINES = {
     HARBIN.VARIANT: HarbinGame,
     JILIN.VARIANT: JilinGame,
     SHUANGLIAO.VARIANT: ShuangliaoGame,
+    SHENYANG.VARIANT: ShenyangGame,
+    **{room.VARIANT: FuxinGame for room in FUXIN_ROOMS},
 }
 
 
@@ -164,6 +168,8 @@ class HonorsSession(GameSession):
                 mark = game.ready_river[actor]
                 if mark is not None and mark[0] < len(players[-1]['river']):
                     players[-1]['river'][mark[0]]['ready'] = True
+            if isinstance(game, FuxinGame) and (folded := game.folded_ready_discards[actor]) is not None:
+                players[-1]['hidden_ready_discard'] = {'tile': self.display_tile(folded) if actor == 0 else None}
             if isinstance(game, jj_multiplier.JJMultiplierGame) and actor in game.dark_seats:
                 players[-1]['dark_ready'] = True
                 if not won and actor != 0:
@@ -203,6 +209,8 @@ class HonorsSession(GameSession):
             table['bao_tiles'] = [{'owner': owner, 'tile': self.display_tile(tile)} for owner, tile in game.bao_view(0)]
             if isinstance(game, JilinGame) and table['bao_tiles']:
                 table['bao_roll'] = game.bao_slot + 1
+        if isinstance(game, ShenyangGame):
+            table['split_draw'] = game.split_draw
         if isinstance(game, HangzhouGame):
             table.update(wildcard=self.display_tile(game.wildcard_tile), dealer_multiplier=game.dealer_multiplier,
                          float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())
@@ -314,7 +322,8 @@ class HonorsSession(GameSession):
                         time.sleep(self.pacing)
             game.step(action)
             kind, tile = action
-            if kind in ('discard', 'declare_ready', 'declare_dark', TEN_WINDS, ELEVEN_WINDS):
+            hidden_discard = kind == 'declare_ready' and isinstance(game, FuxinGame) and self.rules.DARK_READY
+            if not hidden_discard and kind in ('discard', 'declare_ready', 'declare_dark', TEN_WINDS, ELEVEN_WINDS):
                 self.log_event('discard', {'actor': actor, 'tile': self.display_tile(tile)})
             elif kind == FLOAT[0]:
                 self.log_event('wildcard_float', {'actor': actor, 'count': game.float_streak[actor]}, 'call')
@@ -377,7 +386,8 @@ class HonorsSession(GameSession):
             if game.options.kong_points:
                 self.result['kong_deltas'] = game.kong_deltas.copy()
             if any(game.echo_deltas):
-                self.result['echo_deltas'] = game.echo_deltas.copy()
+                ledger = 'follow_deltas' if isinstance(game, FuxinGame) else 'echo_deltas'
+                self.result[ledger] = game.echo_deltas.copy()
             if self.variant in (SUIZHOU.VARIANT, XIANGYANG.VARIANT, jj_multiplier.VARIANT):
                 self.result['open_ready_deltas'] = game.ready_deltas.copy()
             elif self.variant == jj_three.VARIANT:

@@ -31,6 +31,7 @@ class NortheastRules:
     MIN_FAAN = 0
     PASS_LOCK = False
     SWAP_LOCK = True
+    OPEN_FOR_STANDARD = False
 
     @staticmethod
     def next_dealer(dealer, winners, provider):
@@ -78,6 +79,7 @@ class HarbinRules(NortheastRules):
                            concealed_kong_faces=0, pass_win_all=True, kong_requires_live_tile=True,
                            kong_points=KongPoints(1, 1, 2, single_direct_payer=True))
     WALL_RESERVE = 4
+    OPEN_FOR_STANDARD = True
 
     def rack_allowed(self, hand, melds):
         if len(melds) >= 4 or self.closed(melds):
@@ -101,6 +103,8 @@ HARBIN = HarbinRules('harbin-four-bao')
 
 
 class BaoGame(HonorsGame):
+    ALLOW_READY_KONGS = False
+
     def __init__(self, seed, dealer, round_wind, *, rules):
         self.declared_waits = [() for _ in range(rules.OPTIONS.seat_count)]
         self.ready_river = [None for _ in self.declared_waits]
@@ -115,12 +119,27 @@ class BaoGame(HonorsGame):
         p = self.players[actor]
         return self._ready_discards(self.rules, tuple(p.hand), tuple(p.melds), self.forbidden_discards)
 
+    def _keeps_waits(self, actor, action):
+        kind, tile = action
+        if tile != self.drawn_tile or kind not in ('ankan', 'bugang'):
+            return False
+        p = self.players[actor]
+        hand = tuple(p.hand)
+        if kind == 'ankan':
+            rest = without_tile(hand, tile, 4)
+            melds = (*p.melds, Meld('gang_an', tile))
+        else:
+            rest = without_tile(hand, tile)
+            melds = tuple(Meld('gang_bu', tile, m.provider) if m.kind == 'peng' and m.tile == tile else m for m in p.melds)
+        return self.rules.waits(rest, melds) == self.declared_waits[actor]
+
     def legal_actions(self):
         actor, actions = super().legal_actions()
         if self.phase != 'action' or self.offer is not None:
             return actor, actions
         if self.declared_waits[actor]:
-            return actor, [a for a in actions if a[0] == 'zimo' or a == ('discard', self.drawn_tile)]
+            return actor, [a for a in actions if a[0] == 'zimo' or a == ('discard', self.drawn_tile)
+                           or self.ALLOW_READY_KONGS and self._keeps_waits(actor, a)]
         if self.remaining:
             actions += [('declare_ready', tile) for tile, _ in self._ready_choices(actor)]
         return actor, actions
@@ -141,6 +160,9 @@ class BaoGame(HonorsGame):
 
     def _declared(self, actor):
         pass
+
+    def bao_view(self, actor):
+        return ()
 
     def _call_discard(self, offer):
         if self.ready_river[offer.actor] == (len(self.discards[offer.actor]) - 1, offer.tile):

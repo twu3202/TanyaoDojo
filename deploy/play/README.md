@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 83 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 86 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -17,11 +17,13 @@ Wuhu Red Dragon 515, Anhui Red Dragon, Fuzhou 36 Flowers, Taiwanese Sixteen Tile
 Longyan Half Self-Draw, Nanping Honors and Flowers, Nanping Suits and Flowers, Nanping Red Dragon Gold,
 Ningde White Gold, Xianyou White Dragon Substitution, Xianyou White Dragon Flowers, Xianyou Self-Draw,
 Quanzhou Triplet and Kong Points, Ningde Random Gold and Flowers, Changchun Shared Bao, Harbin Four Bao Slots,
-Jilin City Dice Bao, and Shuangliao Pung Multipliers.
+Jilin City Dice Bao, Shuangliao Pung Multipliers, Shenyang Whirlwind Kongs, Fuxin Middle Five, and Fuxin Hidden Ready.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
 
+- `shenyang.py` and `fuxin.py`: cross-seat whirlwind scoring, final split draws, middle-five transfers, and face-down declarations.
+  [Shenyang and Fuxin rules](rules/ShenyangFuxin.md).
 - `jilin_shuangliao.py`: capped dice-bao scoring with seven pairs in Jilin City and stand-alone pung multipliers in Shuangliao.
   [Jilin and Shuangliao rules](rules/JilinShuangliao.md).
 - `northeast.py` and `changchun.py`: ready declarations, seat-scoped bao, egg kongs, and separate Harbin and

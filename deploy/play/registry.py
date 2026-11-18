@@ -22,6 +22,8 @@ from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .northeast import HARBIN
 from .jilin_shuangliao import JILIN, SHUANGLIAO
+from .fuxin import FUXIN_DARK, FUXIN_ROOMS, FUXIN_ZAWU
+from .shenyang import SHENYANG
 from .suited import Profile
 from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
 from .taizhou import TAIZHOU
@@ -2452,6 +2454,63 @@ VARIANTS[SHUANGLIAO.VARIANT] = {
     }},
 }
 
+VARIANTS[SHENYANG.VARIANT] = {
+    **VARIANTS[SHUANGLIAO.VARIANT], 'id': SHENYANG.VARIANT,
+    'name': 'Shenyang Mahjong · Whirlwind Kongs', 'aliases': ['沈阳麻将', '波克沈阳', '沈阳分张'],
+    'rule_version': 'shenyang-whirlwind-dojo-v1', 'subtitle': 'Four seats · 136 tiles · Shared whirlwind bonuses',
+    'badge': 'Liaoning · Whirlwinds and final split draws',
+    'description': 'Reveal whirlwind kongs and score pungs that match another seat’s whirlwind. Draw the final four tiles without discarding.',
+    'rules': ['Open the hand through a chow, pon or open kong. Whirlwinds alone leave it closed. Include three suits, a terminal or honor, and a pung, kong or dragon eyes.',
+              'Reveal four winds or three dragons from the first 14 tiles. A matching exposed pon earns one extra fan if another seat has revealed the face in a whirlwind.',
+              'The last four wall tiles are split draws. Draw, win or pass. A discard win charges the supplier alone. A self-draw charges all three opponents.'],
+    'sources': [{'title': 'Pook Shenyang rules and whirlwind points', 'url': 'https://www.pook.com/games/symj.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '沈阳麻将（旋风杠）', 'subtitle': '四人 · 136 张 · 旋风碰番与分张',
+        'badge': '辽宁 · 旋风杠与海底分张', 'description': '开旋风能影响别家的碰番。最后四张按座分摸，不再弃牌。',
+        'rules': ['吃、碰、明杠才开门。旋风杠本身算副、算幺九，但不算开门。需三门全、有幺九或字，有刻杠或中发白作将。',
+                  '第一次到 14 张可亮四风或中发白。别人已亮的旋风与自己的碰牌同面时，该碰多一番。',
+                  '最后四张分摸，可自摸或过。点炮只由供牌者付，自摸三家付。'],
+    }},
+}
+
+VARIANTS[FUXIN_ZAWU.VARIANT] = {
+    **VARIANTS[SHUANGLIAO.VARIANT], 'id': FUXIN_ZAWU.VARIANT,
+    'name': 'Fuxin Mahjong · Middle Five', 'aliases': ['阜新麻将', '阜新扎五', '边锋阜新'],
+    'rule_version': 'fuxin-middle-five-dojo-v1', 'subtitle': 'Four seats · Ready wins · Middle-five transfers',
+    'badge': 'Liaoning · Ready, dealer match and middle five',
+    'description': 'Announce a wait before winning. The first matching discards and a middle-five win carry separate payments.',
+    'rules': ['Announce ready before winning. Open a standard hand, or use closed seven pairs. This room uses three suited colors and a terminal or honor for the completed hand.',
+              'When all three opponents match the dealer’s first discard, each receives 5 from the dealer.',
+              'Win on the 5 of a 4–5–6 sequence to collect an extra 10 from each opponent on self-draw, or 20 from the supplier. An unready supplier also doubles their normal bill.'],
+    'sources': [{'title': 'Bianfeng Fuxin declaration, dealer match and middle-five transfers', 'url': 'https://www.hzbianqu.com/game/781.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '阜新麻将（扎五）', 'subtitle': '四人 · 先报听 · 扎五与跟庄赏',
+        'badge': '辽宁 · 扎五额外结算', 'description': '报听才能和牌，跟庄与扎五各有独立付款。',
+        'rules': ['先报听再和牌。普通手须开门，七对可门清；本桌和牌要三门齐，并带幺九或字。',
+                  '三闲首弃均跟庄家首弃时，庄家各付 5 分。',
+                  '用 5 补 4–5–6 成顺扎五，自摸三家各额外付 10，点炮由供牌者额外付 20。未听供牌者的一般账另翻倍。'],
+    }},
+}
+
+VARIANTS[FUXIN_DARK.VARIANT] = {
+    **VARIANTS[SHUANGLIAO.VARIANT], 'id': FUXIN_DARK.VARIANT,
+    'name': 'Fuxin Mahjong · Hidden Ready', 'aliases': ['老友阜新', '阜新暗扣', '阜新一包三'],
+    'rule_version': 'fuxin-hidden-ready-dojo-v1', 'subtitle': 'Four seats · Face-down declaration · Face-value scoring',
+    'badge': 'Liaoning · No chows and liable discarder',
+    'description': 'Declare ready with a face-down discard. Score the winning tile and charge an unready supplier for all three bills.',
+    'rules': ['Pon and kong are available. Declare ready by placing one tile face down. Only its owner sees it. It cannot be called.',
+              'The winning tile must score at least 6. Numbered tiles use their rank and honors count 6 in this room. A self-draw doubles the face value.',
+              'An unready supplier pays all three bills on a discard win. After a ready supplier discards, or on self-draw, the losers pay separately.'],
+    'sources': [{'title': 'Bianfeng Laoyou Fuxin face-down ready and liability rules', 'url': 'https://www.hzbianqu.com/game/632.html'}],
+    'translations': {'zh-CN': {
+        'family': '东北刻子麻将', 'name': '老友阜新麻将（暗扣报听）', 'subtitle': '四人 · 报听扣牌 · 按胡牌牌面计点',
+        'badge': '辽宁 · 不吃牌与一包三', 'description': '扣下一张牌报听，按胡牌牌面计点，未听放铳一包三。',
+        'rules': ['可碰可杠，不能吃。报听时扣下一张，只有本人能看，其他人不能取用。',
+                  '胡牌须达 6 点。数牌按牌面，字牌在本房算 6。自摸点数翻倍。',
+                  '未听者放铳一包三。已听者放铳或自摸时，其他各家分付。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2501,4 +2560,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in FUJIAN_TRAVEL_ROOMS},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (CHANGCHUN, HARBIN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (JILIN, SHUANGLIAO)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (SHENYANG, *FUXIN_ROOMS)},
 }

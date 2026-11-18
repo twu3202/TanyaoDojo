@@ -23,7 +23,7 @@ from .tiantai import TiantaiWildcardRules
 from .taizhou import TaizhouRules
 from .linhai import LinhaiRules
 from .longyan import TRAVEL, LongyanRules, split_longyan
-from .northeast import READY_CALLS, HarbinRules, NortheastRules
+from .northeast import READY_CALLS, NortheastRules
 from .jinyun import JinyunClassicRules
 from .jiaxing import JiaxingRules
 from .pinghu import PinghuRules
@@ -486,8 +486,9 @@ def heuristic(view):
             ranked = _discard_options(hand, melds, view, live,
                                       (tile for tile, count in enumerate(hand) if count and tile not in block))
             rank = min(row[0] for row in ranked)
-        opens_harbin = isinstance(view.rules, HarbinRules) and view.rules.closed(view.melds) and preferred == PASS
-        if rank < best or (opens_harbin and rank == best):
+        opens_hand = (isinstance(view.rules, NortheastRules) and view.rules.OPEN_FOR_STANDARD
+                      and view.rules.closed(view.melds) and preferred == PASS)
+        if rank < best or (opens_hand and rank == best):
             best = rank
             preferred = kind, argument
     return preferred

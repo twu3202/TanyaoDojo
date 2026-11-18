@@ -82,6 +82,7 @@ CHANGCHUN = ChangchunRules('changchun-shared-bao')
 
 class ChangchunGame(BaoGame):
     BAO_SLOT_COUNT = 12
+    EGG_ROB_PON = True
 
     def __init__(self, seed, dealer, round_wind, *, rules=CHANGCHUN):
         self.kong_count = 0
@@ -179,6 +180,9 @@ class ChangchunGame(BaoGame):
         melds = tuple(p.melds[:index] + [extended] + p.melds[index + 1:])
         return self.rules.waits(without_tile(tuple(p.hand), tile), melds) == waits
 
+    def _can_extend_on_turn(self, actor):
+        return self.egg_racks[self.dealer] is None or actor != self.dealer
+
     def legal_actions(self):
         if self.phase == 'bao_peek':
             return self.cur, [PASS, BAO_WIN]
@@ -187,7 +191,7 @@ class ChangchunGame(BaoGame):
             return actor, actions
         if not self.declared_waits[actor]:
             actions += self._new_eggs(actor)
-        if self.egg_racks[self.dealer] is not None and actor == self.dealer:
+        if not self._can_extend_on_turn(actor):
             return actor, [a for a in actions if a[0] != 'bugang']
         p = self.players[actor]
         for i, meld in enumerate(p.melds):
@@ -195,7 +199,7 @@ class ChangchunGame(BaoGame):
                 for tile in sorted({CHICKEN, *EGG_GROUPS[meld.kind]}):
                     if p.hand[tile] and self._preserves_waits(actor, i, tile, self._extended(meld, tile)):
                         actions.append(('extend_egg', (i, tile)))
-            elif self.declared_waits[actor] and meld.kind == 'peng' and p.hand[meld.tile]:
+            elif self.declared_waits[actor] and meld.kind == 'peng' and p.hand[meld.tile] and ('bugang', meld.tile) not in actions:
                 if self._preserves_waits(actor, i, meld.tile, Meld('gang_bu', meld.tile, meld.provider)):
                     actions.append(('bugang', meld.tile))
         return actor, actions
@@ -245,7 +249,7 @@ class ChangchunGame(BaoGame):
 
     def _response_actions(self):
         actor, actions = super()._response_actions()
-        if self.egg_extension is not None and not self.winners and not self.declared_waits[actor]:
+        if self.EGG_ROB_PON and self.egg_extension is not None and not self.winners and not self.declared_waits[actor]:
             if self.players[actor].hand[self.offer.tile] >= 2:
                 actions.append(('rob_egg_pon', None))
         return actor, actions

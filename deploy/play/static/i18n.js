@@ -211,6 +211,12 @@ I18N.en.action.tong_bao='Win with initial bao';
 I18N['zh-CN'].action.tong_bao='通宝';
 I18N.en.baoRoll='Bao roll · {n}';
 I18N['zh-CN'].baoRoll='掷宝 · {n} 点';
+I18N.en.foldedReadyDiscard='Face-down ready discard';
+I18N['zh-CN'].foldedReadyDiscard='报听扣牌';
+I18N.en.promptSplitDraw='Final split draw. Win on this tile or keep it aside and pass.';
+I18N['zh-CN'].promptSplitDraw='海底分张。可自摸，或收下这张牌并过。';
+Object.assign(I18N.en.fans, {'旋风杠':'Whirlwind kong', '旋风碰番':'Whirlwind pon bonus', '箭刻':'Dragon pung',
+  '流泪':'Discard following a kong', '扎五':'Middle-five award', '一包三':'Discarder covers all three bills'});
 I18N.en.messages.declared_ready='{actor} declared ready.';
 I18N['zh-CN'].messages.declared_ready='{actor} 报听。';
 Object.assign(I18N.en.fans, {'摸宝':'Drawn bao', '对宝':'Matched bao', '摸大宝':'Own bao draw', '摸小宝':'Another player’s bao draw',
