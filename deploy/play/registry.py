@@ -5,6 +5,7 @@ from .blood_battle import SICHUAN_EXCHANGE, YUNNAN
 from .chongji import CHONGJI, CHONGJI_SEVEN
 from .dongyang import DONGYANG
 from .fuzhou import FUZHOU
+from .fujian_sixteen import NANPING_HONORS, NANPING_RED, NANPING_SUITED, NINGDE
 from .guangzhou import VARIANT as GUANGZHOU
 from .golden_guangdong import VARIANT as GOLDEN_GUANGDONG
 from .guiliu import VARIANT as GUILIU
@@ -2159,6 +2160,90 @@ VARIANTS[LONGYAN_HALF.VARIANT] = {
     }},
 }
 
+NANPING_SOURCES = [
+    {'title': 'Xinyue Nanping room profiles and payment tables',
+     'url': 'https://www.xinyueyouxi.com/game/223-22?doc-innerlink-%E5%B1%85%E6%B0%91=&region='},
+    {'title': 'Tongchengyou Nanping deal, flower passes and White Dragon substitution',
+     'url': 'https://m.tcy365.com/news/d13231.html'},
+]
+
+VARIANTS[NANPING_HONORS.VARIANT] = {
+    'id': NANPING_HONORS.VARIANT, 'family_id': 'sixteen-tile', 'family': 'Sixteen-tile Mahjong', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Nanping Mahjong · Honors and Flowers', 'aliases': ['南平麻将', '南平十六张有字', '南平有字'],
+    'rule_version': 'nanping-honors-sixteen-dojo-v1', 'subtitle': 'Four seats · 144 tiles · Flipped gold',
+    'badge': 'Fujian · Honors and eight flowers',
+    'description': 'Play five sets and a pair with regular honors, eight flowers and a flipped gold wildcard.',
+    'rules': ['Deal 16/17 from 144 tiles. Honors stay in play. Replace flowers and then flip gold. White Dragons take its printed value in the hand.',
+              'On the opening deal, you can win as dealer, declare three actual golds or claim the displayed gold to complete a hand.',
+              'On a discard only its supplier pays. With a self-draw each opponent pays. Add the highest special award to the flower, gold and repeat subtotal. Kongs transfer separately.'],
+    'sources': NANPING_SOURCES,
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '南平麻将（十六张有字）', 'subtitle': '四人 · 144 张 · 翻金',
+        'badge': '福建 · 字牌与八花', 'description': '字牌可用，八花轮补后翻金，用五副一对胡牌。',
+        'rules': ['144 张，闲家 16 张、庄家 17 张。字牌留作本牌，轮补后开金，白板替金的本牌。',
+                  '开局可天胡、三金倒或抢金。后续列明普通胡、金雀、金坎和金龙等牌型。',
+                  '放冲者独付，自摸三家分付。花、金和连庄小计加最高特殊分，杠账独立。'],
+    }},
+}
+
+VARIANTS[NANPING_SUITED.VARIANT] = {
+    **VARIANTS[NANPING_HONORS.VARIANT], 'id': NANPING_SUITED.VARIANT,
+    'name': 'Nanping Mahjong · Suits and Flowers', 'aliases': ['南平十六张无字', '南平无字牌'],
+    'rule_version': 'nanping-suited-sixteen-dojo-v1', 'subtitle': 'Four seats · 116 tiles · Suited gold',
+    'badge': 'Fujian · Numbered tiles and flowers',
+    'description': 'Keep only numbered tiles and eight flowers. A direct kong charges its supplier three.',
+    'rules': ['116 tiles, with the three numbered suits and eight flowers. Flip gold after replacing flowers.',
+              'Pay 1 on an ordinary discard win or 2 each on self-draw. A qualifying special hand uses its own listed value.',
+              'A direct kong charges the discard supplier 3. Concealed and added kongs charge each opponent 2 or 1.'],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '南平麻将（十六张无字）', 'subtitle': '四人 · 116 张 · 数牌翻金',
+        'badge': '福建 · 数牌与八花', 'description': '用三门数牌和八花，点杠由供牌者独付 3 分。',
+        'rules': ['116 张，三门数牌加八花，轮补后开金。',
+                  '普通接炮 1、自摸每家 2；特殊牌型直接按表收分。',
+                  '点杠向供牌者收 3；暗杠三家各 2，补杠三家各 1。'],
+    }},
+}
+
+VARIANTS[NANPING_RED.VARIANT] = {
+    **VARIANTS[NANPING_HONORS.VARIANT], 'id': NANPING_RED.VARIANT,
+    'name': 'Nanping Mahjong · Red Dragon Gold', 'aliases': ['南平红中金', '南平十六张红中'],
+    'rule_version': 'nanping-red-gold-sixteen-dojo-v1', 'subtitle': 'Four seats · 120 tiles · Fixed gold and gold kong',
+    'badge': 'Fujian · Red Dragon wildcards',
+    'description': 'All four Red Dragons are gold. Win with four golds, a gold kong, or seven pairs and a pung.',
+    'rules': ['120 tiles, using three suits, eight flowers and four Red Dragons. All Red Dragons are wild from the deal.',
+              'Five sets and a pair or seven pairs with a pung can win. Three and four golds can win directly.',
+              'All four golds may form a kong. The gold-kong award is 80 on a discard or 100 on self-draw, plus the win subtotal.'],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '南平麻将（十六张红中金）', 'subtitle': '四人 · 120 张 · 固定红中金',
+        'badge': '福建 · 红中金杠', 'description': '四张红中固定为金，可四金倒，也可开金杠。',
+        'rules': ['120 张，三门数牌、八花及四张红中。红中从发牌起即为金。',
+                  '可凑五副一对或七对加一刻，也可三金倒、四金倒。',
+                  '四张金可开杠成金杠。金杠和牌点炮特殊分 80，自摸特殊分 100，再加胡分小计。'],
+    }},
+}
+
+VARIANTS[NINGDE.VARIANT] = {
+    'id': NINGDE.VARIANT, 'family_id': 'sixteen-tile', 'family': 'Sixteen-tile Mahjong', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Ningde Mahjong · White Gold', 'aliases': ['宁德麻将', '福安麻将', '宁德白板金'],
+    'rule_version': 'ningde-white-gold-sixteen-dojo-v1', 'subtitle': 'Four seats · 112 tiles · Losers settle gold and kongs',
+    'badge': 'Fujian · Fixed White Dragon gold',
+    'description': 'White Dragons are fixed gold. After the win, the remaining seats settle their differences in gold and kongs.',
+    'rules': ['112 tiles, three numbered suits and four White Dragons. Deal 16/17. White Dragons are all wild.',
+              'Five sets and a pair, seven pairs with a pung, three or four golds, and completed gold kongs are available.',
+              'After a win, each pair of nonwinners settles the difference in gold and kong units. A draw makes no transfer.'],
+    'sources': [{'title': 'Ningde developer profile, tile set and loser differences', 'url': 'https://app-1218204345.appstor.io/'},
+                {'title': 'Yiran Ningde and Fu’an gold hands and payouts', 'url': 'https://www.al173.com/index-3.htm'}],
+    'translations': {'zh-CN': {
+        'family': '十六张麻将', 'name': '宁德麻将（白板金）', 'subtitle': '四人 · 112 张 · 败家互结金杠',
+        'badge': '福建 · 固定白板金', 'description': '四张白板固定为金。胡牌后未胡各家两两结金杠差值。',
+        'rules': ['112 张，三门数牌与四张白板，发 16／17 张，白板为金。',
+                  '可五副一对、七对加一刻、三金倒和四金倒，也可开金杠。',
+                  '有人胡时，未胡各家两两支付金番、杠番的差额。荒庄没有转账。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -2203,4 +2288,5 @@ SESSION_OPTIONS = {
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (WUHU, WUHU_515)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (FUZHOU, TAIWAN)},
     **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (LONGYAN, LONGYAN_HALF)},
+    **{rules.VARIANT: {'variant': rules.VARIANT} for rules in (NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE)},
 }

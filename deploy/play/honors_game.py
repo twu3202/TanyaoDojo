@@ -15,6 +15,7 @@ from .core import Closed, GameSession, tile_name
 from .errors import ClientError
 from .flower_wall import FLOWER_TILES, FlowerWall
 from .fuzhou import FUZHOU, FuzhouGame
+from .fujian_sixteen import NANPING_HONORS, NANPING_RED, NANPING_SUITED, NINGDE, FujianSixteenGame
 from .hangzhou import FLOAT, HANGZHOU_ROOMS, WHITE, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
@@ -41,6 +42,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
     TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU, QUZHOU_DUANZI, QUZHOU_LATA, QUZHOU_BANKED,
     BENGBU, BENGBU_FLOWER, LIPU, WUHU, WUHU_515, FUZHOU, TAIWAN, LONGYAN, LONGYAN_HALF,
+    NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -77,6 +79,7 @@ GAME_ENGINES = {
     TAIWAN.VARIANT: TaiwanGame,
     LONGYAN.VARIANT: LongyanGame,
     LONGYAN_HALF.VARIANT: LongyanGame,
+    **{room.VARIANT: FujianSixteenGame for room in (NANPING_HONORS, NANPING_SUITED, NANPING_RED, NINGDE)},
 }
 
 
@@ -201,8 +204,11 @@ class HonorsSession(GameSession):
             table['yellow_faan'] = len(game.yellow)
         if isinstance(game, LipuGame):
             table['feed_liabilities'] = game.related_seats.copy()
-        if isinstance(game, (FuzhouGame, LongyanGame)):
-            table.update(wildcard=self.display_tile(game.wildcard_tile), gold_indicator=True)
+        if isinstance(game, (FuzhouGame, LongyanGame, FujianSixteenGame)):
+            table['wildcard'] = self.display_tile(game.wildcard_tile)
+            table['fixed_gold' if game.indicator_tile is None else 'gold_indicator'] = True
+        if isinstance(game, FujianSixteenGame) and self.rules.WHITE_PROXY not in (None, game.wildcard_tile):
+            table['white_substitute'] = self.display_tile(game.wildcard_tile)
         if isinstance(game, LongyanGame):
             table.update(travel_owner=game.travel_owner, travel_level=game.travel_level, gold_owner=game.gold_owner)
             if game.wildcard_tile != WHITE:
@@ -317,10 +323,12 @@ class HonorsSession(GameSession):
                 self.result['taizhou_settlement'] = game.taizhou_settlement
             if isinstance(game, DaxiGame):
                 self.result['buy_base_deltas'] = game.buy_base_deltas.copy()
-            if isinstance(game, (JinyunClassicGame, LongyanGame)):
+            if isinstance(game, (JinyunClassicGame, LongyanGame, FujianSixteenGame)):
                 self.result['follow_deltas'] = game.follow_deltas.copy()
             if isinstance(game, LongyanGame):
                 self.result['flower_kong_deltas'] = game.flower_kong_deltas.copy()
+            if self.rules is NINGDE:
+                self.result['balance_deltas'] = game.balance_deltas.copy()
             if isinstance(game, (JinyunCantoneseGame, LipuGame)) and any(game.kong_refunds):
                 self.result['kong_refund_deltas'] = game.kong_refunds.copy()
             if game.options.kong_points:

@@ -1,6 +1,6 @@
 # Playable Mahjong MVP
 
-Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 70 playable rulesets are
+Human vs one to three AI players, with a responsive browser table and a CPU-only server. The 74 playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
 Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
@@ -14,11 +14,14 @@ Tiantai Three-Player 300 Hu, Tiantai White Dragon Wild, Taizhou Four-Player Hu, 
 Jinyun Classic, Jinyun Cantonese Style, Jiaxing Raise the Head, Pinghu Flowers and Faan, Quzhou Duanzi,
 Quzhou Lata, Quzhou Lata Banked Match, Bengbu Classic, Bengbu East Wind Flowers, Lipu Feed Liability, Wuhu Eight Suit Tiles,
 Wuhu Red Dragon 515, Anhui Red Dragon, Fuzhou 36 Flowers, Taiwanese Sixteen Tiles, Longyan New Chapter
-and Longyan Half Self-Draw.
+Longyan Half Self-Draw, Nanping Honors and Flowers, Nanping Suits and Flowers, Nanping Red Dragon Gold,
+and Ningde White Gold.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
 
+- `fujian_sixteen.py`: three Nanping tile sets and payment schedules, plus Ningde's fixed White Dragon
+  gold and pairwise loser transfers. [Fujian sixteen-tile rooms](rules/NanpingNingde.md).
 - `longyan.py` and `gold_opening.py`: opening gold priority, White Dragon substitutions, traveling gold,
   follow-discard payments and two different win and robbery profiles. [Longyan room rules](rules/Longyan.md).
 - `sixteen.py`, `fuzhou.py` and `taiwan.py`: shared 16/17-tile opening and five-set progression, with opening gold

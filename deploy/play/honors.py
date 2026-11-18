@@ -499,6 +499,9 @@ class HonorsGame:
             return
 
         self.offer = None
+        self._finish_responses(offer)
+
+    def _finish_responses(self, offer):
         if self.winners:
             self._settle(self.winners, offer)
         elif offer.kind != 'discard':

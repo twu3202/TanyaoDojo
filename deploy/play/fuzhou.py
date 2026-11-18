@@ -2,7 +2,7 @@
 
 from dataclasses import replace
 
-from .gold_opening import GoldOpening
+from .gold_opening import GoldOpening, split_gold
 from .honors import DRAGONS, PASS, WINDS
 from .honors_bonus import Score
 from .sixteen import OPTIONS, SET_COUNT, SixteenGame, SixteenRules
@@ -10,10 +10,6 @@ from .wildcard_shapes import can_form_sets, can_form_standard, without_tile
 
 
 HONOR_FLOWERS = WINDS | DRAGONS
-
-
-def split_gold(hand, gold):
-    return without_tile(tuple(hand), gold, hand[gold]), hand[gold]
 
 
 class FuzhouRules(SixteenRules):

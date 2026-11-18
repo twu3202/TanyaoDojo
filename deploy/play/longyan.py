@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from .flower_wall import FlowerWall
-from .gold_opening import GoldOpening
+from .gold_opening import GoldOpening, record_opening_follow, split_gold
 from .honors import PASS, RON, HonorsGame, KongPoints, TableOptions, thirteen_orphans
 from .honors_bonus import Score
 from .wildcard_shapes import can_form_pairs, can_form_sets, can_form_standard, without_tile
@@ -15,12 +15,7 @@ TRAVEL_PATTERNS = ('游金', '双游', '三游')
 
 
 def split_longyan(hand, gold):
-    natural = list(hand)
-    wild = natural[gold]
-    natural[gold] = 0
-    if gold != WHITE:
-        natural[gold], natural[WHITE] = natural[WHITE], 0
-    return tuple(natural), wild
+    return split_gold(hand, gold, substitute=WHITE)
 
 
 def _shape(hand, melds, gold):
@@ -210,19 +205,7 @@ class LongyanGame(GoldOpening, FlowerWall, HonorsGame):
             self.gold_owner = None
             self.gold_count = 0
         super()._discard(actor, tile)
-        if not self.following or not self.uninterrupted:
-            return
-        river = self.discards[actor]
-        number = len(river) - 1
-        if actor != self.dealer and tile != self.discards[self.dealer][number]:
-            self.following = False
-        elif actor == (self.dealer - 1) % self.seat_count:
-            share = (2 if tile < 27 else 1) * 2 ** self.follow_rounds
-            self.follow_rounds += 1
-            delta = [share if seat != self.dealer else -3 * share for seat in range(self.seat_count)]
-            for seat, amount in enumerate(delta):
-                self.players[seat].score += amount
-                self.follow_deltas[seat] += amount
+        record_opening_follow(self, actor, tile)
 
     def _score(self, actor, hand, melds, ctx):
         drew = ctx.kind == 'zimo'

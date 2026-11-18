@@ -94,7 +94,8 @@ $('remaining').textContent=tr('wall',{count:table.remaining});$('pot').textConte
 $('dora').replaceChildren();if(table.dora.length){$('dora').append(text('span',tr('dora')));for(const t of table.dora)$('dora').append(img(t));}if(table.winning_tiles?.length){$('dora').append(text('span',tr('winningTiles'),'winning-tile-label'));for(const t of table.winning_tiles)$('dora').append(img(t));}
 if(table.wildcard){
   if(table.wildcard_indicator) $('dora').append(text('span',tr('wildcardIndicatorTile')),img(table.wildcard_indicator));
-  const label=table.gold_indicator?'goldIndicator':table.wildcard_indicated&&!table.wildcard_indicator?'wildcardIndicator':'wild';
+  const label=table.gold_indicator?'goldIndicator':table.fixed_gold?'fixedGold':
+    table.wildcard_indicated&&!table.wildcard_indicator?'wildcardIndicator':'wild';
   $('dora').append(text('span',tr(label)),img(table.wildcard));
   if(table.white_substitute) $('dora').append(text('span',tr('whiteSubstitute',{tile:tileText(table.white_substitute)}),'white-substitute'));
   if(table.white_optional) $('dora').append(text('span',tr('whiteOptional',{tile:tileText(table.white_optional)}),'white-substitute'));
@@ -239,7 +240,7 @@ function renderActions() {
   for (const option of game.choices) {
     if (isDiscard(option) || ['declare_ready','declare_dark'].includes(option.kind)) continue;
     const button = text('button', optionText(option), 'action' +
-      (['hora', 'ron', 'zimo', 'ten_winds', 'eleven_winds', 'claim_gold', 'three_gold', 'flower_hu', 'opening_heaven'].includes(option.kind) ? ' primary-action' : ''));
+      (['hora', 'ron', 'zimo', 'ten_winds', 'eleven_winds', 'claim_gold', 'three_gold', 'four_gold', 'flower_hu', 'opening_heaven'].includes(option.kind) ? ' primary-action' : ''));
     for (const tile of option.tiles.slice(0, 4)) button.append(img(tile));
     button.onclick = () => sendAction(option.id);
     box.append(button);
@@ -287,6 +288,7 @@ function renderTaizhou(settlement, container) {
 }
 function renderBonusTiles(result, container) {
   renderTransfers(result.flower_kong_deltas, 'flowerKongTransfers', container);
+  renderTransfers(result.balance_deltas, 'goldBalanceTransfers', container);
   if(result.busted?.length) {
     container.append(text('p', tr('bankExhausted', {names: result.busted.map(playerName).join(' · ')}), 'bonus-detail'));
   }

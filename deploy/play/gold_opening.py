@@ -5,7 +5,31 @@ from collections import deque
 from .honors import PASS
 
 
-GOLD_CLAIMS = ('claim_gold', 'three_gold', 'opening_heaven')
+GOLD_CLAIMS = ('claim_gold', 'three_gold', 'four_gold', 'opening_heaven')
+
+
+def split_gold(hand, gold, *, substitute=None):
+    natural = list(hand)
+    wild = natural[gold]
+    natural[gold] = 0
+    if substitute is not None and substitute != gold:
+        natural[gold], natural[substitute] = natural[substitute], 0
+    return tuple(natural), wild
+
+
+def record_opening_follow(game, actor, tile):
+    if not game.following or not game.uninterrupted:
+        return
+    number = len(game.discards[actor]) - 1
+    if actor != game.dealer and tile != game.discards[game.dealer][number]:
+        game.following = False
+    elif actor == (game.dealer - 1) % game.seat_count:
+        share = (2 if tile < 27 else 1) * 2 ** game.follow_rounds
+        game.follow_rounds += 1
+        for seat, player in enumerate(game.players):
+            amount = share if seat != game.dealer else (1 - game.seat_count) * share
+            player.score += amount
+            game.follow_deltas[seat] += amount
 
 
 class GoldOpening:
@@ -14,20 +38,26 @@ class GoldOpening:
             self._reveal_flower(self.dealer, tile)
         self.indicator_tile = self.wildcard_tile = tile
         order = sorted(seats, key=lambda actor: self.players[actor].hand[tile] != 3)
-        self.gold_queue = deque((actor, False) for actor in order)
+        entries = [(actor, None) for actor in order]
         if heaven and self._qualifies_for_gold(self.players[self.dealer].hand):
-            self.gold_queue.appendleft((self.dealer, True))
-        self.phase = 'gold_opening'
-        self.cur = self.gold_queue[0][0]
+            entries.insert(0, (self.dealer, 'opening_heaven'))
+        self._queue_gold_choices(entries)
+
+    def _queue_gold_choices(self, entries):
+        self.gold_queue = deque(entries)
+        if entries:
+            self.phase = 'gold_opening'
+            self.cur = entries[0][0]
 
     def physical_counts(self):
         counts = super().physical_counts()
-        counts[self.indicator_tile] += 1
+        if self.indicator_tile is not None:
+            counts[self.indicator_tile] += 1
         return counts
 
     def _gold_actions(self):
-        if self.gold_queue[0][1]:
-            return [PASS, ('opening_heaven', None)]
+        if (choice := self.gold_queue[0][1]) is not None:
+            return [PASS, (choice, None)]
         hand = self.players[self.cur].hand
         gold = self.wildcard_tile
         if hand[gold] == 3:

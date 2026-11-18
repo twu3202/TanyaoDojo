@@ -11,8 +11,9 @@ from . import hongkong
 from .anji import AnjiRules
 from .chongji import ChongjiRules
 from .dongyang import DongyangRules, white_assignments
-from .fuzhou import FuzhouRules, split_gold
-from .gold_opening import GOLD_CLAIMS
+from .fujian_sixteen import FujianSixteenRules
+from .fuzhou import FuzhouRules
+from .gold_opening import GOLD_CLAIMS, split_gold
 from .hangzhou import FLOAT, WHITE, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
@@ -209,6 +210,9 @@ def _distance(hand, melds, view):
         if isinstance(view.rules, FuzhouRules):
             natural, wild = split_gold(hand, view.wildcard)
             return max(0, standard_distance(natural, len(melds), SET_COUNT) - wild)
+        if isinstance(view.rules, FujianSixteenRules):
+            natural, wild = view.rules.split(hand, view.wildcard)
+            return max(0, standard_distance(natural, len(melds), SET_COUNT) - wild)
         return standard_distance(hand, len(melds), SET_COUNT)
     if isinstance(view.rules, WuhuRules):
         return max(standard_distance(hand, len(melds)), 7 - max(suit_counts(hand, melds)))
@@ -290,7 +294,7 @@ def _ready_waits(hand, melds, view, live):
     params = {}
     if isinstance(view.rules, SongyangRules):
         params['indicator'] = view.wildcard_indicator
-    elif isinstance(view.rules, (FuzhouRules, LongyanRules)):
+    elif isinstance(view.rules, (FuzhouRules, LongyanRules, FujianSixteenRules)):
         params['gold'] = view.wildcard
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
@@ -361,7 +365,7 @@ def heuristic(view):
     actions = view.actions
     if isinstance(view.rules, (SixteenRules, LongyanRules)):
         special = next((action for action in actions if action[0] in (*GOLD_CLAIMS, 'flower_hu')), None)
-        if special is not None:
+        if special is not None and (special[0] != 'three_gold' or RON not in actions):
             return special
     if isinstance(view.rules, LongyanRules) and view.remaining >= 12:
         travels = [action for action in actions if action[0] == TRAVEL]

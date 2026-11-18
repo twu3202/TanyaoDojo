@@ -191,6 +191,15 @@ Object.assign(I18N['zh-CN'], {
 I18N.en.messages.travel_gold='{actor} discarded {tile} and declared gold travel {level}.';
 I18N['zh-CN'].messages.travel_gold='{actor} 打出 {tile}，进入第 {level} 阶游金。';
 Object.assign(I18N.en.fans, {'游金':'Gold travel', '双游':'Double gold travel', '三游':'Triple gold travel'});
+I18N.en.action.four_gold='Win with four golds';
+I18N['zh-CN'].action.four_gold='四金倒';
+I18N.en.reason.four_gold_win='{names} won with four gold tiles.';
+I18N['zh-CN'].reason.four_gold_win='{names} 四金倒胡牌';
+I18N.en.fixedGold='Fixed gold';
+I18N['zh-CN'].fixedGold='固定金';
+I18N.en.goldBalanceTransfers='Gold and kong differences · {amounts}';
+I18N['zh-CN'].goldBalanceTransfers='未胡金杠差 · {amounts}';
+Object.assign(I18N.en.fans, {'四金倒':'Four gold tiles', '金坎':'Gold triplet', '金杠':'Declared gold kong'});
 Object.assign(I18N.en.reason, {gold_claim:'{names} claimed the opening gold.', three_gold_win:'{names} won with three gold tiles.',
   flower_hu:'{names} won with flowers.'});
 Object.assign(I18N['zh-CN'].reason, {gold_claim:'{names} 开局抢金胡牌', three_gold_win:'{names} 三金倒胡牌', flower_hu:'{names} 胡花'});
