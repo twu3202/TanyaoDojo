@@ -7,7 +7,7 @@ let visibleLimit=CATALOG_PAGE_SIZE;
 const img=t=>{if(/^F[1-8]$/.test(t))return text('span',tileText(t),'flower-face');const i=document.createElement('img');i.src=`/tiles/${encodeURIComponent(t)}.svg`;i.alt=tileText(t);i.draggable=false;return i;};
 function text(tag,value,cls=''){const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;}
 function showError(id,e){const node=$(id);node.dataset.errorCode=e.code||'server_error';node.textContent=I18N[LANGUAGE].errors[node.dataset.errorCode]||e.message||I18N[LANGUAGE].errors.server_error;}
-function optionText(o){if(o.kind==='buy_base')return tr(o.value?'buyBase':'skipBase');if(o.kind==='piao')return tr('piaoChoice',{value:o.value});if(o.win_type)return actionText(o.win_type);if(['discard','dahai'].includes(o.kind))return tr('discard',{tile:tileText(o.tiles[0])});if(o.kind==='void')return tr('voidAction',{suit:I18N[LANGUAGE].suits[o.suit]});return actionText(o.kind);}
+function optionText(o){if(o.kind==='liability_choice')return tr(o.value?'continueHand':'foldHand');if(o.kind==='buy_base')return tr(o.value?'buyBase':'skipBase');if(o.kind==='piao')return tr('piaoChoice',{value:o.value});if(o.win_type)return actionText(o.win_type);if(['discard','dahai'].includes(o.kind))return tr('discard',{tile:tileText(o.tiles[0])});if(o.kind==='void')return tr('voidAction',{suit:I18N[LANGUAGE].suits[o.suit]});return actionText(o.kind);}
 function applyLanguage(){document.documentElement.lang=LANGUAGE;document.title='TanyaoDojo · '+tr('brand');for(const e of document.querySelectorAll('[data-language]'))e.value=LANGUAGE;for(const e of document.querySelectorAll('[data-i18n]'))e.textContent=tr(e.dataset.i18n);for(const e of document.querySelectorAll('[data-i18n-aria]'))e.setAttribute('aria-label',tr(e.dataset.i18nAria));for(const e of document.querySelectorAll('[data-wind]'))e.textContent=LANGUAGE==='en'?e.dataset.wind:I18N[LANGUAGE].wind[e.dataset.wind];$('policy').setAttribute('aria-label',tr('policyLabel'));$('close-rules').setAttribute('aria-label',tr('closeRules'));if(catalog.length)renderLobby();if(game){const v=currentVariant();$('room-title').textContent=v.name;$('room-subtitle').textContent=v.subtitle;render(game,true);}if($('rules-dialog').open)fillRules();for(const e of document.querySelectorAll('[data-error-code]'))if(e.textContent)e.textContent=I18N[LANGUAGE].errors[e.dataset.errorCode]||e.textContent;}
 for(const picker of document.querySelectorAll('[data-language]'))picker.onchange=()=>{LANGUAGE=picker.value;try{localStorage.setItem('tanyao_language',LANGUAGE);}catch{}applyLanguage();};
 applyLanguage();
@@ -99,6 +99,7 @@ if(table.wildcard){
   if(table.white_optional) $('dora').append(text('span',tr('whiteOptional',{tile:tileText(table.white_optional)}),'white-substitute'));
 }
 if(table.fresh_stage) $('dora').append(text('span',tr('taizhouFreshStage'),'tag'));
+if(table.yellow_faan) $('dora').append(text('span',tr('yellowFaan',{n:table.yellow_faan}),'tag'));
 $('table').classList.toggle('two-player',table.players.length===2);
 $('table').classList.toggle('three-player',table.players.length===3);
 $('seat-2').hidden=table.players.length<3;
@@ -144,7 +145,7 @@ function exchangeContains(option, tiles) {
   }
   return true;
 }
-function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+table.players.length)%table.players.length]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',p.win_count?tr('winCount',{count:p.win_count}):tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.open_ready)title.append(text('span',tr(p.dark_ready?'darkReadyTag':'openReadyTag'),'tag reach'));if(p.bought_base)title.append(text('span',tr('boughtBase'),'tag'));if(p.piao!==undefined)title.append(text('span',tr('piaoTag',{value:p.piao}),'tag'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
+function renderSeat(p,table,s){const seat=$(`seat-${p.id}`);seat.replaceChildren();const title=text('div','','seat-title'+(table.current===p.id?' active':''));title.append(text('span',playerName(p.id)),text('span',p.score.toLocaleString(),'score'));if(s.variant==='riichi'||table.show_winds)title.append(text('span',I18N[LANGUAGE].wind['ESWN'[(p.id-table.dealer+table.players.length)%table.players.length]],'tag'));if(p.id===table.dealer)title.append(text('span',tr('dealer'),'tag'));if(p.void_suit!==undefined&&p.void_suit!==null)title.append(text('span',tr('void',{suit:I18N[LANGUAGE].suits[p.void_suit]}),'tag'));if(p.won)title.append(text('span',p.win_count?tr('winCount',{count:p.win_count}):tr('won'),'tag won'));if(p.riichi)title.append(text('span',tr('riichi'),'tag reach'));if(p.open_ready)title.append(text('span',tr(p.dark_ready?'darkReadyTag':'openReadyTag'),'tag reach'));if(p.folded)title.append(text('span',tr('foldedSeat'),'tag'));if(p.bought_base)title.append(text('span',tr('boughtBase'),'tag'));if(p.piao!==undefined)title.append(text('span',tr('piaoTag',{value:p.piao}),'tag'));if(p.ready)title.append(text('span',tr('ready'),'tag reach'));seat.append(title);
 if(p.id===table.dealer&&table.dealer_multiplier>1) title.append(text('span',`×${table.dealer_multiplier}`,'tag'));
 if(p.id===table.dealer&&table.dealer_stake) title.append(text('span',tr('dealerStake',{points:table.dealer_stake}),'tag'));
 if(p.wildcard_floats) title.append(text('span',tr('wildcardFloatTag',{count:p.wildcard_floats}),'tag reach'));
@@ -169,7 +170,7 @@ function turnPrompt(snapshot) {
     if (player.open_ready) return 'promptOpenReady';
     if (player.ready && snapshot.variant === 'jj-three-player') return 'promptPaidReady';
   }
-  return {void:'promptVoid',rob_kong:'promptRob',piao:'promptPiao',buy_base:'promptBuyBase'}[table.phase] || 'promptTurn';
+  return {void:'promptVoid',rob_kong:'promptRob',piao:'promptPiao',buy_base:'promptBuyBase',liability_choice:'liabilityPrompt'}[table.phase] || 'promptTurn';
 }
 function renderActions() {
   const box = $('actions');

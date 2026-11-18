@@ -17,8 +17,10 @@ from .hangzhou import FLOAT, HANGZHOU_ROOMS, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .jinyun import JINYUN, JINYUN_CANTONESE, JinyunCantoneseGame, JinyunClassicGame
+from .jiaxing import JIAXING, JiaxingGame
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .linhai import LINHAI, LinhaiGame
+from .pinghu import PINGHU, PinghuGame
 from .taizhou import TAIZHOU, TaizhouGame
 from .xiaogan import XIAOGAN, XiaoganGame
 from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
@@ -29,7 +31,7 @@ RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
     DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
-    TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE,
+    TAIZHOU, DAXI, LINHAI, JINYUN, JINYUN_CANTONESE, JIAXING, PINGHU,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -54,6 +56,8 @@ GAME_ENGINES = {
     LINHAI.VARIANT: LinhaiGame,
     JINYUN.VARIANT: JinyunClassicGame,
     JINYUN_CANTONESE.VARIANT: JinyunCantoneseGame,
+    JIAXING.VARIANT: JiaxingGame,
+    PINGHU.VARIANT: PinghuGame,
 }
 
 
@@ -81,8 +85,11 @@ class HonorsSession(GameSession):
             self.hand_number += 1
             engine = GAME_ENGINES.get(self.variant, HonorsGame)
             dealer_rules = {'dealer_streak': self.dealer_streak} if issubclass(engine, HangzhouGame) else {}
+            previous = self.game
             self.game = engine(self.seed + self.hand_number, self.dealer,
                                27 + (self.dealer_advances // self.seat_count) % 4, rules=self.rules, **dealer_rules)
+            if isinstance(self.game, JiaxingGame):
+                self.game.carry_yellow(previous)
             self.result = None
             self.options = []
             self.automatic = False
@@ -123,6 +130,8 @@ class HonorsSession(GameSession):
                 players[-1]['piao'] = game.piao[actor]
             if isinstance(game, DaxiGame) and not before_play:
                 players[-1]['bought_base'] = game.buy_base[actor]
+            if isinstance(game, JiaxingGame) and actor in game.folded:
+                players[-1]['folded'] = True
             if isinstance(game, HangzhouGame) and game.float_streak[actor]:
                 players[-1]['wildcard_floats'] = game.float_streak[actor]
             if isinstance(game, XiaoshanGame) and actor == 0 and game.ten_winds[actor] >= 5:
@@ -132,7 +141,11 @@ class HonorsSession(GameSession):
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
+        if game.phase == 'liability_choice':
+            current = game.liability_choices[0]
         drawn = self.display_tile(game.drawn_tile) if current == 0 and game.drawn_tile is not None else None
+        if game.phase == 'liability_choice':
+            drawn = None
         table = {'players': players, 'hand_number': self.hand_number, 'dealer': None if game.phase == 'piao' else game.dealer,
                 'round_wind': tile_name(game.round_wind), 'show_winds': game.options.show_winds,
                 'match_hands': self.rules.MATCH_HANDS,
@@ -157,6 +170,8 @@ class HonorsSession(GameSession):
             table['wildcard_fixed'] = True
         if isinstance(game, TaizhouGame):
             table['fresh_stage'] = game.fresh_stage
+        if isinstance(game, JiaxingGame):
+            table['yellow_faan'] = len(game.yellow)
         return table
 
     def display_tile(self, tile):
@@ -178,7 +193,7 @@ class HonorsSession(GameSession):
         kind, tile = action
         if kind == 'exchange':
             tiles = [self.display_tile(index) for index in tile]
-        elif kind in ('piao', 'buy_base'):
+        elif kind in ('piao', 'buy_base', 'liability_choice'):
             return {'action': action, 'kind': kind, 'label': kind, 'tiles': [], 'value': tile}
         elif kind == 'chi':
             tiles = [self.display_tile(index) for index in range(tile, tile + 3)]
@@ -197,8 +212,8 @@ class HonorsSession(GameSession):
             if self.closed:
                 raise Closed()
             actor, actions = game.legal_actions()
-            if actions == [PASS]:
-                action = PASS
+            if actions == [PASS] or (isinstance(game, JiaxingGame) and actor in game.folded):
+                action = actions[0]
             else:
                 action = heuristic(policy_view(game, actor, actions))
                 if actor == 0:

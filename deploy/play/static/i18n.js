@@ -105,6 +105,8 @@ Object.assign(I18N.en.fans, {
  '无得':'No wildcards', '得还原':'All wildcards match their face',
  '四风聚齐':'Four Winds', '门风或字牌刻杠':'Seat-wind or dragon set',
  '财神会':'Wild Gathering', '杠上开花':'Kong replacement win', '海底捞月':'Last draw win', '点杠杠开':'Win on a direct-kong replacement',
+ '无百搭':'No wildcards', '三百搭':'Three wildcards', '全老头':'All honors', '杠开花开':'Kong or flower replacement win',
+ '黄番':'Draw bonus', '老头黄':'Honor wildcard bonus', '豹子黄':'Doubles bonus', '百搭连庄':'Repeat wildcard bonus',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 Object.assign(I18N.en.tileHonors, {F1:'Spring', F2:'Summer', F3:'Autumn', F4:'Winter',
@@ -118,6 +120,9 @@ I18N.en.taiCount='{n} tai';
 I18N['zh-CN'].taiCount='{n} 台';
 Object.assign(I18N.en, {
   followTransfers:'Opening follow-tile points · {amounts}',
+  liabilityPrompt:'Rivals formed a liability link. Stay in the hand or fold to sit out scoring.',
+  continueHand:'Stay in', foldHand:'Fold this hand', foldedSeat:'Folded', yellowFaan:'Carried bonus faan {n}',
+  countedFlowers:'{n} flower points',
   kongRefundTransfers:'Kong points returned · {amounts}',
   promptBuyBase:'Choose whether to buy the base before seeing your tiles.', buyBase:'Buy the base', skipBase:'Play without buying',
   boughtBase:'Base bought', buyBaseTransfers:'Buy-in points · {amounts}', chongTiles:'Chong tiles',
@@ -129,6 +134,9 @@ Object.assign(I18N.en, {
 });
 Object.assign(I18N['zh-CN'], {
   followTransfers:'开局跟牌分 · {amounts}',
+  liabilityPrompt:'其他牌手形成三摊承包。继续打牌，或退出本局计分。',
+  continueHand:'继续打牌', foldHand:'退出本局计分', foldedSeat:'已退出计分', yellowFaan:'累计黄番 {n}',
+  countedFlowers:'花数 {n}',
   kongRefundTransfers:'退杠分 · {amounts}',
   promptBuyBase:'看牌前请先选择是否买底。', buyBase:'买底', skipBase:'不买底',
   boughtBase:'已买底', buyBaseTransfers:'买底分 · {amounts}', chongTiles:'抓冲牌',
@@ -146,7 +154,7 @@ const tpl=(text,args={})=>String(text).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');
 const playerName=i=>I18N[LANGUAGE].names[i]??String(i);
 const tileText=t=>I18N[LANGUAGE].tileHonors[t]||(LANGUAGE==='en'?`${t.endsWith('r')?'Red ':''}${t[0]} ${I18N.en.suits['mps'.indexOf(t[1])]}`:`${t[0]}${I18N['zh-CN'].suits['mps'.indexOf(t[1])]}${t.endsWith('r')?'赤':''}`);
 const actionText=k=>I18N[LANGUAGE].action[k]??k;
-const countedPatterns=[['根x','gen'],['鬼x','ghost'],['花牌x','flowerBonus'],['底胡x','baseHu'],['台数x','taiCount'],['番数x','faanCount']];
+const countedPatterns=[['根x','gen'],['鬼x','ghost'],['花牌x','flowerBonus'],['底胡x','baseHu'],['台数x','taiCount'],['番数x','faanCount'],['花数x','countedFlowers']];
 function patternText(pattern){
   const match=countedPatterns.find(([prefix])=>pattern.startsWith(prefix));
   return match?tr(match[1],{n:pattern.slice(match[0].length)}):(I18N[LANGUAGE].fans[pattern]||pattern);

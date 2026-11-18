@@ -18,6 +18,8 @@ from .tiantai import TiantaiWildcardRules
 from .taizhou import TaizhouRules
 from .linhai import LinhaiRules
 from .jinyun import JinyunClassicRules
+from .jiaxing import JiaxingRules
+from .pinghu import PinghuRules
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
 
@@ -159,6 +161,14 @@ def _distance(hand, melds, view):
         allow_pairs = view.rules.OPTIONS.seven_pairs
         distance = min(_wild_distance(choice, wild, len(melds), view.rules.require_burst, allow_pairs)
                        for choice in choices)
+        if isinstance(view.rules, JiaxingRules):
+            called_suits = {meld.tile // 9 for meld in melds if meld.tile < 27}
+            routes = [standard_distance(tuple(count if t >= 27 or t // 9 == suit else 0
+                                              for t, count in enumerate(natural)), len(melds)) - wild
+                      for suit in range(3) if called_suits <= {suit}]
+            if all(meld.kind != 'chi' for meld in melds):
+                routes.append(_triplet_distance(natural, 4 - len(melds)) - wild)
+            distance = min(routes, default=9)
         if isinstance(view.rules, JinyunClassicRules) and not melds:
             missing = sum(not natural[tile] for tile in ORPHANS)
             distance = min(distance, missing - any(natural[tile] >= 2 for tile in ORPHANS) - wild)
@@ -205,10 +215,11 @@ def _ready_waits(hand, melds, view, live):
         params['indicator'] = view.wildcard_indicator
     elif isinstance(view.rules, AnjiRules):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
-    elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules)):
+    elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules, JiaxingRules, PinghuRules)):
         params['wildcard'] = view.wildcard
-    if isinstance(view.rules, (JinyunClassicRules, LinhaiRules, TaizhouRules, TiantaiWildcardRules)):
-        can_win = view.rules.can_win
+    if isinstance(view.rules, (JiaxingRules, JinyunClassicRules, LinhaiRules, PinghuRules, TaizhouRules, TiantaiWildcardRules)):
+        def can_win(hand, melds, ctx):
+            return view.rules.can_win(hand, melds, ctx, **params)
     else:
         def can_win(hand, melds, ctx):
             return view.rules.faan(hand, melds, ctx, **params) is not None
@@ -268,6 +279,9 @@ def _ukeire(distance, rest, melds, live, view):
 
 def heuristic(view):
     actions = view.actions
+    if actions[0][0] == 'liability_choice':
+        worthwhile = _distance(view.hand, view.melds, view) <= 1 and view.remaining >= 5
+        return 'liability_choice', int(worthwhile)
     if actions[0][0] == 'buy_base':
         return 'buy_base', 1
     if actions[0][0] == 'piao':

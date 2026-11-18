@@ -21,6 +21,8 @@ from .taizhou import TAIZHOU
 from .daxi import DAXI
 from .linhai import LINHAI
 from .jinyun import JINYUN, JINYUN_CANTONESE
+from .jiaxing import JIAXING
+from .pinghu import PINGHU
 from .xiaogan import XIAOGAN
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
@@ -1831,6 +1833,57 @@ VARIANTS[JINYUN_CANTONESE.VARIANT] = {
     }},
 }
 
+VARIANTS[JIAXING.VARIANT] = {
+    'id': JIAXING.VARIANT, 'family_id': 'hangzhou-wildcard', 'family': 'Hangzhou wildcard family', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Jiaxing Mahjong · Raise the Head', 'aliases': ['嘉兴麻将', '嘉兴抬头胡', '茶苑嘉兴', '嘉兴黄番'],
+    'rule_version': 'jiaxing-136-tai-chayuan-dojo-v1', 'subtitle': 'Four seats · Qualifying hand types · Three-feed choices',
+    'badge': 'Zhejiang · Carried faan',
+    'description': 'Aim for a qualifying hand and choose whether to stay in when rivals form a liability link.',
+    'rules': [
+        '136 tiles. The flipped face is wild. To win, finish a standard hand as All Pungs, Pure Suit, Mixed Suit or All Honors. '
+        'Wins are self-drawn or by robbing an added kong.',
+        'After three feeds from one seat, the two seats are linked. Other active players choose whether to continue. '
+        'A player who folds discards their draws and does not pay.',
+        'Tai establishes the base and each faan doubles it. A win consumes at most one carried bonus. '
+        'Feed liability and kong robbery change the shares paid by each seat.',
+    ],
+    'sources': [{'title': 'Game Tea House Jiaxing rules, qualifying hands and liability choices',
+                 'url': 'https://wap.gametea.com/ask/201809/7367.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭州财神系', 'name': '嘉兴麻将（茶苑抬头胡）', 'subtitle': '四人 · 四类起胡牌型 · 三摊后可退出',
+        'badge': '浙江 · 黄番可累计', 'description': '凑够起胡牌型。别人三摊承包时，你可继续或退出本局计分。',
+        'rules': ['136 张，同面百搭。四副一对须成对对胡、清一色、混一色或全老头，允许自摸及抢补杠。',
+                  '从同一人吃碰杠三次后双方互为承包。其他牌手可继续，或退出计分后随摸随打。',
+                  '台数作基数，每番翻倍。胡时最多使用一个累计黄番，承包和抢杠按各家身份分账。'],
+    }},
+}
+
+VARIANTS[PINGHU.VARIANT] = {
+    'id': PINGHU.VARIANT, 'family_id': 'hangzhou-wildcard', 'family': 'Hangzhou wildcard family', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Pinghu Mahjong · Flowers and Faan', 'aliases': ['平湖麻将', '平湖花番', '平湖补花'],
+    'rule_version': 'pinghu-144-flower-faan-dojo-v1', 'subtitle': 'Four seats · Eight flowers · Flower-count scoring',
+    'badge': 'Zhejiang · 144 tiles',
+    'description': 'Replace flowers and score wind sets, kongs and awards together.',
+    'rules': [
+        '144 tiles, a 16-tile reserve and same-face wildcards. Flowers are shown and replaced automatically. '
+        'Four sets and a pair can win on a draw, discard or added kong.',
+        'Flowers, wind sets and kongs increase the flower count. Each faan doubles one plus the flower count. '
+        'Show the count and faan separately in settlement.',
+        'On self-draw each opponent pays. On a discard only its supplier pays. The supplier of a robbed added kong pays all three shares.',
+    ],
+    'sources': [{'title': 'Bianfeng Pinghu flower counts and faan schedule', 'url': 'https://www.hzbianqu.com/game/510.html'},
+                {'title': 'Game Tea House Pinghu draw and flower replacements', 'url': 'https://www.gametea.com/ask/201809/7357.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭州财神系', 'name': '平湖麻将（花番）', 'subtitle': '四人 · 八花 · 花数乘番',
+        'badge': '浙江 · 144 张', 'description': '公开补花，把花牌、风刻和杠折成花数，再乘番。',
+        'rules': ['144 张，留 16 张，同面百搭。花牌自动公开补摸。四副一对可自摸、接炮或抢补杠。',
+                  '花牌、风刻和杠计花，按「花数加一」逐番翻倍。结算分列花数和番数。',
+                  '自摸三家各付，放炮家独付一份，补杠被抢时供牌家独付三份。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1867,4 +1920,6 @@ SESSION_OPTIONS = {
     LINHAI.VARIANT: {'variant': LINHAI.VARIANT},
     JINYUN.VARIANT: {'variant': JINYUN.VARIANT},
     JINYUN_CANTONESE.VARIANT: {'variant': JINYUN_CANTONESE.VARIANT},
+    JIAXING.VARIANT: {'variant': JIAXING.VARIANT},
+    PINGHU.VARIANT: {'variant': PINGHU.VARIANT},
 }
