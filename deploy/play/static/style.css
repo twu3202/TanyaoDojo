@@ -18,3 +18,6 @@
 }
 
 .hand-tile.ready-discard:not(.selected){outline:2px dashed #e9c47c;outline-offset:1px}
+
+.meld .tile-back{width:18px;height:24px;flex-shrink:0}
+@media(max-width:760px){.opponent .meld .tile-back{width:13px;height:17px}.human-seat .meld .tile-back{width:21px;height:28px}}

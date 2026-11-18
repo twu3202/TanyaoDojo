@@ -141,5 +141,5 @@ def liability(melds, last):
     return tuple(result)
 
 
-def next_dealer(dealer, winners):
+def next_dealer(dealer, winners, provider=None):
     return (dealer + 1) % 4

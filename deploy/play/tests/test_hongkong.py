@@ -26,7 +26,8 @@ def fixture(hands, melds=None, *, drawn=0, opening=False, rules=hongkong):
         for meld in player.melds:
             used.update(meld.tiles)
     assert all(n <= 4 for n in used.values())
-    remain = sorted((COPIES - used).elements())
+    assert not (used - game.tile_supply)
+    remain = sorted((game.tile_supply - used).elements())
     for actor, player in enumerate(game.players):
         tiles = hands.get(actor, []).copy()
         expected = 13 + (actor == 0) - 3 * len(player.melds)
@@ -38,7 +39,7 @@ def fixture(hands, melds=None, *, drawn=0, opening=False, rules=hongkong):
     game.wall = remain
     game.drawn_tile = drawn
     game.opening = opening
-    assert game.physical_counts() == COPIES
+    assert game.physical_counts() == game.tile_supply
     return game
 
 

@@ -1,4 +1,4 @@
-"""Public-information tile efficiency for a three-faan Hong Kong room."""
+"""Public-information tile efficiency for rooms using suited tiles and honors."""
 
 from collections import Counter
 from dataclasses import dataclass
@@ -8,7 +8,8 @@ from types import ModuleType
 from common.suit_table import load_table
 
 from . import hongkong
-from .honors import DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
+from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
+from .honors_bonus import HorseRoom
 
 
 @dataclass(frozen=True)
@@ -21,7 +22,7 @@ class PolicyView:
     round_wind: int
     offered: int | None
     remaining: int
-    rules: ModuleType = hongkong
+    rules: ModuleType | HorseRoom = hongkong
 
 
 def policy_view(game, actor, actions):
@@ -93,9 +94,13 @@ def _triplet_distance(hand, needed):
 def _distance(hand, melds, view):
     if not view.rules.MIN_FAAN:
         best = standard_distance(hand, len(melds))
+        options = getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS)
         if not melds:
-            orphans = 13 - sum(bool(hand[tile]) for tile in ORPHANS) - any(hand[tile] > 1 for tile in ORPHANS)
-            best = min(best, orphans)
+            if options.orphans:
+                orphans = 13 - sum(bool(hand[tile]) for tile in ORPHANS) - any(hand[tile] > 1 for tile in ORPHANS)
+                best = min(best, orphans)
+            if options.seven_pairs:
+                best = min(best, 6 - sum(count // 2 for count in hand))
         return best
     open_melds = tuple(meld for meld in melds if meld.kind != 'gang_an')
     valued = {meld.tile for meld in melds if meld.kind != 'chi'}
@@ -116,7 +121,9 @@ def _distance(hand, melds, view):
 
 
 def _live_tiles(view):
-    return tuple(max(0, 4 - held - shown) for held, shown in zip(view.hand, view.visible))
+    available = getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).tile_kinds
+    return tuple(max(0, 4 - view.hand[tile] - view.visible[tile]) if tile in available else 0
+                 for tile in range(TILE_COUNT))
 
 
 def _ready_waits(hand, melds, view, live):
@@ -153,11 +160,15 @@ def _discard_options(hand, melds, view, live, candidates):
     return ranked
 
 
-def _ukeire(distance, rest, melds, live):
+def _ukeire(distance, rest, melds, live, view):
     # Once a route has been chosen, compare ordinary shape improvements among tied discards.
     if distance == 0:
         return 0
-    before = standard_distance(rest, len(melds))
+    if getattr(view.rules, 'OPTIONS', DEFAULT_OPTIONS).seven_pairs:
+        improve = lambda hand: _distance(hand, melds, view)
+    else:
+        improve = lambda hand: standard_distance(hand, len(melds))
+    before = improve(rest)
     if before <= 0:
         return 0
     available = list(rest)
@@ -166,7 +177,7 @@ def _ukeire(distance, rest, melds, live):
         if not count:
             continue
         available[tile] += 1
-        if standard_distance(tuple(available), len(melds)) < before:
+        if improve(tuple(available)) < before:
             effective += count
         available[tile] -= 1
     return effective
@@ -199,7 +210,7 @@ def heuristic(view):
             if _rank(tuple(hand), new_melds, view, live) <= best:
                 return kind, tile
         choices = [(tile, rest) for rank, tile, rest in ranked if rank == best]
-        tile, _ = max(choices, key=lambda item: (_ukeire(best[0], item[1], view.melds, live),
+        tile, _ = max(choices, key=lambda item: (_ukeire(best[0], item[1], view.melds, live, view),
                                                 -view.hand[item[0]], item[0]))
         return 'discard', tile
 

@@ -1,17 +1,18 @@
-"""Browser session adapter for the 136-tile honors and chows family."""
+"""Browser session adapter for rooms using suited tiles and honors."""
 
 from dataclasses import asdict
 import random
 import time
 
 from . import hongkong, macau
+from .honors_bonus import HEZHOU, HUNDRED, SHANGSI
 from .core import Closed, GameSession, tile_name
 from .errors import ClientError
-from .honors import PASS, HonorsGame
+from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 
 
-RULESETS = {rule.VARIANT: rule for rule in (hongkong, macau)}
+RULESETS = {rule.VARIANT: rule for rule in (hongkong, macau, SHANGSI, HUNDRED, HEZHOU)}
 
 
 class HonorsSession(GameSession):
@@ -20,7 +21,8 @@ class HonorsSession(GameSession):
         self.rules = RULESETS[variant]
         self.hand_number = 0
         self.totals = [0] * 4
-        self.dealer = random.Random(self.seed).randrange(4)
+        options = getattr(self.rules, 'OPTIONS', DEFAULT_OPTIONS)
+        self.dealer = 0 if options.host_deals_first else random.Random(self.seed).randrange(4)
         self.dealer_advances = 0
         self.game = None
 
@@ -55,18 +57,24 @@ class HonorsSession(GameSession):
                 'hand_count': sum(hand), 'revealed': revealed, 'won': won, 'riichi': False,
                 'hand': [tile_name(tile) for tile, count in enumerate(hand) for _ in range(count)] if revealed else [],
                 'river': [{'tile': tile_name(tile)} for tile in game.discards[actor]],
-                'melds': [{'kind': meld.kind, 'tiles': [tile_name(tile) for tile in meld.tiles],
-                           'provider': meld.provider} for meld in player.melds],
+                'melds': [self.view_meld(meld) for meld in player.melds],
             })
         current = game.cur if game.phase != 'over' else None
         if game.offer is not None:
             current = 0 if game.responses[0] == 0 else None
         drawn = tile_name(game.drawn_tile) if current == 0 and game.drawn_tile is not None else None
         return {'players': players, 'hand_number': self.hand_number, 'dealer': game.dealer,
-                'round_wind': tile_name(game.round_wind), 'show_winds': True,
+                'round_wind': tile_name(game.round_wind), 'show_winds': game.options.show_winds,
                 'match_hands': self.rules.MATCH_HANDS,
                 'current': current, 'remaining': game.remaining, 'dora': [], 'honba': 0,
                 'pot': 0, 'phase': game.phase, 'drawn': drawn}
+
+    def view_meld(self, meld):
+        tiles = [tile_name(tile) for tile in meld.tiles]
+        if meld.kind == 'gang_an':
+            visible = self.game.options.concealed_kong_faces
+            tiles = tiles[:visible] + [None] * (len(tiles) - visible)
+        return {'kind': meld.kind, 'tiles': tiles, 'provider': meld.provider}
 
     def option(self, action):
         kind, tile = action
@@ -112,6 +120,8 @@ class HonorsSession(GameSession):
         for win in game.win_details:
             if win.tier:
                 self.log_event('win_tier', {'actor': win.actor, 'tier': win.tier, 'patterns': win.patterns}, 'win')
+            elif win.fan is None:
+                self.log_event('win_points', {'actor': win.actor, 'points': win.points, 'patterns': win.patterns}, 'win')
             else:
                 self.log_event('win_fan', {'actor': win.actor, 'fan': win.fan, 'patterns': win.patterns}, 'win')
         match_hands = self.rules.MATCH_HANDS
@@ -120,6 +130,16 @@ class HonorsSession(GameSession):
             self.result = {'reason_code': game.reason_code, 'scores': self.totals.copy(),
                            'deltas': delta, 'winners': game.winners.copy(),
                            'win_details': [asdict(win) for win in game.win_details], 'next': not finished}
+            if game.options.kong_points:
+                self.result['kong_deltas'] = game.kong_deltas.copy()
+            if any(game.echo_deltas):
+                self.result['echo_deltas'] = game.echo_deltas.copy()
+            if game.horse_tiles:
+                self.result['bonus'] = [tile_name(tile) for tile in game.horse_tiles]
+                self.result['bonus_details'] = [
+                    {'actor': actor, 'count': count, 'hits': hits, 'per_loser': points, 'extra': extra}
+                    for actor, count, hits, points, extra in game.horse_details
+                ]
             if finished:
                 best = max(self.totals)
                 self.result['match_hands'] = match_hands

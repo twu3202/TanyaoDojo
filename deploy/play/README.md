@@ -1,9 +1,10 @@
 # Playable Mahjong MVP
 
-Human vs three AI players, with a responsive browser table and a CPU-only server. The seventeen playable rulesets are
+Human vs three AI players, with a responsive browser table and a CPU-only server. The twenty playable rulesets are
 Japanese riichi (complete hanchan), Sichuan Xuezhan, Hongzhong Double Ma, Hongzhong One Ma, Fangchenggang
 Hongzhong, Wenzhou Fangpao, Changsha Zhuanzhuan, Taishun, Xuanhua, Shaanxi, Lishui Fangpao, Wenxi, Guilin
-Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style and Macau Tournament Mahjong.
+Zhuanzhuan, Pook Dazhong, Shanxi Datang Tuidaohu, no-flower Hong Kong Old Style, Macau Tournament Mahjong,
+Shangsi, Hundred-Tile Mahjong and Hezhou.
 The Macau room plays a complete 16-hand match.
 
 ## Architecture
@@ -21,6 +22,8 @@ The Macau room plays a complete 16-hand match.
 - `honors.py`, `hongkong.py`, `macau.py`, `honors_game.py`: 136-tile engine with chows, scoring over all hand decompositions,
   and named payers. `honors_policy.py` ranks legal waits and routes to a three-faan hand using public tiles and the
   existing suit table. [Hong Kong](rules/HongKongOldStyle.md) and [Macau](rules/MacauTournament.md) rules.
+- `honors_bonus.py`: regional point schedules with reserved horse tiles, configurable tile sets, immediate kong
+  transfers, and shared bonus reveals on multi-win hands. [Shangsi, Hundred-Tile and Hezhou rules](rules/HonorsHorseTiles.md).
 - `policies.py`, `sichuan_model.py`: existing tpt 408k and Sichuan P2 adaptation `seed201`, CPU inference only. The Sichuan Torch
   port and NumPy observation encoder are cross-checked against the original JAX network/encoder.
 - `server.py`: one HTTP port, session-capability IDs, server-side legal-choice validation, bounded request sizes.

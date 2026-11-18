@@ -6,7 +6,7 @@ colorTo: yellow
 sdk: docker
 app_port: 7860
 license: agpl-3.0
-short_description: Play 17 Mahjong rulesets vs AI. English / 中文.
+short_description: Play 20 Mahjong rulesets vs AI. English / 中文.
 ---
 
 # TanyaoDojo · Mahjong table
@@ -14,7 +14,7 @@ short_description: Play 17 Mahjong rulesets vs AI. English / 中文.
 Choose **Japanese riichi**, **Sichuan Xuezhan**, **Hongzhong Double Ma**, **Hongzhong One Ma**,
 **Fangchenggang Hongzhong**, **Wenzhou Fangpao**, **Changsha Zhuanzhuan**, **Taishun**, **Xuanhua**, **Shaanxi**,
 **Lishui Fangpao**, **Wenxi**, **Guilin Zhuanzhuan**, **Pook Dazhong**, **Shanxi Datang Tuidaohu**,
-**Hong Kong Old Style**, or **Macau Tournament Mahjong**
+**Hong Kong Old Style**, **Macau Tournament Mahjong**, **Shangsi**, **Hundred-Tile Mahjong**, or **Hezhou**
 and play with three AI opponents. Search in either language or
 filter by family. Riichi plays a complete East-South match, and Macau plays a 16-hand match over four winds.
 
@@ -53,6 +53,10 @@ The **Hong Kong Old Style** room adds 136 tiles with honors, chows, three faan t
 
 **Macau Tournament Mahjong** shares the 136-tile setup and adds zero-faan discard wins, two fixed special-hand
 tiers, a 14-tile reserve and fixed dealer rotation. [Rules and sources](deploy/play/rules/MacauTournament.md).
+
+Three rooms with **honors and horse tiles** reveal bonuses from a reserve. Shangsi scores by seat and
+refunds kong points on draws, Hundred-Tile removes the character suit, and Hezhou adds chows and three-feeds
+liability. [Rules and sources](deploy/play/rules/HonorsHorseTiles.md).
 
 The catalog exposes only implemented, tested rulesets. More regional variants will be added
 by rule family. No training runs inside this Space; models are fixed CPU inference snapshots.

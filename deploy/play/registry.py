@@ -1,4 +1,5 @@
 """Versioned playable rules; English is the API default."""
+from .honors_bonus import HEZHOU, HUNDRED, SHANGSI
 from .hongzhong import FANGCHENGGANG, ONE_MA
 from .hongkong import VARIANT as HONG_KONG
 from .macau import VARIANT as MACAU
@@ -610,9 +611,127 @@ VARIANTS[MACAU] = {
     }},
 }
 
+_HORSE_ROOMS = {
+    'family_id': 'honors-horse-tiles',
+    'family': 'Honors and horse tiles',
+    'default_policy': 'heuristic',
+    'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+}
+VARIANTS[SHANGSI.VARIANT] = {
+    **_HORSE_ROOMS,
+    'id': SHANGSI.VARIANT,
+    'name': 'Shangsi Mahjong',
+    'aliases': ['Shangsi', 'Guangxi', '上思', '上思麻将', '广西'],
+    'rule_version': 'shangsi-discard-4-10-dojo-v1',
+    'subtitle': 'Guangxi · Reserve 10 tiles · Seat-based horse tiles',
+    'badge': 'Shangsi · 136 tiles',
+    'description': 'A no-chow Guangxi room with seat-based horses, opening discard payments and kong refunds on a draw.',
+    'rules': [
+        '136 tiles with honors. Pon and kong are allowed; no chow. Discard, self-draw and added-kong robbery can win. '
+        'Standard hands, seven pairs and thirteen orphans use the same base schedule.',
+        'Discard and robbery winners receive 1 from the provider; self-draw receives 2 from each opponent. '
+        'Reserve ten tiles. Reveal four on a discard or robbery, ten on a self-draw. '
+        'Each winner uses the same revealed tiles and multiplies their base by one plus their own seat hits.',
+        'The dealer matches 1/5/9, East and Red; the next seat 2/6, South and Green; the opposite seat 3/7, West and White; '
+        'the last seat 4/8 and North.',
+        'If the first four uninterrupted discards all match, the dealer pays 1 to each opponent. '
+        'Passing an ordinary win or pon locks that tile until the next draw; a higher-valued win can bypass the win lock.',
+        'Each opponent pays 1 for direct or added kong and 2 for concealed kong. Kong points are refunded on a draw. '
+        'You deal first. A sole winner, or the provider on multiple wins, deals next. The dealer stays on a draw.',
+    ],
+    'sources': [{'title': 'Shangsi operator rules', 'url': 'https://www.hzbianqu.com/game/1091.html'}],
+    'translations': {'zh-CN': {
+        'name': '上思麻将', 'family': '字牌奖码家族', 'subtitle': '广西 · 留 10 张 · 按庄位中码',
+        'badge': '上思 · 136 张', 'description': '无吃，按庄位中码，支持抄庄，流局退杠。',
+        'rules': [
+            '136 张带字牌，可碰杠，不可吃，可点炮、自摸和抢补杠。标准型、七对、十三幺同底分。',
+            '点炮或抢杠由供牌者付 1，自摸其他每家付 2。留 10 张，点炮或抢杠翻 4 张、自摸翻 10 张。'
+            '多响共用翻开的码牌，按各自位置命中，胡分乘以中码数加一。',
+            '庄家中 1/5/9、东、中；下家中 2/6、南、发；对家中 3/7、西、白；上家中 4/8、北。',
+            '开局未碰杠且首圈四家打同一张，庄家各付另外三家 1 分。过普通胡或碰锁同张到下次摸牌，'
+            '加分的胡牌可以越过过胡限制。',
+            '其他每家付直杠或补杠 1、暗杠 2。流局退杠。首局你坐庄，单胡赢家或多响供牌者接庄，流局连庄。',
+        ],
+    }},
+}
+
+VARIANTS[HUNDRED.VARIANT] = {
+    **_HORSE_ROOMS,
+    'id': HUNDRED.VARIANT,
+    'name': 'Hundred-Tile Mahjong',
+    'aliases': ['100 tiles', 'Hundred tiles', '100张', '100张麻将', '百张麻将', '一百张麻将'],
+    'rule_version': 'hundred-tiles-4-horses-dojo-v1',
+    'subtitle': 'Dots, bamboo and honors · Self-draw · Four horse tiles',
+    'badge': '100 tiles',
+    'description': 'Remove the character suit. Win by self-draw or by robbing an added kong and reveal seat-based horse tiles.',
+    'rules': [
+        '100 tiles: dots, bamboo, four winds and three dragons. No chow or ordinary discard wins. '
+        'Rob an added kong, including multiple winners. A concealed kong shows one face.',
+        'Self-draw base: regular 2, all triplets 4, mixed one suit 4, pure one suit 8, seven pairs 8. '
+        'Combine triplets with a flush or seven pairs with a pure flush. Terminals and honors 12 and all honors 16 stand alone.',
+        'Keep four tiles in reserve and reveal them after a win. Each win share is multiplied by one plus the '
+        'number of matches for that winner’s seat relative to the dealer. The robbed player covers three shares per winner.',
+        'Direct kong: the provider pays 3. Added kong: each opponent pays 1. Concealed kong: each pays 2. '
+        'Keep kong points on a draw. This room uses no passed-win or passed-pon lock.',
+        'You deal first. A sole winner, or the robbed player after multiple wins, deals next. The dealer stays on a draw.',
+    ],
+    'sources': [{'title': 'Hundred-Tile operator rules', 'url': 'https://www.hzbianqu.com/game/1086.html'}],
+    'translations': {'zh-CN': {
+        'name': '100 张麻将', 'family': '字牌奖码家族', 'subtitle': '筒条加字牌 · 自摸／抢杠 · 四码',
+        'badge': '100 张', 'description': '去除万子。自摸或抢补杠后，按庄位翻码结算。',
+        'rules': [
+            '100 张，包含筒、条、四风及三元牌。不可吃，不可普通点炮胡，可抢补杠及一杠多抢。暗杠亮一张。',
+            '自摸每份：平胡 2、对对胡 4、混一色 4、清一色 8、七对 8。对对胡可叠加清一色或混一色，'
+            '七对可叠加清一色。幺九 12、全字牌 16，各自单列。',
+            '留四张，胡后翻开，按与庄家的相对座位判码，每份乘以中码数加一。抢杠由杠家向每位赢家包三份。',
+            '直杠供牌者付 3，补杠每家付 1，暗杠每家付 2。流局保留杠分。本桌无过碰、过胡。',
+            '首局你坐庄，单胡赢家或多抢时被抢杠者接庄，流局连庄。',
+        ],
+    }},
+}
+
+VARIANTS[HEZHOU.VARIANT] = {
+    **_HORSE_ROOMS,
+    'id': HEZHOU.VARIANT,
+    'name': 'Hezhou Mahjong',
+    'aliases': ['Hezhou', 'Guangxi', '贺州', '贺州麻将', '广西'],
+    'rule_version': 'hezhou-136-four-yao-horses-dojo-v1',
+    'subtitle': 'Guangxi · Chows enabled · Three-feeds liability',
+    'badge': 'Hezhou · 136 tiles',
+    'description': 'A four-seat table with chows, four fixed horse tiles and reciprocal liability after three feeds.',
+    'rules': [
+        '136 tiles, no jokers. Chow from the previous seat; pon and kong are open to the other players. '
+        'Discard and added-kong robbery allow multiple winners. Pass a win or pon and that action is blocked '
+        'until your next draw. Self-draw is still allowed.',
+        'Regular win starts at 1. All triplets, pure suit, seven pairs, closed self-draw and replacement self-draw '
+        'each double it. Dragon seven pairs ×4 replaces ordinary seven pairs; thirteen orphans uses 10. '
+        'Robbing a kong or winning on a discard after kong adds 1.',
+        'Reserve and reveal four horse tiles after a win. Ranks 1/5/9, East and Red count for each winner. '
+        'Multiply the patterned share by one plus the hits.',
+        'Three calls sourced from one opponent make the two seats liable for each other’s discard wins and self-draws. '
+        'A third seat’s discard only bills that seat. The latest qualifying partner covers a self-draw.',
+        'Direct kong: the provider pays 1. Added and concealed kong: each opponent pays 1. Keep kong points on a draw. '
+        'You deal first. A sole winner or the multi-win provider deals next. The dealer stays on a draw.',
+    ],
+    'sources': [{'title': 'Hezhou operator rules', 'url': 'https://www.hzbianqu.com/game/1092.html'}],
+    'translations': {'zh-CN': {
+        'name': '贺州麻将', 'family': '字牌奖码家族', 'subtitle': '广西 · 可吃 · 三笔互赔',
+        'badge': '贺州 · 136 张', 'description': '四人无鬼桌，上家可吃，翻四张幺码，三笔后两席互包。',
+        'rules': [
+            '136 张，无鬼。只吃上家，可碰杠。点炮及抢补杠允许多响。过胡或过碰后，到下次摸牌才可再胡或再碰，自摸不受限。',
+            '平胡 1，碰碰胡、清一色、七对、门清自摸、杠开各翻倍。龙七对 ×4 取代普通七对，'
+            '十三幺单列 10。抢杠或杠后炮加 1。',
+            '留四张，胡后翻幺码。1/5/9、东、红中为中码，每份按中码数加一乘算。',
+            '同一对手提供三笔副露，两家互相包点炮和自摸。其他家点炮仍由该供牌者付，有多组关系时取最后成立的一笔包自摸。',
+            '直杠供牌者付 1，补杠和暗杠每家付 1，流局保留杠分。你先坐庄，单胡赢家或多响供牌者接庄，流局连庄。',
+        ],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
     **{profile.value: {'profile': profile.value} for profile in Profile},
+    **{room.VARIANT: {'variant': room.VARIANT} for room in (SHANGSI, HUNDRED, HEZHOU)},
     MACAU: {'variant': MACAU},
 }
