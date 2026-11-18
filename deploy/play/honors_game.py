@@ -13,13 +13,13 @@ from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
 from .xiaogan import XIAOGAN, XiaoganGame
-from .zhejiang_flipped import (SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, SongyangGame, SuichangGame,
-                               XiaoshanGame)
+from .zhejiang_flipped import (DEQING, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame, SongyangGame,
+                               SuichangGame, XiaoshanGame)
 
 
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
-    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
+    SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG, DEQING,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -30,6 +30,7 @@ GAME_ENGINES = {
     XIAOSHAN.VARIANT: XiaoshanGame,
     SONGYANG.VARIANT: SongyangGame,
     SUICHANG.VARIANT: SuichangGame,
+    DEQING.VARIANT: DeqingGame,
 }
 
 
@@ -110,11 +111,13 @@ class HonorsSession(GameSession):
                 'current': current, 'remaining': game.remaining, 'dora': [], 'honba': 0,
                 'pot': 0, 'phase': game.phase, 'drawn': drawn}
         if isinstance(game, HangzhouGame):
-            table.update(wildcard=self.display_tile(self.rules.WILDCARD), dealer_multiplier=game.dealer_multiplier,
+            table.update(wildcard=self.display_tile(game.wildcard_tile), dealer_multiplier=game.dealer_multiplier,
                          float_cycle_owner=game.float_cycle_owner, feed_liabilities=game.related_seats.copy())
             if game.wildcard_indicator is not None:
                 table['wildcard_indicated'] = True
-                if game.wildcard_indicator != self.rules.WILDCARD:
+                if game.indicator_tile != game.wildcard_tile:
+                    table['wildcard_indicator'] = tile_name(game.wildcard_indicator)
+                elif game.wildcard_indicator != game.wildcard_tile:
                     table['white_substitute'] = tile_name(game.wildcard_indicator)
         return table
 
@@ -168,7 +171,7 @@ class HonorsSession(GameSession):
             kind, tile = action
             if kind in ('discard', 'declare_ready', 'declare_dark', TEN_WINDS):
                 self.log_event('discard', {'actor': actor, 'tile': self.display_tile(tile)})
-            elif action == FLOAT:
+            elif kind == FLOAT[0]:
                 self.log_event('wildcard_float', {'actor': actor, 'count': game.float_streak[actor]}, 'call')
             if kind == 'declare_ready':
                 code = 'paid_ready' if game.players[actor].closed_ready else 'open_ready'

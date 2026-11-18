@@ -1,6 +1,6 @@
 # Hangzhou wildcard rooms
 
-The eight rooms play eight hands at base stake one with the 136-tile set and no flowers.
+The nine rooms play eight hands at base stake one with the 136-tile set and no flowers.
 The human hosts and deals the first hand. A kong needs a live replacement tile.
 Kongs draw from the other end of the wall and have no immediate payment. The winner deals next and the dealer
 repeats on a draw. On a draw all deltas are zero. Chun’an also allows discard wins and robbing an added kong.
@@ -16,6 +16,7 @@ Songyang keeps 20 tiles in reserve and allows robbing an added kong from any sea
 | Xiaoshan | Two calls per supplier, passed-pon lock and a restricted second chow | ×4, then ×8 | None |
 | Songyang | Chow, pon and kong, with a 20-tile reserve | Always ×2 | Three feeds between any pair of seats |
 | Suichang | Chow, pon and kong, with a shrinking reserve | Same as non-dealers | An added-kong robbery charges its supplier the entire bill |
+| Deqing Wukang | Chow, pon and kong with a successor wildcard | Dealer pays 10 for Earth | An added-kong robbery charges its supplier three shares per winner |
 
 ## Wildcard and win multipliers
 
@@ -153,6 +154,31 @@ Seven Winds use the same physical-face interpretation as Songyang with Suichang�
 uses the first dealer discard for Earth and allows three wildcards on the dealer’s opening hand or on an
 uninterrupted first draw. The operator documents the chip-based match as a separate profile.
 
+## Deqing Wukang
+
+This four-seat room selects Wukang plain scoring with chow, base stake one and no cap. Three-feed liability
+and forced Burst are room options. The indicator is removed from play. All four copies of its successor can
+be drawn and used as wildcards. Suits wrap after rank nine, winds cycle East–South–West–North, and dragons
+cycle Red–Green–White. White Dragon retains its face when it is a natural tile. Wildcards do not enter melds.
+
+Ordinary self-draw pays one share per loser. Seven pairs and Burst pay two, as does a single kong draw.
+Successive kongs and floats double the relevant payout. A single float pays four, a single kong Burst pays
+four and a single kong followed by a float pays eight. This room pays the higher applicable hand or event
+value where the table lists separate values. Floating forces the other seats to discard their draws until
+the floater draws again. Four wildcards held at the deal or collected on an uninterrupted first draw pay
+ten each, even without a complete hand. A dealer’s opening hand pays twenty each.
+
+Earth applies to a non-dealer’s first draw or a winning discard before the dealer’s second draw, while
+the first circuit is uninterrupted by calls or kongs. For each Earth winner, the dealer pays ten and
+other losing non-dealers pay five. Several players may win on the same eligible discard or added kong.
+For an added-kong robbery, use at least the replacement-win value, doubling for prior kongs in that chain.
+The supplier pays three times the highest robbery share to each winner and the original pon stands. The
+first accepting winner in turn order deals next.
+
+The Ten Winds declaration opens from the tenth consecutive discard of an East, South, West, North or
+wildcard tile. An unrelated discard or open call restarts that seat’s count. This room pays four per loser
+on the tenth and doubles for each later qualifying discard. A draw has zero payments.
+
 ## Sources
 
 - [Zhejiang Game Hall three-player rules and multiplier table](https://www.hzbianqu.com/game/581.html)
@@ -166,4 +192,5 @@ uninterrupted first draw. The operator documents the chip-based match as a separ
 - [Zhejiang Game Hall Xiaoshan hand and payout table](https://www.hzbianqu.com/game/55.html)
 - [Zhejiang Game Hall Songyang scoring and reserve](https://www.hzbianqu.com/game/218.html)
 - [Zhejiang Game Hall Suichang hand and payment table](https://www.hzbianqu.com/game/47.html)
+- [Zhejiang Game Hall Deqing Wukang scoring table and multi-win rules](https://www.hzbianqu.com/game/919.html)
 - [Zhejiang Game Hall Seven Winds definition for the related Jinhua room](https://www.hzbianqu.com/game/74.html)

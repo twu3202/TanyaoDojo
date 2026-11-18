@@ -38,6 +38,7 @@ class HangzhouRules:
     PASS_LOCK = False
     SWAP_LOCK = False
     WILDCARD = WHITE
+    MULTIPLE_WINS = False
 
     @staticmethod
     def next_dealer(dealer, winners, provider):
@@ -72,14 +73,14 @@ TWO_HANGZHOU = HangzhouRules('hangzhou-two-player-flip', replace(_OPTIONS, seat_
 HANGZHOU_ROOMS = (THREE_HANGZHOU, FOUR_HANGZHOU, TONGLU, CHUNAN, TWO_HANGZHOU)
 
 
-def split_wild(hand):
-    return tuple(hand[:WHITE]) + (0,) + tuple(hand[WHITE + 1:]), hand[WHITE]
+def split_wild(hand, wildcard=WHITE):
+    return tuple(hand[:wildcard]) + (0,) + tuple(hand[wildcard + 1:]), hand[wildcard]
 
 
 @lru_cache(maxsize=16384)
-def burst_wait(hand, meld_count):
+def burst_wait(hand, meld_count, wildcard=WHITE):
     """A 13-tile hand has a wildcard reserved to pair with the next draw."""
-    natural, wild = split_wild(hand)
+    natural, wild = split_wild(hand, wildcard)
     if not wild or sum(hand) != 13 - 3 * meld_count:
         return False, False
     return can_form_sets(natural, wild - 1), not meld_count and can_form_pairs(natural, wild - 1)
@@ -143,7 +144,9 @@ class HangzhouGame(HonorsGame):
         self.feeds = Counter()
         self.liability_feeds = Counter()
         self.dealer_multiplier = rules.fixed_dealer or 2 << min(dealer_streak, 2)
+        self.wildcard_tile = rules.WILDCARD
         self.wildcard_indicator = None
+        self.indicator_tile = None
         super().__init__(seed, dealer, round_wind, rules=rules)
         if rules.flip_wildcard:
             self._flip_wildcard()
@@ -152,6 +155,7 @@ class HangzhouGame(HonorsGame):
         # Inside the rules engine WHITE still means a joker. Exchange the actual flip with WHITE
         # so the original white dragons can be used as the indicator's natural tile in any call.
         self.wildcard_indicator = self.wall.pop(0)
+        self.indicator_tile = WHITE
         self.wall[:] = map(self.physical_tile, self.wall)
         for player in self.players:
             hand = player.hand
@@ -188,29 +192,31 @@ class HangzhouGame(HonorsGame):
         actor, actions = super().legal_actions()
         if self.phase != 'action':
             return actor, actions
+        wildcard = self.wildcard_tile
         actions = [(kind, tile) for kind, tile in actions
-                   if (kind not in ('ankan', 'bugang') or tile != WHITE)
+                   if (kind not in ('ankan', 'bugang') or tile != wildcard)
                    and (kind != 'bugang' or self._open_kong_allowed(actor))]
         if self.float_cycle_owner is not None and self.float_cycle_owner != actor:
             actions = [(kind, tile) for kind, tile in actions if kind != 'discard' or tile == self.drawn_tile]
-        elif self.drawn_tile is not None and self.remaining and ('discard', WHITE) in actions:
+        elif self.drawn_tile is not None and self.remaining and ('discard', wildcard) in actions:
             player = self.players[actor]
-            if any(burst_wait(without_tile(tuple(player.hand), WHITE), len(player.melds))):
-                actions[actions.index(('discard', WHITE))] = FLOAT
+            before = without_tile(tuple(player.hand), wildcard)
+            if any(burst_wait(before, len(player.melds), wildcard)):
+                actions[actions.index(('discard', wildcard))] = FLOAT[0], wildcard
         return actor, actions
 
     def step(self, action):
-        if action != FLOAT:
+        if action[0] != FLOAT[0]:
             return super().step(action)
         actor, actions = self.legal_actions()
-        if FLOAT not in actions:
+        if action not in actions:
             raise ValueError('Illegal wildcard float')
         self.last_call = None
         self.floated.add(actor)
         self.float_streak[actor] += 1
         self.float_kongs[actor] += self.kong_chain
         self.float_cycle_owner = actor
-        self._throw_tile(actor, WHITE)
+        self._throw_tile(actor, self.wildcard_tile)
 
     def _discard(self, actor, tile):
         self.float_streak[actor] = 0
@@ -227,11 +233,11 @@ class HangzhouGame(HonorsGame):
     def _response_actions(self):
         actor, offer = self.responses[0], self.offer
         during_float = self.float_cycle_owner is not None
-        can_win = self._can_take_win(actor, offer)
-        can_call = (offer.kind == 'discard'
+        can_win = (not self.winners or self.rules.MULTIPLE_WINS) and self._can_take_win(actor, offer)
+        can_call = (not self.winners and offer.kind == 'discard'
                     and (not during_float or (self.rules.floater_can_call and actor == self.float_cycle_owner))
                     and (self.options.chow or actor not in self.floated))
-        if offer.tile == WHITE or self.winners or not (can_win or can_call):
+        if offer.tile == self.wildcard_tile or not (can_win or can_call):
             return actor, [PASS]
         _, actions = super()._response_actions()
         actions = [action for action in actions if action == PASS or (action == RON and can_win)

@@ -14,7 +14,7 @@ from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
 from .xiaogan import XIAOGAN
-from .zhejiang_flipped import SONGYANG, SUICHANG, XIAOSHAN
+from .zhejiang_flipped import DEQING, SONGYANG, SUICHANG, XIAOSHAN
 
 VARIANTS = {'riichi': {'id': 'riichi',
             'family_id': 'riichi',
@@ -1466,6 +1466,33 @@ VARIANTS[SUICHANG.VARIANT] = {
     }},
 }
 
+VARIANTS[DEQING.VARIANT] = {
+    **_HANGZHOU, 'id': DEQING.VARIANT,
+    'name': 'Deqing Mahjong · Wukang',
+    'aliases': ['德清麻将', '武康麻将', '地胡', '一炮多响', '顺位财神'],
+    'rule_version': 'deqing-wukang-plain-dojo-v1',
+    'subtitle': 'Four seats · Successor wildcard · Multiple winners',
+    'badge': 'Zhejiang · 136 tiles',
+    'description': 'The next tile after the indicator becomes the wildcard. Early Earth wins and added-kong robberies can have multiple winners.',
+    'rules': [
+        '136 tiles with no flowers. The tile after the indicator is the wildcard. Ranks, winds and dragons wrap in their own cycles. '
+        'White Dragon keeps its face unless it becomes the wildcard.',
+        'Win by self-draw, first-circuit Earth or robbing an added kong. Earth charges the dealer 10 and other losers 5. '
+        'Several players can win on the same eligible tile. The owner of a robbed kong pays three shares per winner.',
+        'Four opening wildcards collect 10 from each loser. Ten consecutive wind or wildcard discards let you declare Ten Winds. '
+        'A dealer’s opening win collects 20 from each loser. This is the plain room at base stake one.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Deqing Wukang rules and payouts', 'url': 'https://www.hzbianqu.com/game/919.html'}],
+    'translations': {'zh-CN': {
+        'family': '杭麻财神', 'name': '德清麻将（武康）', 'subtitle': '四人 · 顺位财神 · 一炮多响',
+        'badge': '浙江 · 136 张', 'description': '翻牌顺位为财神，地胡和抢补杠可一炮多响。',
+        'rules': ['136 张，无花。翻牌下一位是财神，数牌、风牌、三元牌各自循环。白板只有当选财神时才作百搭。',
+                  '可自摸、首圈地胡、抢补杠。地胡庄家付 10，其他输家各付 5。合条件的出牌可以多响。'
+                  '被抢杠者向每位赢家支付三份。',
+                  '起手四财神每位输家付 10，连续打出十张风牌或财神可宣告十风。庄家天胡三家各付 20。采用底分 1 的平胡房。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1488,4 +1515,5 @@ SESSION_OPTIONS = {
     XIAOSHAN.VARIANT: {'variant': XIAOSHAN.VARIANT},
     SONGYANG.VARIANT: {'variant': SONGYANG.VARIANT},
     SUICHANG.VARIANT: {'variant': SUICHANG.VARIANT},
+    DEQING.VARIANT: {'variant': DEQING.VARIANT},
 }

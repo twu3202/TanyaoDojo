@@ -1,4 +1,4 @@
-"""Xiaoshan, Songyang and Suichang rooms over the common flipped-wildcard game."""
+"""Zhejiang rooms with a flipped tile or its successor as the wildcard."""
 
 from dataclasses import replace
 from functools import lru_cache
@@ -6,8 +6,8 @@ from itertools import combinations
 from math import prod
 
 from .hangzhou import (FLOAT, WHITE, FOUR_HANGZHOU, HangzhouGame, HangzhouRules, HangzhouScore,
-                       burst_wait, split_wild)
-from .honors import ORPHANS, chow_choices
+                       _score_shape, burst_wait, split_wild)
+from .honors import ORPHANS, WINDS, chow_choices
 from .wildcard_shapes import (can_form_all_pungs, can_form_pairs, can_form_pungs, can_form_standard,
                              without_tile)
 
@@ -92,38 +92,31 @@ XIAOSHAN = XiaoshanRules('xiaoshan-mahjong', replace(FOUR_HANGZHOU.OPTIONS, pass
                         open_kong_after_float=True)
 
 
-class XiaoshanGame(HangzhouGame):
+class TenWindsGame(HangzhouGame):
+    WIND_RESET = -1
+
     def __init__(self, seed, dealer, round_wind, *, rules, dealer_streak=0):
         self.ten_winds = [0] * rules.OPTIONS.seat_count
         self.ten_winds_winner = None
-        self.last_kong_kind = None
         super().__init__(seed, dealer, round_wind, rules=rules, dealer_streak=dealer_streak)
-        self.dealer_multiplier = 4 << min(dealer_streak, 1)
-
-    def _wind_tile(self, tile):
-        return tile == WHITE or tile >= 27 or self.physical_tile(tile) == WHITE
 
     def _record_wind(self, actor, tile):
         if self.ten_winds[actor] >= 0 and self._wind_tile(tile):
             self.ten_winds[actor] += 1
         else:
-            self.ten_winds[actor] = -1
+            self.ten_winds[actor] = self.WIND_RESET
 
     def _throw_tile(self, actor, tile):
         self._record_wind(actor, tile)
         super()._throw_tile(actor, tile)
 
     def _call_discard(self, offer):
-        self.ten_winds[self.claim[0]] = -1
+        self.ten_winds[self.claim[0]] = self.WIND_RESET
         super()._call_discard(offer)
 
-    def _chows(self, player, tile, provider):
-        return chow_choices(player.hand, tile, swap_lock=self.rules.chow_swap_lock(player.melds, provider))
-
     def _pay_kong(self, actor, meld):
-        self.last_kong_kind = meld.kind
         if meld.kind != 'gang_an':
-            self.ten_winds[actor] = -1
+            self.ten_winds[actor] = self.WIND_RESET
         super()._pay_kong(actor, meld)
 
     def legal_actions(self):
@@ -148,9 +141,29 @@ class XiaoshanGame(HangzhouGame):
         self._settle([actor], None)
         self.reason_code = 'ten_winds_win'
 
+    def _ten_winds_score(self, actor):
+        return HangzhouScore(4 << (self.ten_winds[actor] - 10), ('十风',))
+
+
+class XiaoshanGame(TenWindsGame):
+    def __init__(self, seed, dealer, round_wind, *, rules, dealer_streak=0):
+        self.last_kong_kind = None
+        super().__init__(seed, dealer, round_wind, rules=rules, dealer_streak=dealer_streak)
+        self.dealer_multiplier = 4 << min(dealer_streak, 1)
+
+    def _wind_tile(self, tile):
+        return tile == WHITE or tile >= 27 or self.physical_tile(tile) == WHITE
+
+    def _chows(self, player, tile, provider):
+        return chow_choices(player.hand, tile, swap_lock=self.rules.chow_swap_lock(player.melds, provider))
+
+    def _pay_kong(self, actor, meld):
+        self.last_kong_kind = meld.kind
+        super()._pay_kong(actor, meld)
+
     def _score(self, actor, hand, melds, ctx):
         if actor == self.ten_winds_winner:
-            return HangzhouScore(4 << (self.ten_winds[actor] - 10), ('十风',))
+            return self._ten_winds_score(actor)
         return self.rules.faan(hand, melds, ctx, floats=self.float_streak[actor], last_kong=self.last_kong_kind)
 
     def payments(self, actor, share, provider=None):
@@ -312,3 +325,105 @@ class SuichangGame(SongyangGame):
             return tuple(4 * share if seat == provider else 0 for seat in range(self.seat_count))
         return tuple(0 if seat == actor else share * (2 if provider in (None, seat) else 1)
                      for seat in range(self.seat_count))
+
+
+def next_wildcard(indicator):
+    if indicator < 27:
+        suit, rank = divmod(indicator, 9)
+        return suit * 9 + (rank + 1) % 9
+    if indicator in WINDS:
+        return 27 + (indicator - 26) % 4
+    return 31 + (indicator - 32) % 3  # Red → Green → White → Red.
+
+
+_FOUR_WILDCARDS = HangzhouScore(10, ('四财神',))
+
+
+class DeqingRules(HangzhouRules):
+    MULTIPLE_WINS = True
+
+    def faan(self, hand, melds, ctx, *, wildcard=WHITE, floats=0, kongs_before_float=0):
+        if ctx.kind not in ('zimo', 'ron', 'rob_kong') or (ctx.kind == 'ron' and ctx.opening != '地胡'):
+            return None
+        if ctx.tile is None or not hand[ctx.tile] or sum(hand) != 14 - 3 * len(melds):
+            return None
+        natural, wild = split_wild(hand, wildcard)
+        if ctx.kind == 'zimo' and (ctx.opening or ctx.first_nondealer_draw) and wild == 4:
+            return _FOUR_WILDCARDS
+        pairs = not melds and can_form_pairs(natural, wild)
+        burst, pair_burst = (False, False)
+        if ctx.kind == 'zimo':
+            before = without_tile(tuple(hand), ctx.tile)
+            burst, pair_burst = burst_wait(before, len(melds), wildcard)
+        if not (burst or pair_burst or pairs or can_form_standard(natural, wild)):
+            return None
+        if ctx.kind == 'rob_kong':
+            return HangzhouScore(2 << ctx.kong_chain, ('抢杠',))
+        if ctx.opening == '天胡':
+            return HangzhouScore(20, ('天胡',))
+        if ctx.opening == '地胡' or ctx.first_nondealer_draw:
+            return HangzhouScore(5, ('地胡',))
+        score = _score_shape(1, (), burst or pair_burst, ctx.kong_chain, floats, kongs_before_float)
+        return HangzhouScore(2, ('七对子',)) if pairs and not (burst or pair_burst) and score.share <= 2 else score
+
+    @staticmethod
+    def settle_hand(game, winners, offer):
+        if offer is not None and offer.kind == 'gang_bu':
+            share = max(winner.score.share for winner in winners)
+            bill = tuple(3 * share if seat == offer.actor else 0 for seat in range(game.seat_count))
+            return [(replace(winner.score, share=share), bill) for winner in winners]
+        winning_seats = {winner.actor for winner in winners}
+        outcomes = []
+        for winner in winners:
+            score = winner.score
+            earth = '地胡' in score.patterns
+            bill = tuple(0 if seat in winning_seats else score.share * (2 if earth and seat == game.dealer else 1)
+                         for seat in range(game.seat_count))
+            outcomes.append((score, bill))
+        return outcomes
+
+
+DEQING = DeqingRules('deqing-wukang', FOUR_HANGZHOU.OPTIONS, fixed_dealer=1, flip_wildcard=True,
+                     floater_can_call=False, open_kong_after_float=True)
+
+
+class DeqingGame(TenWindsGame):
+    WIND_RESET = 0
+
+    def __init__(self, seed, dealer, round_wind, *, rules, dealer_streak=0):
+        super().__init__(seed, dealer, round_wind, rules=rules, dealer_streak=dealer_streak)
+        for seat, player in enumerate(self.players):
+            if player.hand[self.wildcard_tile] == 4:
+                self._settle([seat], None)
+                break
+
+    def _flip_wildcard(self):
+        self.wildcard_indicator = self.indicator_tile = self.wall.pop(0)
+        self.wildcard_tile = next_wildcard(self.wildcard_indicator)
+
+    def physical_tile(self, tile):
+        return tile
+
+    def _wind_tile(self, tile):
+        return tile in WINDS or tile == self.wildcard_tile
+
+    def _chows(self, player, tile, provider):
+        return ((start, take, block) for start, take, block in super()._chows(player, tile, provider)
+                if self.wildcard_tile not in take)
+
+    def _open_offer(self, offer):
+        if offer.kind == 'discard' and self.uninterrupted and self.players[self.dealer].draws == 1:
+            offer = replace(offer, opening='地胡')
+        super()._open_offer(offer)
+
+    def _can_take_win(self, actor, offer):
+        return self.float_cycle_owner is None and (
+            offer.kind == 'gang_bu' or (actor != self.dealer and offer.opening == '地胡'))
+
+    def _score(self, actor, hand, melds, ctx):
+        if actor == self.ten_winds_winner:
+            return self._ten_winds_score(actor)
+        if self.opening and hand[self.wildcard_tile] == 4:
+            return _FOUR_WILDCARDS
+        return self.rules.faan(hand, melds, ctx, wildcard=self.wildcard_tile, floats=self.float_streak[actor],
+                               kongs_before_float=self.float_kongs[actor])

@@ -60,13 +60,13 @@ en:{
 Object.assign(I18N.en, {
  wildcardFloatTag:'Float ×{count}', promptFloatCycle:'An opponent floated a wildcard. You can discard your draw, make a concealed kong or win.',
  feedLiability:'{caller} ← {provider} · three feeds', setupNoteOne:'You and one AI opponent. You can autoplay the hand.',
- wildcardIndicator:'Wildcard indicator', whiteSubstitute:'White Dragon plays as {tile}', selectWildcard:'Select {tile} (wildcard)',
+ wildcardIndicator:'Wildcard indicator', wildcardIndicatorTile:'Indicator', whiteSubstitute:'White Dragon plays as {tile}', selectWildcard:'Select {tile} (wildcard)',
  tenWindsRun:'Ten Winds · {count}',
 });
 Object.assign(I18N['zh-CN'], {
  wildcardFloatTag:'飘财 ×{count}', promptFloatCycle:'对手已飘财，你可摸切、暗杠或自摸。',
  feedLiability:'{caller} ← {provider} · 三摊承包', setupNoteOne:'你与一位 AI 单挑，可以随时托管本局。',
- wildcardIndicator:'翻出的财神', whiteSubstitute:'白板替 {tile}', selectWildcard:'选择 {tile}（财神）',
+ wildcardIndicator:'翻出的财神', wildcardIndicatorTile:'财神指示牌', whiteSubstitute:'白板替 {tile}', selectWildcard:'选择 {tile}（财神）',
  tenWindsRun:'十风 · {count}',
 });
 I18N.en.action.float_wildcard='Float wildcard';
@@ -89,7 +89,7 @@ Object.assign(I18N.en.fans, {
  '双豪华清七对':'Natural double luxury seven pairs', '三豪华清七对':'Natural triple luxury seven pairs',
  '十风':'Ten Winds', '乱风':'Unstructured honors', '正风':'All honor pungs', '豪杠开':'Concealed kong draw',
  '大对子':'All pungs', '大碰胡':'All pungs', '大吊车':'Four sets and a pair', '全字':'All honors',
- '财神头':'Wildcard head', '三财神':'Three opening wildcards', '正规十三幺':'Natural thirteen orphans',
+ '财神头':'Wildcard head', '三财神':'Three opening wildcards', '四财神':'Four opening wildcards', '正规十三幺':'Natural thirteen orphans',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 let LANGUAGE='en';

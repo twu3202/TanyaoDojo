@@ -8,10 +8,10 @@ from types import ModuleType
 from common.suit_table import load_table
 
 from . import hongkong
-from .hangzhou import FLOAT, WHITE, split_wild
+from .hangzhou import FLOAT, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
-from .zhejiang_flipped import TEN_WINDS, SongyangRules
+from .zhejiang_flipped import TEN_WINDS, DeqingRules, SongyangRules
 
 
 @dataclass(frozen=True)
@@ -27,12 +27,18 @@ class PolicyView:
     rules: ModuleType | HorseRoom = hongkong
     offered_by: int | None = None
     wildcard_indicator: int | None = None
+    wildcard_tile: int | None = None
+
+    @property
+    def wildcard(self):
+        return self.wildcard_tile if self.wildcard_tile is not None else getattr(self.rules, 'WILDCARD', None)
 
 
 def policy_view(game, actor, actions):
     visible = Counter(tile for river in game.discards for tile in river)
-    if getattr(game, 'wildcard_indicator', None) is not None:
-        visible[WHITE] += 1
+    indicator_tile = getattr(game, 'indicator_tile', None)
+    if indicator_tile is not None:
+        visible[indicator_tile] += 1
     for seat, player in enumerate(game.players):
         for meld in player.melds:
             if (seat != actor and meld.kind == 'gang_an'
@@ -56,7 +62,8 @@ def policy_view(game, actor, actions):
     return PolicyView(hand, tuple(player.melds), tuple(visible[i] for i in range(TILE_COUNT)),
                       tuple(actions), seat_wind, game.round_wind,
                       offered, game.remaining, game.rules,
-                      None if offered is None else game.offer.actor, getattr(game, 'wildcard_indicator', None))
+                      None if offered is None else game.offer.actor, getattr(game, 'wildcard_indicator', None),
+                      getattr(game, 'wildcard_tile', None))
 
 
 @lru_cache(maxsize=1)
@@ -122,8 +129,9 @@ def _triplet_distance(hand, needed):
 
 
 def _distance(hand, melds, view):
-    if getattr(view.rules, 'WILDCARD', None) == WHITE:
-        natural, wild = split_wild(hand)
+    wildcard = view.wildcard
+    if wildcard is not None:
+        natural, wild = split_wild(hand, wildcard)
         if view.rules.require_burst and wild:
             # Reserve one wildcard for the drawn tile instead of completing a natural pair.
             wild -= 1
@@ -173,7 +181,11 @@ def _live_tiles(view):
 def _ready_waits(hand, melds, view, live):
     waits = 0
     augmented = list(hand)
-    params = {'indicator': view.wildcard_indicator} if isinstance(view.rules, SongyangRules) else {}
+    params = {}
+    if isinstance(view.rules, SongyangRules):
+        params['indicator'] = view.wildcard_indicator
+    elif isinstance(view.rules, DeqingRules):
+        params['wildcard'] = view.wildcard
     for tile, count in enumerate(live):
         if not count:
             continue
@@ -244,8 +256,9 @@ def heuristic(view):
     ten_winds = next((action for action in actions if action[0] == TEN_WINDS), None)
     if ten_winds is not None:
         return ten_winds
-    if FLOAT in actions and view.remaining >= 45:
-        return FLOAT
+    float_action = FLOAT[0], view.wildcard
+    if float_action in actions and view.remaining >= 45:
+        return float_action
     if ZIMO in actions:
         return ZIMO
     if actions == (PASS,):
@@ -269,7 +282,7 @@ def heuristic(view):
             if _rank(tuple(hand), new_melds, view, live) <= best:
                 return kind, tile
         choices = [(tile, rest) for rank, tile, rest in ranked if rank == best]
-        wildcard = getattr(view.rules, 'WILDCARD', None)
+        wildcard = view.wildcard
         tile, _ = max(choices, key=lambda item: (_ukeire(best[0], item[1], view.melds, live, view),
                                                 item[0] != wildcard,
                                                 -view.hand[item[0]], item[0]))
