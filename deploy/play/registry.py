@@ -17,6 +17,7 @@ from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG
 from .macau import VARIANT as MACAU
 from .suited import Profile
 from .tiantai import TIANTAI_WILD, VARIANT as TIANTAI
+from .taizhou import TAIZHOU
 from .xiaogan import XIAOGAN
 from .zhejiang_flipped import DEQING, DEQING_XINSHI, SONGYANG, SUICHANG, XIAOSHAN
 
@@ -1706,6 +1707,33 @@ VARIANTS[TIANTAI_WILD.VARIANT] = {
     }},
 }
 
+VARIANTS[TAIZHOU.VARIANT] = {
+    'id': TAIZHOU.VARIANT, 'family_id': 'taizhou-hu', 'family': 'Taizhou hu scoring', 'seat_count': 4,
+    'default_policy': 'heuristic', 'policies': [{'id': 'heuristic', 'name': 'Beginner · Tile efficiency'}],
+    'name': 'Taizhou Mahjong · Four Players',
+    'aliases': ['台州麻将', '台州四人', '台州胡数', '台州承包', '生牌阶段'],
+    'rule_version': 'taizhou-136-reciprocal-hu-dojo-v1',
+    'subtitle': 'Four seats · Flipped wildcard · Reciprocal scoring',
+    'badge': 'Zhejiang · Hu and faan',
+    'description': 'Every seat scores its own hand. A liable player may cover all payments.',
+    'rules': [
+        '136 tiles. The flipped face becomes wild and White Dragons play as the flipped face. Leave 16 tiles in reserve.',
+        'Only one player can win. Sets, valued pairs and faan determine each hand value. The winner starts at 10 hu. '
+        'Each seat is capped at 100 hu. All six pairs of seats settle, including pairs of opponents who did not win.',
+        'The late phase starts at 30 tiles including the reserve. A first-time discard that someone wins on then '
+        'assigns all bills to the discarder. Feeding three chows for a pure hand and some live dragon discards can also assign liability.',
+    ],
+    'sources': [{'title': 'Zhejiang Game Hall Taizhou rules and reciprocal settlement',
+                 'url': 'https://www.hzbianqu.com/game/936.html'}],
+    'translations': {'zh-CN': {
+        'family': '台州系胡数', 'name': '台州四人麻将', 'subtitle': '四人 · 翻得 · 四家互算',
+        'badge': '浙江 · 胡数与番数', 'description': '四家各算自己的牌点，满足承包条件时由一人代付所有账单。',
+        'rules': ['136 张。翻出的牌面作财神，白板替作翻出的牌面。留尾 16 张。',
+                  '一炮一响。四家分别算刻杠、对子和番数，赢家 10 胡起算，各家最多 100 胡。六对座位逐对结算，输家之间也结算。',
+                  '含尾牌剩 30 张时进入生牌阶段，打出生张被胡须承包。三吃清一色以及部分中发白生张也会触发承包。'],
+    }},
+}
+
 SESSION_OPTIONS = {
     'hongzhong-one-ma': {'variant': 'hongzhong-one-ma', 'profile': ONE_MA},
     'fangchenggang-hongzhong': {'variant': 'fangchenggang-hongzhong', 'profile': FANGCHENGGANG},
@@ -1737,4 +1765,5 @@ SESSION_OPTIONS = {
     CHONGJI_SEVEN.VARIANT: {'variant': CHONGJI_SEVEN.VARIANT},
     TIANTAI: {'variant': TIANTAI},
     TIANTAI_WILD.VARIANT: {'variant': TIANTAI_WILD.VARIANT},
+    TAIZHOU.VARIANT: {'variant': TAIZHOU.VARIANT},
 }

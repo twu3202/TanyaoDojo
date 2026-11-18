@@ -15,6 +15,7 @@ from .hangzhou import FLOAT, split_wild
 from .honors import DEFAULT_OPTIONS, DRAGONS, ORPHANS, PASS, RON, TILE_COUNT, ZIMO, Meld, WinContext, chow_choices
 from .honors_bonus import HorseRoom
 from .tiantai import TiantaiWildcardRules
+from .taizhou import TaizhouRules
 from .zhejiang_flipped import ELEVEN_WINDS, TEN_WINDS, DeqingRules, SongyangRules
 
 
@@ -201,7 +202,7 @@ def _ready_waits(hand, melds, view, live):
         params.update(wildcard=view.wildcard, excluded=view.excluded_tiles)
     elif isinstance(view.rules, (ChongjiRules, DeqingRules, DongyangRules)):
         params['wildcard'] = view.wildcard
-    if isinstance(view.rules, TiantaiWildcardRules):
+    if isinstance(view.rules, (TaizhouRules, TiantaiWildcardRules)):
         can_win = view.rules.can_win
     else:
         def can_win(hand, melds, ctx):

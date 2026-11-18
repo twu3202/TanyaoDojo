@@ -1,10 +1,28 @@
 """Standard Mahjong sets and pairs with a known number of wildcards."""
 
 from functools import lru_cache
+from itertools import combinations_with_replacement
+
+from .honors import standard_shapes
 
 
 def without_tile(counts, tile, count=1):
     return counts[:tile] + (counts[tile] - count,) + counts[tile + 1:]
+
+
+@lru_cache(maxsize=256)
+def wildcard_decompositions(natural, wild, meld_count, assignable):
+    """Return complete shapes along with which ranks the jokers can occupy."""
+    results = []
+    for assignment in combinations_with_replacement(assignable, wild):
+        filled = list(natural)
+        for tile in assignment:
+            filled[tile] += 1
+        filled = tuple(filled)
+        shapes = tuple(standard_shapes(filled, meld_count))
+        if shapes:
+            results.append((filled, tuple(dict.fromkeys(assignment)), shapes))
+    return tuple(results)
 
 
 @lru_cache(maxsize=65536)

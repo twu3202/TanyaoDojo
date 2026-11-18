@@ -16,6 +16,7 @@ from .hangzhou import FLOAT, HANGZHOU_ROOMS, HangzhouGame
 from .honors import DEFAULT_OPTIONS, PASS, HonorsGame
 from .honors_policy import heuristic, policy_view
 from .kawuxing import SHIYAN, SUIZHOU, XIANGYANG, KaWuXingGame
+from .taizhou import TAIZHOU, TaizhouGame
 from .xiaogan import XIAOGAN, XiaoganGame
 from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SUICHANG, TEN_WINDS, XIAOSHAN, DeqingGame,
                                DeqingXinshiGame, SongyangGame, SuichangGame, XiaoshanGame)
@@ -24,7 +25,7 @@ from .zhejiang_flipped import (DEQING, DEQING_XINSHI, ELEVEN_WINDS, SONGYANG, SU
 RULESETS = {rule.VARIANT: rule for rule in (
     hongkong, macau, guangzhou, SHANGSI, HUNDRED, HEZHOU, LIUZHOU, golden_guangdong, guiliu,
     SUIZHOU, XIANGYANG, SHIYAN, jj_three, jj_multiplier, XIAOGAN, *HANGZHOU_ROOMS, XIAOSHAN, SONGYANG, SUICHANG,
-    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD,
+    DEQING, DEQING_XINSHI, ANJI, ANJI_TEA_HOUSE, DONGYANG, CHONGJI, CHONGJI_SEVEN, tiantai, tiantai.TIANTAI_WILD, TAIZHOU,
 )}
 GAME_ENGINES = {
     **{rules.VARIANT: KaWuXingGame for rules in (SUIZHOU, XIANGYANG, SHIYAN)},
@@ -44,6 +45,7 @@ GAME_ENGINES = {
     CHONGJI_SEVEN.VARIANT: ChongjiGame,
     tiantai.VARIANT: tiantai.TiantaiGame,
     tiantai.TIANTAI_WILD.VARIANT: tiantai.TiantaiWildcardGame,
+    TAIZHOU.VARIANT: TaizhouGame,
 }
 
 
@@ -140,6 +142,8 @@ class HonorsSession(GameSession):
             table['dealer_stake'] = game.dealer_stake
         if isinstance(game, tiantai.TiantaiWildcardGame):
             table.update(wildcard=tile_name(self.rules.WILDCARD), wildcard_fixed=True)
+        if isinstance(game, TaizhouGame):
+            table['fresh_stage'] = game.fresh_stage
         return table
 
     def display_tile(self, tile):
@@ -231,6 +235,8 @@ class HonorsSession(GameSession):
             self.result = {'reason_code': game.reason_code, 'scores': self.totals.copy(),
                            'deltas': delta, 'winners': game.winners.copy(),
                            'win_details': [asdict(win) for win in game.win_details], 'next': not finished}
+            if isinstance(game, TaizhouGame) and game.taizhou_settlement is not None:
+                self.result['taizhou_settlement'] = game.taizhou_settlement
             if game.options.kong_points:
                 self.result['kong_deltas'] = game.kong_deltas.copy()
             if any(game.echo_deltas):

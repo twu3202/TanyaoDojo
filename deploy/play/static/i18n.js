@@ -102,6 +102,7 @@ Object.assign(I18N.en.fans, {
  '全风向':'All honors', '抛龙':'Wildcard-head declaration',
  '位花':'Seat flower', '四花':'Four matching flowers', '八花':'Eight flowers', '靠柄':'Edge wait', '嵌档':'Inside wait',
  '排胡':'All sequences', '门风刻杠':'Seat-wind set', '字牌刻杠':'Dragon set', '清牌':'No wildcards in hand',
+ '无得':'No wildcards', '得还原':'All wildcards match their face',
  '不正规十三幺':'Wildcard thirteen orphans', '正规七风':'Natural Seven Winds', '不正规七风':'Wildcard Seven Winds',
 });
 Object.assign(I18N.en.tileHonors, {F1:'Spring', F2:'Summer', F3:'Autumn', F4:'Winter',
@@ -113,6 +114,17 @@ I18N.en.baseHu='Base {n} hu';
 I18N['zh-CN'].baseHu='底 {n} 胡';
 I18N.en.taiCount='{n} tai';
 I18N['zh-CN'].taiCount='{n} 台';
+Object.assign(I18N.en, {
+  faanCount:'{n} faan', taizhouFreshStage:'Fresh-tile liability phase', taizhouValues:'Hand values · {amounts}',
+  taizhouLiability:'{name} pays all bills · {reason}', taizhouBill:'{payer} pays {receiver} {points} hu',
+  taizhou_late_fresh_tile:'late fresh discard', taizhou_pure_suit_feeds:'three chows for a pure suit',
+  taizhou_fresh_dragon:'fresh dragon discard',
+});
+Object.assign(I18N['zh-CN'], {
+  faanCount:'{n} 番', taizhouFreshStage:'生牌阶段', taizhouValues:'各家牌点 · {amounts}',
+  taizhouLiability:'{name} 承包 · {reason}', taizhouBill:'{payer} 付 {receiver} {points} 胡',
+  taizhou_late_fresh_tile:'生牌阶段点炮', taizhou_pure_suit_feeds:'三吃清一色', taizhou_fresh_dragon:'中发白生张',
+});
 let LANGUAGE='en';
 try{const saved=localStorage.getItem('tanyao_language');if(saved&&I18N[saved])LANGUAGE=saved;}catch{}
 const tr=(key,args={})=>{let s=I18N[LANGUAGE][key]??I18N.en[key]??key;return String(s).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');};
@@ -120,7 +132,7 @@ const tpl=(text,args={})=>String(text).replace(/\{(\w+)\}/g,(_,k)=>args[k]??'');
 const playerName=i=>I18N[LANGUAGE].names[i]??String(i);
 const tileText=t=>I18N[LANGUAGE].tileHonors[t]||(LANGUAGE==='en'?`${t.endsWith('r')?'Red ':''}${t[0]} ${I18N.en.suits['mps'.indexOf(t[1])]}`:`${t[0]}${I18N['zh-CN'].suits['mps'.indexOf(t[1])]}${t.endsWith('r')?'赤':''}`);
 const actionText=k=>I18N[LANGUAGE].action[k]??k;
-const countedPatterns=[['根x','gen'],['鬼x','ghost'],['花牌x','flowerBonus'],['底胡x','baseHu'],['台数x','taiCount']];
+const countedPatterns=[['根x','gen'],['鬼x','ghost'],['花牌x','flowerBonus'],['底胡x','baseHu'],['台数x','taiCount'],['番数x','faanCount']];
 function patternText(pattern){
   const match=countedPatterns.find(([prefix])=>pattern.startsWith(prefix));
   return match?tr(match[1],{n:pattern.slice(match[0].length)}):(I18N[LANGUAGE].fans[pattern]||pattern);

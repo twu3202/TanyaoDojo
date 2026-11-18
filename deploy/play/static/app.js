@@ -98,6 +98,7 @@ if(table.wildcard){
   if(table.white_substitute) $('dora').append(text('span',tr('whiteSubstitute',{tile:tileText(table.white_substitute)}),'white-substitute'));
   if(table.white_optional) $('dora').append(text('span',tr('whiteOptional',{tile:tileText(table.white_optional)}),'white-substitute'));
 }
+if(table.fresh_stage) $('dora').append(text('span',tr('taizhouFreshStage'),'tag'));
 $('table').classList.toggle('two-player',table.players.length===2);
 $('table').classList.toggle('three-player',table.players.length===3);
 $('seat-2').hidden=table.players.length<3;
@@ -262,7 +263,21 @@ function renderTransfers(deltas, label, container) {
     points ? [`${playerName(seat)} ${points > 0 ? '+' : '−'}${Math.abs(points).toLocaleString()}`] : []);
   if (amounts?.length) container.append(text('p', tr(label, {amounts: amounts.join(' · ')}), 'bonus-detail'));
 }
+function renderTaizhou(settlement, container) {
+  if (!settlement) return;
+  const {values, liable, liability_reason: reason, bills} = settlement;
+  const amounts = values.map((value, seat) => `${playerName(seat)} ${value.toLocaleString()}`);
+  container.append(text('p', tr('taizhouValues', {amounts: amounts.join(' · ')}), 'bonus-detail'));
+  if (liable !== null) {
+    container.append(text('p', tr('taizhouLiability', {name: playerName(liable), reason: tr(`taizhou_${reason}`)}), 'bonus-detail'));
+  }
+  bills.forEach((row, payer) => row.forEach((points, receiver) => {
+    if (points) container.append(text('p', tr('taizhouBill', {payer: playerName(payer), receiver: playerName(receiver),
+      points: points.toLocaleString()}), 'bonus-detail'));
+  }));
+}
 function renderBonusTiles(result, container) {
+  renderTaizhou(result.taizhou_settlement, container);
   const mode = result.bonus_mode;
   if (result.bonus?.length) {
     container.append(text('span', tr(mode === 'exploding_fish' ? 'fishTile' : 'bonusTileHeading')));

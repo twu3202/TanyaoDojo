@@ -1,13 +1,10 @@
 """Three-player Tiantai with flowers and a 300-hu limit."""
 
-from functools import lru_cache
-from itertools import combinations_with_replacement
-
 from .flower_wall import FlowerWall
 from .hangzhou import WHITE, split_wild
 from .honors import DRAGONS, PASS, RON, TERMINALS, WINDS, HonorsGame, TableOptions, standard_shapes
 from .honors_bonus import Score
-from .wildcard_shapes import can_form_standard
+from .wildcard_shapes import can_form_standard, wildcard_decompositions
 
 
 VARIANT = 'tiantai-three-hu'
@@ -124,20 +121,6 @@ def _rank_hand(hand, melds, ctx, shapes, winning_tiles, flowers, flower_replacem
     return best
 
 
-@lru_cache(maxsize=256)
-def _wild_decompositions(natural, wild, meld_count):
-    decompositions = []
-    for assignment in combinations_with_replacement(_WILD_ASSIGNABLE, wild):
-        filled = list(natural)
-        for tile in assignment:
-            filled[tile] += 1
-        filled = tuple(filled)
-        shapes = tuple(standard_shapes(filled, meld_count))
-        if shapes:
-            decompositions.append((filled, tuple(dict.fromkeys(assignment)), shapes))
-    return tuple(decompositions)
-
-
 def liability(melds, meld):
     return ()
 
@@ -205,7 +188,7 @@ class TiantaiWildcardRules:
         if ctx.kind == 'zimo' and wild == 4:
             return Score(HU_CAP, ('四财神',))
         best = None
-        for filled, assignments, shapes in _wild_decompositions(natural, wild, len(melds)):
+        for filled, assignments, shapes in wildcard_decompositions(natural, wild, len(melds), _WILD_ASSIGNABLE):
             winning_tiles = assignments if ctx.tile == WHITE else (ctx.tile,)
             choice = _rank_hand(filled, melds, ctx, shapes, winning_tiles, flowers, flower_replacement,
                                 ('清牌',) if not wild else ())
